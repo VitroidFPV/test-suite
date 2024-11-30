@@ -1,5 +1,5 @@
 <template>
-	<UContainer>
+	<!-- <UContainer>
 		<UCard class="mt-10">
 			<template #header>
 				<div class="flex justify-between">
@@ -18,5 +18,12 @@
 				>Open Nuxt UI Documentation</UButton
 			>
 		</UCard>
-	</UContainer>
+	</UContainer> -->
+	<main>
+		<NavHeader/>
+		<div class="flex flex-col lg:flex-row">
+			<NavSidebar/>
+			<NuxtPage/>
+		</div>
+	</main>
 </template>
