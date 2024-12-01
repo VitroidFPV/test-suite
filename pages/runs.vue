@@ -1,5 +1,3 @@
 <template>
-	<div>
-		runs
-	</div>
+	<div>runs</div>
 </template>
