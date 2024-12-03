@@ -8,9 +8,6 @@
 	if (error) {
 		console.error(error)
 	}
-	if (data) {
-		console.log(data)
-	}
 
 	const userIsDev = data?.role === "dev"
 
