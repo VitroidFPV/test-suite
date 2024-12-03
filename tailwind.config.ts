@@ -17,6 +17,9 @@ export default <Partial<Config>>{
 					900: "#7c400b",
 					950: "#482100"
 				}
+			},
+			spacing: {
+				"full-nav": "calc(100vh - 4rem)"
 			}
 		}
 	}

@@ -1,6 +1,6 @@
 <template>
-	<aside class="p-4 w-56">
-		<ul class="flex flex-col space-y-2">
+	<aside class="p-4 w-full lg:w-56">
+		<ul class="flex lg:flex-col justify-between lg:justify-start space-y-2">
 			<li>
 				<ULink
 					to="/"
@@ -12,7 +12,7 @@
 					Home
 				</ULink>
 			</li>
-			<UDivider />
+			<UDivider class="hidden lg:block" />
 			<li>
 				<ULink
 					to="/cases"
