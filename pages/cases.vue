@@ -134,7 +134,7 @@ async function deleteCase(id: string) {
 
 
 const linkModalOpen = ref(false)
-function linkModal(id: string) {
+function groupModal(id: string) {
 	linkModalOpen.value = true
 	editedGroup.value = id
 		? JSON.parse(
@@ -146,6 +146,9 @@ function linkModal(id: string) {
 			name: "",
 			cases: []
 		}
+	if (editedGroup.value != id) {
+		selectedCases.value = []
+	}
 }
 
 const selectedCases = ref<string[]>([])
@@ -210,6 +213,15 @@ function saveGroup(close: boolean = false, update: boolean = false) {
 	}
 }
 
+async function deleteGroup(id: string) {
+	const { error } = await supabase.from("case-groups").delete().match({ id })
+	if (error) {
+		console.error(error)
+	}
+	linkModalOpen.value = false
+	getCaseGroups()
+}
+
 const editedGroup = ref<CaseGroup>()
 
 const { metaSymbol } = useShortcuts()
@@ -240,6 +252,7 @@ defineShortcuts({
 					color="primary"
 					variant="link"
 					icon="i-lucide-plus"
+					@click="groupModal('')"
 				/>
 			</div>
 			<UDivider />
@@ -298,7 +311,7 @@ defineShortcuts({
 							variant="link"
 							icon="i-lucide-pen"
 							:disabled="selectedGroup === undefined"
-							@click="linkModal(selectedGroup?.id ? selectedGroup.id : '')"
+							@click="groupModal(selectedGroup?.id ? selectedGroup.id : '')"
 						>
 							Edit Group
 						</UButton>
@@ -513,6 +526,20 @@ defineShortcuts({
 									variant="link"
 									icon="i-lucide-save-all"
 									@click="saveGroup(true, (editedGroup.id !== '' ? true : false))"
+								/>
+							</UTooltip>
+
+							<UTooltip
+								v-if="editedGroup.id"
+								text="Delete"
+								:shortcuts="[metaSymbol, 'Delete']"
+							>
+								<UButton
+									color="primary"
+									size="sm"
+									variant="link"
+									icon="i-lucide-trash"
+									@click="deleteGroup(editedGroup.id)"
 								/>
 							</UTooltip>
 
