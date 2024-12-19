@@ -206,6 +206,17 @@ function saveGroup(close: boolean = false, update: boolean = false) {
 	}
 }
 
+function removeFromGroup(id: string) {
+	const newCases = selectedGroup.value?.cases.filter((item) => item !== id)
+	if (selectedGroup.value) {
+		if (newCases) {
+			selectedGroup.value.cases = newCases
+		}
+		writeGroup(selectedGroup.value, true)
+	}
+	caseModalOpen.value = false
+}
+
 async function deleteGroup(id: string) {
 	const { error } = await supabase.from("case-groups").delete().match({ id })
 	if (error) {
@@ -410,6 +421,21 @@ defineShortcuts({
 									@click="deleteCase(editedCase.id)"
 								/>
 							</UTooltip>
+
+							<UTooltip
+								v-if="editedCase.id && selectedGroup && selectedGroup.name !== 'All'"
+								text="Remove from group"
+								:shortcuts="[metaSymbol, 'Delete']"
+							>
+								<UButton
+									color="red"
+									size="sm"
+									variant="link"
+									icon="i-lucide-unlink"
+									@click="removeFromGroup(editedCase.id)"
+								/>
+							</UTooltip>
+
 						</div>
 
 						<div class="flex items-center gap-2 h-fit">
