@@ -36,24 +36,19 @@ onMounted(() => {
 	getCaseGroups()
 })
 
-const groups = computed(() => {
-	return [
-		{
-			slot: "all",
-			label: "All"
-		},
-		...caseGroups.value.map((group) => {
-			return {
-				slot: group.name,
-				label: group.title
-			}
-		})
-	]
-})
+const groups = computed(() => [
+	{ label: "All", value: "all" },
+	...caseGroups.value.map((item) => ({
+		label: item.title,
+		value: item.name
+	}))
+])
+
+let selectedTabGroup: number = 0
 
 function filterGroup(index: number) {
 	selectedGroup.value = caseGroups.value[index - 1]
-	// -1 since "all" does not come from caseGroups
+	selectedTabGroup = index
 	editedGroup.value = selectedGroup.value
 }
 
@@ -64,8 +59,6 @@ const filteredCases = computed(() => {
 			selectedGroup.value && selectedGroup.value.cases.includes(item.id)
 	)
 })
-
-
 
 const caseModalOpen = ref(false)
 const editedCase = ref<Case>()
@@ -146,8 +139,8 @@ function groupModal(id: string) {
 			name: "",
 			cases: []
 		}
-	if (editedGroup.value != id) {
-		selectedCases.value = []
+	if (editedGroup.value) {
+		selectedCases.value = editedGroup.value.cases
 	}
 }
 
@@ -187,7 +180,7 @@ async function writeGroup(data: CaseGroup, update: boolean = false) {
 			.from("case-groups")
 			.insert([
 				{
-					name: data.name,
+					name: data.title.toLowerCase().replace(/\s/g, "-"),
 					title: data.title,
 					cases: data.cases,
 					created_at: data.created_at
@@ -199,9 +192,9 @@ async function writeGroup(data: CaseGroup, update: boolean = false) {
 	}
 	getCaseGroups()
 
-	selectedGroup.value = editedGroup.value
-	// this somehow updated the filtered cases
-	// I don't ask
+	if (selectedGroup.value?.id === data.id) {
+		selectedGroup.value = data
+	}
 }
 
 function saveGroup(close: boolean = false, update: boolean = false) {
@@ -220,6 +213,8 @@ async function deleteGroup(id: string) {
 	}
 	linkModalOpen.value = false
 	getCaseGroups()
+	// go to all
+	filterGroup(0)
 }
 
 const editedGroup = ref<CaseGroup>()
@@ -257,6 +252,7 @@ defineShortcuts({
 			</div>
 			<UDivider />
 			<UTabs
+				v-model="selectedTabGroup"
 				:items="groups"
 				orientation="vertical"
 				as="ul"
