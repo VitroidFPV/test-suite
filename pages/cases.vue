@@ -399,13 +399,23 @@ defineShortcuts({
 				</template>
 				<template #footer>
 					<div class="flex items-center justify-between">
-						<div class="text-sm text-gray-500">
-							{{
-								dayjs(editedCase.created_at).format(
-									"D.MM.YYYY HH:mm"
-								)
-							}}
+
+						<div class="flex items-center gap-2 h-fit">
+							<UTooltip
+								v-if="editedCase.id"
+								text="Delete"
+								:shortcuts="[metaSymbol, 'Delete']"
+							>
+								<UButton
+									color="red"
+									size="sm"
+									variant="link"
+									icon="i-lucide-trash"
+									@click="deleteCase(editedCase.id)"
+								/>
+							</UTooltip>
 						</div>
+
 						<div class="flex items-center gap-2 h-fit">
 							<UTooltip
 								text="Save"
@@ -430,20 +440,6 @@ defineShortcuts({
 									variant="link"
 									icon="i-lucide-save-all"
 									@click="saveCase(true, (editedCase.id !== '' ? true : false))"
-								/>
-							</UTooltip>
-
-							<UTooltip
-								v-if="editedCase.id"
-								text="Delete"
-								:shortcuts="[metaSymbol, 'Delete']"
-							>
-								<UButton
-									color="primary"
-									size="sm"
-									variant="link"
-									icon="i-lucide-trash"
-									@click="deleteCase(editedCase.id)"
 								/>
 							</UTooltip>
 
@@ -495,13 +491,21 @@ defineShortcuts({
 				</template>
 				<template #footer>
 					<div class="flex items-center justify-between">
-						<div class="text-sm text-gray-500">
-							<!-- {{
-								dayjs(editedCase.created_at).format(
-									"D.MM.YYYY HH:mm"
-								)
-							}} -->
-						</div>
+						
+						<UTooltip
+							v-if="editedGroup.id"
+							text="Delete"
+							:shortcuts="[metaSymbol, 'Delete']"
+						>
+							<UButton
+								color="red"
+								size="sm"
+								variant="link"
+								icon="i-lucide-trash"
+								@click="deleteGroup(editedGroup.id)"
+							/>
+						</UTooltip>
+
 						<div class="flex items-center gap-2 h-fit">
 							<UTooltip
 								text="Save"
@@ -526,20 +530,6 @@ defineShortcuts({
 									variant="link"
 									icon="i-lucide-save-all"
 									@click="saveGroup(true, (editedGroup.id !== '' ? true : false))"
-								/>
-							</UTooltip>
-
-							<UTooltip
-								v-if="editedGroup.id"
-								text="Delete"
-								:shortcuts="[metaSymbol, 'Delete']"
-							>
-								<UButton
-									color="primary"
-									size="sm"
-									variant="link"
-									icon="i-lucide-trash"
-									@click="deleteGroup(editedGroup.id)"
 								/>
 							</UTooltip>
 
