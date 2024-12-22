@@ -9,23 +9,20 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      "case-groups": {
+      case_groups: {
         Row: {
-          cases: string[]
           created_at: string
           id: string
           name: string
           title: string
         }
         Insert: {
-          cases: string[]
           created_at?: string
           id?: string
           name: string
           title: string
         }
         Update: {
-          cases?: string[]
           created_at?: string
           id?: string
           name?: string
@@ -54,6 +51,108 @@ export type Database = {
           id?: string
           text?: string | null
           title?: string
+        }
+        Relationships: []
+      }
+      grouped_cases: {
+        Row: {
+          case: string
+          group: string
+        }
+        Insert: {
+          case: string
+          group: string
+        }
+        Update: {
+          case?: string
+          group?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "grouped_cases_case_fkey"
+            columns: ["case"]
+            isOneToOne: false
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "grouped_cases_group_fkey"
+            columns: ["group"]
+            isOneToOne: false
+            referencedRelation: "case_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      plan_cases: {
+        Row: {
+          case: string
+          plan: string
+        }
+        Insert: {
+          case: string
+          plan: string
+        }
+        Update: {
+          case?: string
+          plan?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_cases_case_fkey"
+            columns: ["case"]
+            isOneToOne: false
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plan_cases_plan_fkey"
+            columns: ["plan"]
+            isOneToOne: false
+            referencedRelation: "test_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tags: {
+        Row: {
+          color: string
+          id: string
+          title: string
+        }
+        Insert: {
+          color?: string
+          id?: string
+          title?: string
+        }
+        Update: {
+          color?: string
+          id?: string
+          title?: string
+        }
+        Relationships: []
+      }
+      test_plans: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          title: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          title?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          title?: string | null
         }
         Relationships: []
       }

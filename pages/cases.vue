@@ -1,28 +1,43 @@
 <script setup lang="ts">
 import dayjs from "dayjs"
-import type { Database, Tables } from "~/database.types";
+import type { Database, Tables } from "~/database.types"
 
 const supabase = useSupabaseClient<Database>()
 
-type Case = Tables<'cases'>;
-
-type CaseGroup = Tables<'case-groups'>;
+type Case = Tables<"cases">
+type CaseGroup = Tables<"case_groups">
+type GroupedCase = Tables<"grouped_cases">
 
 const cases = ref<Case[]>([])
 const caseGroups = ref<CaseGroup[]>([])
 const selectedGroup = ref<CaseGroup>()
+const groupedCases = ref<GroupedCase[]>([])
 
 async function getAllCases() {
-	const { data, error } = await supabase.from("cases").select("*")
-	if (error) {
-		console.error(error)
-	} else {
-		cases.value = data
+	const { data: casesData, error: casesError } = await supabase
+		.from("cases")
+		.select("*")
+
+	if (casesError) {
+		console.error(casesError)
+		return
 	}
+
+	const { data: groupingsData, error: groupingsError } = await supabase
+		.from("grouped_cases")
+		.select("*")
+
+	if (groupingsError) {
+		console.error(groupingsError)
+		return
+	}
+
+	cases.value = casesData
+	groupedCases.value = groupingsData
 }
 
 async function getCaseGroups() {
-	const { data, error } = await supabase.from("case-groups").select("*")
+	const { data, error } = await supabase.from("case_groups").select("*")
 	if (error) {
 		console.error(error)
 	} else {
@@ -30,6 +45,19 @@ async function getCaseGroups() {
 		caseGroups.value = data
 	}
 }
+
+// Filter cases by selected group
+const filteredCases = computed(() => {
+	if (!selectedGroup.value || selectedGroup.value.name === "all") {
+		return cases.value
+	}
+
+	const groupedCaseIds = groupedCases.value
+		.filter((gc) => gc.group === selectedGroup.value?.id)
+		.map((gc) => gc.case)
+
+	return cases.value.filter((c) => groupedCaseIds.includes(c.id))
+})
 
 onMounted(() => {
 	getAllCases()
@@ -52,44 +80,39 @@ function filterGroup(index: number) {
 	editedGroup.value = selectedGroup.value
 }
 
-const filteredCases = computed(() => {
-	if (!selectedGroup.value) return cases.value
-	return cases.value.filter(
-		(item) =>
-			selectedGroup.value && selectedGroup.value.cases.includes(item.id)
-	)
-})
-
 const caseModalOpen = ref(false)
 const editedCase = ref<Case>()
 
 function caseModal(id: string) {
-	caseModalOpen.value = true
-	editedCase.value = id
-		? JSON.parse(
-			JSON.stringify(cases.value.find((item) => item.id === id))
-		) : {
-			case_id: 1,
-			title: "",
-			text: "",
-			created_at: new Date().toISOString(),
-			id: "",
-			name: "",
-			cases: []
-		}
+  caseModalOpen.value = true
+  editedCase.value = id
+    ? JSON.parse(JSON.stringify(cases.value.find((item) => item.id === id)))
+    : {
+        case_id: 1,
+        title: "",
+        text: "",
+        created_at: new Date().toISOString(),
+        id: ""
+      }
 }
 
 async function writeCase(data: Case, update: boolean = false) {
 	if (update) {
 		const { error } = await supabase
 			.from("cases")
-			.update(data)
-			.match({ id: data.id })
+			.update({
+				title: data.title,
+				text: data.text,
+				case_id: data.case_id,
+				created_at: data.created_at
+			})
+			.eq("id", data.id)
 		if (error) {
 			console.error(error)
+			return
 		}
 	} else {
-		const { error } = await supabase
+		const { data: newCase, error } = await supabase
 			.from("cases")
 			.insert([
 				{
@@ -98,16 +121,34 @@ async function writeCase(data: Case, update: boolean = false) {
 					created_at: data.created_at
 				}
 			])
+			.select()
+			.single()
 		if (error) {
 			console.error(error)
+			return
+		}
+
+		// Add case to current group if one is selected
+		if (selectedGroup.value && selectedGroup.value.id) {
+			const { error: groupError } = await supabase
+				.from("grouped_cases")
+				.insert([
+					{
+						case: newCase.id,
+						group: selectedGroup.value.id
+					}
+				])
+			if (groupError) {
+				console.error(groupError)
+			}
 		}
 	}
-	getAllCases()
+	await getAllCases()
 }
 
 function saveCase(close: boolean = false, update: boolean = false) {
 	if (editedCase.value) {
-		console.log(editedCase.value);
+		console.log(editedCase.value)
 		writeCase(editedCase.value, update)
 		if (close) {
 			caseModalOpen.value = false
@@ -124,74 +165,114 @@ async function deleteCase(id: string) {
 	getAllCases()
 }
 
-
-
 const linkModalOpen = ref(false)
-function groupModal(id: string) {
-	linkModalOpen.value = true
-	editedGroup.value = id
-		? JSON.parse(
-			JSON.stringify(caseGroups.value.find((item) => item.id === id))
-		) : {
-			title: "",
-			created_at: new Date().toISOString(),
-			id: "",
-			name: "",
-			cases: []
-		}
-	if (editedGroup.value) {
-		selectedCases.value = editedGroup.value.cases
-	}
+async function groupModal(id: string) {
+  linkModalOpen.value = true
+  
+  if (id) {
+    // Load existing group
+    const group = caseGroups.value.find(item => item.id === id)
+    if (!group) return
+    
+    editedGroup.value = JSON.parse(JSON.stringify(group))
+    
+    // Load associated cases
+    const groupCases = groupedCases.value
+      .filter(gc => gc.group === id)
+      .map(gc => gc.case)
+    
+    selectedCases.value = groupCases
+  } else {
+    // New group
+    editedGroup.value = {
+      title: "",
+      created_at: new Date().toISOString(),
+      id: "",
+      name: ""
+    }
+    selectedCases.value = []
+  }
 }
 
 const selectedCases = ref<string[]>([])
 
-watch(selectedGroup, (value) => {
-	if (value) {
-		selectedCases.value = value.cases
-		console.log(selectedCases.value)
-	}
-})
-
 function selectCase(id: string) {
-	if (selectedCases.value.includes(id)) {
-		selectedCases.value = selectedCases.value.filter((item) => item !== id)
-	} else {
-		selectedCases.value = [...selectedCases.value, id]
-	}
-
-	if (editedGroup.value) {
-		editedGroup.value.cases = selectedCases.value
-	}
-	console.log(selectedCases.value)
+  if (selectedCases.value.includes(id)) {
+    selectedCases.value = selectedCases.value.filter(item => item !== id)
+  } else {
+    selectedCases.value = [...selectedCases.value, id]
+  }
 }
 
 async function writeGroup(data: CaseGroup, update: boolean = false) {
 	if (update) {
 		const { error } = await supabase
-			.from("case-groups")
-			.update(data)
-			.match({ id: data.id })
+			.from("case_groups")
+			.update({
+				name: data.name,
+				title: data.title,
+				created_at: data.created_at
+			})
+			.eq("id", data.id)
 		if (error) {
 			console.error(error)
+			return
+		}
+
+		// Update group-case relationships
+		if (selectedCases.value && data.id) {
+			// Delete existing relationships
+			await supabase.from("grouped_cases").delete().eq("group", data.id)
+
+			// Insert new relationships
+			const { error: groupError } = await supabase
+				.from("grouped_cases")
+				.insert(
+					selectedCases.value.map((caseId) => ({
+						case: caseId,
+						group: data.id
+					}))
+				)
+			if (groupError) {
+				console.error(groupError)
+			}
 		}
 	} else {
-		const { error } = await supabase
-			.from("case-groups")
+		const { data: newGroup, error } = await supabase
+			.from("case_groups")
 			.insert([
 				{
 					name: data.title.toLowerCase().replace(/\s/g, "-"),
 					title: data.title,
-					cases: data.cases,
 					created_at: data.created_at
 				}
 			])
+			.select()
+			.single()
+
 		if (error) {
 			console.error(error)
+			return
+		}
+
+		// Create group-case relationships
+		if (selectedCases.value && newGroup.id) {
+			const { error: groupError } = await supabase
+				.from("grouped_cases")
+				.insert(
+					selectedCases.value.map((caseId) => ({
+						case: caseId,
+						group: newGroup.id
+					}))
+				)
+			if (groupError) {
+				console.error(groupError)
+			}
 		}
 	}
-	getCaseGroups()
 
+	getAllCases()
+	getCaseGroups()
 	if (selectedGroup.value?.id === data.id) {
 		selectedGroup.value = data
 	}
@@ -206,25 +287,46 @@ function saveGroup(close: boolean = false, update: boolean = false) {
 	}
 }
 
-function removeFromGroup(id: string) {
-	const newCases = selectedGroup.value?.cases.filter((item) => item !== id)
-	if (selectedGroup.value) {
-		if (newCases) {
-			selectedGroup.value.cases = newCases
-		}
-		writeGroup(selectedGroup.value, true)
+async function removeFromGroup(caseId: string) {
+	if (!selectedGroup.value?.id) return
+
+	const { error } = await supabase
+		.from("grouped_cases")
+		.delete()
+		.eq("case", caseId)
+		.eq("group", selectedGroup.value.id)
+
+	if (error) {
+		console.error(error)
+		return
 	}
+
+	await getAllCases()
 	caseModalOpen.value = false
 }
 
 async function deleteGroup(id: string) {
-	const { error } = await supabase.from("case-groups").delete().match({ id })
+	// Delete group-case relationships first
+	const { error: relError } = await supabase
+		.from("grouped_cases")
+		.delete()
+		.eq("group", id)
+
+	if (relError) {
+		console.error(relError)
+		return
+	}
+
+	// Then delete the group
+	const { error } = await supabase.from("case_groups").delete().eq("id", id)
+
 	if (error) {
 		console.error(error)
+		return
 	}
+
 	linkModalOpen.value = false
-	getCaseGroups()
-	// go to all
+	await getCaseGroups()
 	filterGroup(0)
 }
 
@@ -244,9 +346,8 @@ defineShortcuts({
 	meta_n: {
 		usingInput: true,
 		handler: () => caseModal("")
-	},
+	}
 })
-
 </script>
 
 <template>
@@ -318,7 +419,11 @@ defineShortcuts({
 							variant="link"
 							icon="i-lucide-pen"
 							:disabled="selectedGroup === undefined"
-							@click="groupModal(selectedGroup?.id ? selectedGroup.id : '')"
+							@click="
+								groupModal(
+									selectedGroup?.id ? selectedGroup.id : ''
+								)
+							"
 						>
 							Edit Group
 						</UButton>
@@ -329,7 +434,7 @@ defineShortcuts({
 			<div
 				class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 w-full"
 			>
-				<div v-for="item in filteredCases" :key="item.id" >
+				<div v-for="item in filteredCases" :key="item.id">
 					<UCard
 						:ui="{
 							header: { padding: 'px-4 py-3 sm:p-4' },
@@ -406,7 +511,6 @@ defineShortcuts({
 				</template>
 				<template #footer>
 					<div class="flex items-center justify-between">
-
 						<div class="flex items-center gap-2 h-fit">
 							<UTooltip
 								v-if="editedCase.id"
@@ -423,7 +527,11 @@ defineShortcuts({
 							</UTooltip>
 
 							<UTooltip
-								v-if="editedCase.id && selectedGroup && selectedGroup.name !== 'All'"
+								v-if="
+									editedCase.id &&
+									selectedGroup &&
+									selectedGroup.name !== 'All'
+								"
 								text="Remove from group"
 								:shortcuts="[metaSymbol, 'Delete']"
 							>
@@ -435,7 +543,6 @@ defineShortcuts({
 									@click="removeFromGroup(editedCase.id)"
 								/>
 							</UTooltip>
-
 						</div>
 
 						<div class="flex items-center gap-2 h-fit">
@@ -448,7 +555,12 @@ defineShortcuts({
 									size="sm"
 									variant="link"
 									icon="i-lucide-save"
-									@click="saveCase(false, (editedCase.id !== '' ? true : false))"
+									@click="
+										saveCase(
+											false,
+											editedCase.id !== '' ? true : false
+										)
+									"
 								/>
 							</UTooltip>
 
@@ -461,10 +573,14 @@ defineShortcuts({
 									size="sm"
 									variant="link"
 									icon="i-lucide-save-all"
-									@click="saveCase(true, (editedCase.id !== '' ? true : false))"
+									@click="
+										saveCase(
+											true,
+											editedCase.id !== '' ? true : false
+										)
+									"
 								/>
 							</UTooltip>
-
 						</div>
 					</div>
 				</template>
@@ -474,13 +590,15 @@ defineShortcuts({
 		<UModal
 			v-if="editedGroup"
 			v-model="linkModalOpen"
-			:ui="{ base: '!max-w-full 2xl:mx-64 xl:mx-32 lg:mx-32 md:mx-16 mx-0 sm:mx-8' }"
+			:ui="{
+				base: '!max-w-full 2xl:mx-64 xl:mx-32 lg:mx-32 md:mx-16 mx-0 sm:mx-8'
+			}"
 		>
 			<UCard
 				:ui="{
 					header: { padding: 'px-4 py-3 sm:p-4' },
 					body: { padding: 'px-4 py-3 sm:p-4' },
-					footer: { padding: 'px-4 py-3 sm:p-4' },
+					footer: { padding: 'px-4 py-3 sm:p-4' }
 				}"
 			>
 				<template #header>
@@ -494,7 +612,9 @@ defineShortcuts({
 				</template>
 				<template #default>
 					<!-- grid of all case titles -->
-					<div class="grid 2xl:grid-cols-4 lg:grid-cols-3 sm:grid-cols-2 grid-cols-1 gap-3">
+					<div
+						class="grid 2xl:grid-cols-4 lg:grid-cols-3 sm:grid-cols-2 grid-cols-1 gap-3"
+					>
 						<div v-for="item in cases" :key="item.id">
 							<UCard
 								:ui="{
@@ -503,7 +623,10 @@ defineShortcuts({
 									footer: { padding: 'px-4 py-3 sm:p-4' },
 									base: 'h-full outline outline-2 outline-transparent duration-100'
 								}"
-								:class="{ 'outline-primary-500/50': selectedCases.includes(item.id) }"
+								:class="{
+									'outline-primary-500/50':
+										selectedCases.includes(item.id)
+								}"
 								@click="selectCase(item.id)"
 							>
 								{{ item.title }}
@@ -513,7 +636,6 @@ defineShortcuts({
 				</template>
 				<template #footer>
 					<div class="flex items-center justify-between">
-						
 						<UTooltip
 							v-if="editedGroup.id"
 							text="Delete"
@@ -538,7 +660,12 @@ defineShortcuts({
 									size="sm"
 									variant="link"
 									icon="i-lucide-save"
-									@click="saveGroup(false, (editedGroup.id !== '' ? true : false))"
+									@click="
+										saveGroup(
+											false,
+											editedGroup.id !== '' ? true : false
+										)
+									"
 								/>
 							</UTooltip>
 
@@ -551,10 +678,14 @@ defineShortcuts({
 									size="sm"
 									variant="link"
 									icon="i-lucide-save-all"
-									@click="saveGroup(true, (editedGroup.id !== '' ? true : false))"
+									@click="
+										saveGroup(
+											true,
+											editedGroup.id !== '' ? true : false
+										)
+									"
 								/>
 							</UTooltip>
-
 						</div>
 					</div>
 				</template>
