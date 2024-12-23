@@ -8,8 +8,8 @@
 		"generate": "nuxt generate",
 		"preview": "nuxt preview",
 		"postinstall": "nuxt prepare",
-		"lint": "eslint . && prettier . --check",
-		"lint:fix": "eslint . --fix && prettier . --write --list-different",
+		"lint": "eslint .",
+		"lint:fix": "eslint . --fix",
 		"db-types": "npx supabase gen types --lang=typescript --project-id yxnhoaudgrpzerbyoqle > database.types.ts"
 	},
 	"devDependencies": {
