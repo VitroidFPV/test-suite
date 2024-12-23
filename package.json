@@ -13,6 +13,7 @@
 		"db-types": "npx supabase gen types --lang=typescript --project-id yxnhoaudgrpzerbyoqle > database.types.ts"
 	},
 	"devDependencies": {
+		"@iconify-json/lucide": "^1.2.20",
 		"@nuxt/devtools": "latest",
 		"@nuxt/eslint": "^0.7.2",
 		"@nuxt/ui": "^2.19.2",
