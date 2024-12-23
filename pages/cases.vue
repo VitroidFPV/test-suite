@@ -84,16 +84,16 @@ const caseModalOpen = ref(false)
 const editedCase = ref<Case>()
 
 function caseModal(id: string) {
-  caseModalOpen.value = true
-  editedCase.value = id
-    ? JSON.parse(JSON.stringify(cases.value.find((item) => item.id === id)))
-    : {
-        case_id: 1,
-        title: "",
-        text: "",
-        created_at: new Date().toISOString(),
-        id: ""
-      }
+	caseModalOpen.value = true
+	editedCase.value = id
+		? JSON.parse(JSON.stringify(cases.value.find((item) => item.id === id)))
+		: {
+				case_id: 1,
+				title: "",
+				text: "",
+				created_at: new Date().toISOString(),
+				id: ""
+			}
 }
 
 async function writeCase(data: Case, update: boolean = false) {
@@ -167,41 +167,41 @@ async function deleteCase(id: string) {
 
 const linkModalOpen = ref(false)
 async function groupModal(id: string) {
-  linkModalOpen.value = true
-  
-  if (id) {
-    // Load existing group
-    const group = caseGroups.value.find(item => item.id === id)
-    if (!group) return
-    
-    editedGroup.value = JSON.parse(JSON.stringify(group))
-    
-    // Load associated cases
-    const groupCases = groupedCases.value
-      .filter(gc => gc.group === id)
-      .map(gc => gc.case)
-    
-    selectedCases.value = groupCases
-  } else {
-    // New group
-    editedGroup.value = {
-      title: "",
-      created_at: new Date().toISOString(),
-      id: "",
-      name: ""
-    }
-    selectedCases.value = []
-  }
+	linkModalOpen.value = true
+
+	if (id) {
+		// Load existing group
+		const group = caseGroups.value.find((item) => item.id === id)
+		if (!group) return
+
+		editedGroup.value = JSON.parse(JSON.stringify(group))
+
+		// Load associated cases
+		const groupCases = groupedCases.value
+			.filter((gc) => gc.group === id)
+			.map((gc) => gc.case)
+
+		selectedCases.value = groupCases
+	} else {
+		// New group
+		editedGroup.value = {
+			title: "",
+			created_at: new Date().toISOString(),
+			id: "",
+			name: ""
+		}
+		selectedCases.value = []
+	}
 }
 
 const selectedCases = ref<string[]>([])
 
 function selectCase(id: string) {
-  if (selectedCases.value.includes(id)) {
-    selectedCases.value = selectedCases.value.filter(item => item !== id)
-  } else {
-    selectedCases.value = [...selectedCases.value, id]
-  }
+	if (selectedCases.value.includes(id)) {
+		selectedCases.value = selectedCases.value.filter((item) => item !== id)
+	} else {
+		selectedCases.value = [...selectedCases.value, id]
+	}
 }
 
 async function writeGroup(data: CaseGroup, update: boolean = false) {
@@ -225,14 +225,12 @@ async function writeGroup(data: CaseGroup, update: boolean = false) {
 			await supabase.from("grouped_cases").delete().eq("group", data.id)
 
 			// Insert new relationships
-			const { error: groupError } = await supabase
-				.from("grouped_cases")
-				.insert(
-					selectedCases.value.map((caseId) => ({
-						case: caseId,
-						group: data.id
-					}))
-				)
+			const { error: groupError } = await supabase.from("grouped_cases").insert(
+				selectedCases.value.map((caseId) => ({
+					case: caseId,
+					group: data.id
+				}))
+			)
 			if (groupError) {
 				console.error(groupError)
 			}
@@ -257,14 +255,12 @@ async function writeGroup(data: CaseGroup, update: boolean = false) {
 
 		// Create group-case relationships
 		if (selectedCases.value && newGroup.id) {
-			const { error: groupError } = await supabase
-				.from("grouped_cases")
-				.insert(
-					selectedCases.value.map((caseId) => ({
-						case: caseId,
-						group: newGroup.id
-					}))
-				)
+			const { error: groupError } = await supabase.from("grouped_cases").insert(
+				selectedCases.value.map((caseId) => ({
+					case: caseId,
+					group: newGroup.id
+				}))
+			)
 			if (groupError) {
 				console.error(groupError)
 			}
@@ -394,10 +390,7 @@ defineShortcuts({
 			<div class="flex justify-between px-1">
 				<div class="text-primary font-bold">Cases</div>
 				<div class="flex">
-					<UTooltip
-						text="Create new Case"
-						:shortcuts="[metaSymbol, 'N']"
-					>
+					<UTooltip text="Create new Case" :shortcuts="[metaSymbol, 'N']">
 						<UButton
 							color="primary"
 							size="sm"
@@ -419,11 +412,7 @@ defineShortcuts({
 							variant="link"
 							icon="i-lucide-pen"
 							:disabled="selectedGroup === undefined"
-							@click="
-								groupModal(
-									selectedGroup?.id ? selectedGroup.id : ''
-								)
-							"
+							@click="groupModal(selectedGroup?.id ? selectedGroup.id : '')"
 						>
 							Edit Group
 						</UButton>
@@ -431,9 +420,7 @@ defineShortcuts({
 				</div>
 			</div>
 			<UDivider />
-			<div
-				class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 w-full"
-			>
+			<div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 w-full">
 				<div v-for="item in filteredCases" :key="item.id">
 					<UCard
 						:ui="{
@@ -448,21 +435,15 @@ defineShortcuts({
 							</div>
 						</template>
 						<template #default>
-							<span
-								v-if="item.text"
-								class="line-clamp-1 text-ellipsis"
-								>{{ item.text }}</span
-							>
+							<span v-if="item.text" class="line-clamp-1 text-ellipsis">{{
+								item.text
+							}}</span>
 							<div v-else class="opacity-50">No description</div>
 						</template>
 						<template #footer>
 							<div class="flex items-center justify-between">
 								<div class="text-sm text-gray-500">
-									{{
-										dayjs(item.created_at).format(
-											"D.MM.YYYY HH:mm"
-										)
-									}}
+									{{ dayjs(item.created_at).format("D.MM.YYYY HH:mm") }}
 								</div>
 								<div class="flex items-center gap-2">
 									<UButton
@@ -528,9 +509,7 @@ defineShortcuts({
 
 							<UTooltip
 								v-if="
-									editedCase.id &&
-									selectedGroup &&
-									selectedGroup.name !== 'All'
+									editedCase.id && selectedGroup && selectedGroup.name !== 'All'
 								"
 								text="Remove from group"
 								:shortcuts="[metaSymbol, 'Delete']"
@@ -546,21 +525,13 @@ defineShortcuts({
 						</div>
 
 						<div class="flex items-center gap-2 h-fit">
-							<UTooltip
-								text="Save"
-								:shortcuts="[metaSymbol, 'S']"
-							>
+							<UTooltip text="Save" :shortcuts="[metaSymbol, 'S']">
 								<UButton
 									color="primary"
 									size="sm"
 									variant="link"
 									icon="i-lucide-save"
-									@click="
-										saveCase(
-											false,
-											editedCase.id !== '' ? true : false
-										)
-									"
+									@click="saveCase(false, editedCase.id !== '' ? true : false)"
 								/>
 							</UTooltip>
 
@@ -573,12 +544,7 @@ defineShortcuts({
 									size="sm"
 									variant="link"
 									icon="i-lucide-save-all"
-									@click="
-										saveCase(
-											true,
-											editedCase.id !== '' ? true : false
-										)
-									"
+									@click="saveCase(true, editedCase.id !== '' ? true : false)"
 								/>
 							</UTooltip>
 						</div>
@@ -624,8 +590,7 @@ defineShortcuts({
 									base: 'h-full outline outline-2 outline-transparent duration-100'
 								}"
 								:class="{
-									'outline-primary-500/50':
-										selectedCases.includes(item.id)
+									'outline-primary-500/50': selectedCases.includes(item.id)
 								}"
 								@click="selectCase(item.id)"
 							>
@@ -651,20 +616,14 @@ defineShortcuts({
 						</UTooltip>
 
 						<div class="flex items-center gap-2 h-fit">
-							<UTooltip
-								text="Save"
-								:shortcuts="[metaSymbol, 'S']"
-							>
+							<UTooltip text="Save" :shortcuts="[metaSymbol, 'S']">
 								<UButton
 									color="primary"
 									size="sm"
 									variant="link"
 									icon="i-lucide-save"
 									@click="
-										saveGroup(
-											false,
-											editedGroup.id !== '' ? true : false
-										)
+										saveGroup(false, editedGroup.id !== '' ? true : false)
 									"
 								/>
 							</UTooltip>
@@ -678,12 +637,7 @@ defineShortcuts({
 									size="sm"
 									variant="link"
 									icon="i-lucide-save-all"
-									@click="
-										saveGroup(
-											true,
-											editedGroup.id !== '' ? true : false
-										)
-									"
+									@click="saveGroup(true, editedGroup.id !== '' ? true : false)"
 								/>
 							</UTooltip>
 						</div>
