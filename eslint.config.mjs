@@ -7,5 +7,10 @@ export default withNuxt([
 	{
 		ignores: ["database.types.ts"]
 	},
-	eslintPluginPrettierRecommended
+	eslintPluginPrettierRecommended,
+	{
+		rules: {
+			"@typescript-eslint/no-unused-vars": ["warn"]
+		}
+	}
 ])

@@ -13,5 +13,12 @@ export default defineNuxtConfig({
 		head: {
 			link: [{ rel: "icon", type: "image/svg+xml", href: "/favicon.svg" }]
 		}
-	}
+	},
+	postcss: {
+		plugins: {
+			tailwindcss: {},
+			autoprefixer: {}
+		}
+	},
+	css: ["~/assets/css/main.css"]
 })
