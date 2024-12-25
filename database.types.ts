@@ -9,7 +9,55 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      case_groups: {
+      tags: {
+        Row: {
+          color: string
+          id: string
+          title: string
+        }
+        Insert: {
+          color?: string
+          id?: string
+          title?: string
+        }
+        Update: {
+          color?: string
+          id?: string
+          title?: string
+        }
+        Relationships: []
+      }
+      test_case_group_links: {
+        Row: {
+          case: string
+          group: string
+        }
+        Insert: {
+          case: string
+          group: string
+        }
+        Update: {
+          case?: string
+          group?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "grouped_cases_case_fkey"
+            columns: ["case"]
+            isOneToOne: false
+            referencedRelation: "test_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "grouped_cases_group_fkey"
+            columns: ["group"]
+            isOneToOne: false
+            referencedRelation: "test_case_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      test_case_groups: {
         Row: {
           created_at: string
           id: string
@@ -30,7 +78,7 @@ export type Database = {
         }
         Relationships: []
       }
-      cases: {
+      test_cases: {
         Row: {
           case_id: number
           created_at: string
@@ -54,37 +102,7 @@ export type Database = {
         }
         Relationships: []
       }
-      grouped_cases: {
-        Row: {
-          case: string
-          group: string
-        }
-        Insert: {
-          case: string
-          group: string
-        }
-        Update: {
-          case?: string
-          group?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "grouped_cases_case_fkey"
-            columns: ["case"]
-            isOneToOne: false
-            referencedRelation: "cases"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "grouped_cases_group_fkey"
-            columns: ["group"]
-            isOneToOne: false
-            referencedRelation: "case_groups"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      plan_cases: {
+      test_plan_case_links: {
         Row: {
           case: string
           plan: string
@@ -102,33 +120,69 @@ export type Database = {
             foreignKeyName: "plan_cases_case_fkey"
             columns: ["case"]
             isOneToOne: false
-            referencedRelation: "cases"
+            referencedRelation: "test_cases"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "plan_cases_plan_fkey"
             columns: ["plan"]
             isOneToOne: false
-            referencedRelation: "test_plans"
+            referencedRelation: "test_plan_groups"
             referencedColumns: ["id"]
           },
         ]
       }
-      tags: {
+      test_plan_group_links: {
         Row: {
-          color: string
-          id: string
-          title: string
+          plan: string
+          plan_group: string
         }
         Insert: {
-          color?: string
-          id?: string
-          title?: string
+          plan: string
+          plan_group: string
         }
         Update: {
-          color?: string
+          plan?: string
+          plan_group?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "test_plan_group_links_plan_fkey"
+            columns: ["plan"]
+            isOneToOne: false
+            referencedRelation: "test_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "test_plan_group_links_plan_group_fkey"
+            columns: ["plan_group"]
+            isOneToOne: false
+            referencedRelation: "test_plan_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      test_plan_groups: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          title: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
           id?: string
-          title?: string
+          name?: string
+          title?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          title?: string | null
         }
         Relationships: []
       }
@@ -144,7 +198,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
-          name: string
+          name?: string
           title?: string | null
         }
         Update: {

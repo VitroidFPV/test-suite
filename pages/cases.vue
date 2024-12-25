@@ -4,9 +4,9 @@ import type { Database, Tables } from "~/database.types"
 
 const supabase = useSupabaseClient<Database>()
 
-type Case = Tables<"cases">
-type CaseGroup = Tables<"case_groups">
-type GroupedCase = Tables<"grouped_cases">
+type Case = Tables<"test_cases">
+type CaseGroup = Tables<"test_case_groups">
+type GroupedCase = Tables<"test_case_group_links">
 
 const cases = ref<Case[]>([])
 const caseGroups = ref<CaseGroup[]>([])
@@ -15,7 +15,7 @@ const groupedCases = ref<GroupedCase[]>([])
 
 async function getAllCases() {
 	const { data: casesData, error: casesError } = await supabase
-		.from("cases")
+		.from("test_cases")
 		.select("*")
 
 	if (casesError) {
@@ -24,7 +24,7 @@ async function getAllCases() {
 	}
 
 	const { data: groupingsData, error: groupingsError } = await supabase
-		.from("grouped_cases")
+		.from("test_case_group_links")
 		.select("*")
 
 	if (groupingsError) {
@@ -37,7 +37,7 @@ async function getAllCases() {
 }
 
 async function getCaseGroups() {
-	const { data, error } = await supabase.from("case_groups").select("*")
+	const { data, error } = await supabase.from("test_case_groups").select("*")
 	if (error) {
 		console.error(error)
 	} else {
@@ -99,7 +99,7 @@ function caseModal(id: string) {
 async function writeCase(data: Case, update: boolean = false) {
 	if (update) {
 		const { error } = await supabase
-			.from("cases")
+			.from("test_cases")
 			.update({
 				title: data.title,
 				text: data.text,
@@ -113,7 +113,7 @@ async function writeCase(data: Case, update: boolean = false) {
 		}
 	} else {
 		const { data: newCase, error } = await supabase
-			.from("cases")
+			.from("test_cases")
 			.insert([
 				{
 					title: data.title,
@@ -131,7 +131,7 @@ async function writeCase(data: Case, update: boolean = false) {
 		// Add case to current group if one is selected
 		if (selectedGroup.value && selectedGroup.value.id) {
 			const { error: groupError } = await supabase
-				.from("grouped_cases")
+				.from("test_case_group_links")
 				.insert([
 					{
 						case: newCase.id,
@@ -157,7 +157,7 @@ function saveCase(close: boolean = false, update: boolean = false) {
 }
 
 async function deleteCase(id: string) {
-	const { error } = await supabase.from("cases").delete().match({ id })
+	const { error } = await supabase.from("test_cases").delete().match({ id })
 	if (error) {
 		console.error(error)
 	}
@@ -207,7 +207,7 @@ function selectCase(id: string) {
 async function writeGroup(data: CaseGroup, update: boolean = false) {
 	if (update) {
 		const { error } = await supabase
-			.from("case_groups")
+			.from("test_case_groups")
 			.update({
 				name: data.name,
 				title: data.title,
@@ -222,22 +222,24 @@ async function writeGroup(data: CaseGroup, update: boolean = false) {
 		// Update group-case relationships
 		if (selectedCases.value && data.id) {
 			// Delete existing relationships
-			await supabase.from("grouped_cases").delete().eq("group", data.id)
+			await supabase.from("test_case_group_links").delete().eq("group", data.id)
 
 			// Insert new relationships
-			const { error: groupError } = await supabase.from("grouped_cases").insert(
-				selectedCases.value.map((caseId) => ({
-					case: caseId,
-					group: data.id
-				}))
-			)
+			const { error: groupError } = await supabase
+				.from("test_case_group_links")
+				.insert(
+					selectedCases.value.map((caseId) => ({
+						case: caseId,
+						group: data.id
+					}))
+				)
 			if (groupError) {
 				console.error(groupError)
 			}
 		}
 	} else {
 		const { data: newGroup, error } = await supabase
-			.from("case_groups")
+			.from("test_case_groups")
 			.insert([
 				{
 					name: data.title.toLowerCase().replace(/\s/g, "-"),
@@ -255,12 +257,14 @@ async function writeGroup(data: CaseGroup, update: boolean = false) {
 
 		// Create group-case relationships
 		if (selectedCases.value && newGroup.id) {
-			const { error: groupError } = await supabase.from("grouped_cases").insert(
-				selectedCases.value.map((caseId) => ({
-					case: caseId,
-					group: newGroup.id
-				}))
-			)
+			const { error: groupError } = await supabase
+				.from("test_case_group_links")
+				.insert(
+					selectedCases.value.map((caseId) => ({
+						case: caseId,
+						group: newGroup.id
+					}))
+				)
 			if (groupError) {
 				console.error(groupError)
 			}
@@ -287,7 +291,7 @@ async function removeFromGroup(caseId: string) {
 	if (!selectedGroup.value?.id) return
 
 	const { error } = await supabase
-		.from("grouped_cases")
+		.from("test_case_group_links")
 		.delete()
 		.eq("case", caseId)
 		.eq("group", selectedGroup.value.id)
@@ -304,7 +308,7 @@ async function removeFromGroup(caseId: string) {
 async function deleteGroup(id: string) {
 	// Delete group-case relationships first
 	const { error: relError } = await supabase
-		.from("grouped_cases")
+		.from("test_case_group_links")
 		.delete()
 		.eq("group", id)
 
@@ -314,7 +318,10 @@ async function deleteGroup(id: string) {
 	}
 
 	// Then delete the group
-	const { error } = await supabase.from("case_groups").delete().eq("id", id)
+	const { error } = await supabase
+		.from("test_case_group_links")
+		.delete()
+		.eq("id", id)
 
 	if (error) {
 		console.error(error)
