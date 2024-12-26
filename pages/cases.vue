@@ -355,7 +355,7 @@ defineShortcuts({
 
 <template>
 	<div class="flex flex-col lg:flex-row gap-3 w-full">
-		<div class="w-full lg:w-min space-y-3 h-full">
+		<div class="w-52 lg:w-min space-y-3 h-full">
 			<div class="flex justify-between px-1">
 				<div class="text-primary font-bold">Groups</div>
 				<UButton
@@ -371,7 +371,7 @@ defineShortcuts({
 				:items="groups"
 				orientation="vertical"
 				as="ul"
-				class="w-full"
+				class="w-52"
 				:ui="{
 					list: {
 						background: 'dark:!bg-gray-900',
