@@ -18,6 +18,7 @@
 		"@nuxt/eslint": "^0.7.2",
 		"@nuxt/ui": "^2.19.2",
 		"@nuxtjs/supabase": "^1.4.3",
+		"@types/markdown-it": "^14.1.2",
 		"eslint": "^9.16.0",
 		"nuxt": "^3.14.1592",
 		"supabase": "^1.226.3",
@@ -27,6 +28,7 @@
 		"dayjs": "^1.11.13",
 		"eslint-config-prettier": "^9.1.0",
 		"eslint-plugin-prettier": "^5.2.1",
-		"prettier": "^3.4.1"
+		"prettier": "^3.4.1",
+		"vue-markdown-render": "^2.2.1"
 	}
 }
