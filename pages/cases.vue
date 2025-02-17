@@ -59,10 +59,8 @@ const filteredCases = computed(() => {
 	return cases.value.filter((c) => groupedCaseIds.includes(c.id))
 })
 
-onMounted(() => {
-	getAllCases()
-	getCaseGroups()
-})
+await getAllCases()
+await getCaseGroups()
 
 const groups = computed(() => [
 	{ label: "All", value: "all" },
