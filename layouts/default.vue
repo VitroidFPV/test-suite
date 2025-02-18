@@ -27,7 +27,7 @@ if (!userIsLoggedIn) {
 		<NavHeader />
 		<div v-if="userIsDev" class="flex flex-col lg:flex-row">
 			<NavSidebar />
-			<div class="p-3 w-full h-full">
+			<div class="p-4 w-full h-full">
 				<slot />
 			</div>
 		</div>
