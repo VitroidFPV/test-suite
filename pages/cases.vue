@@ -59,8 +59,11 @@ const filteredCases = computed(() => {
 	return cases.value.filter((c) => groupedCaseIds.includes(c.id))
 })
 
-await getAllCases()
-await getCaseGroups()
+// await getAllCases()
+// await getCaseGroups()
+
+getAllCases()
+getCaseGroups()
 
 const groups = computed(() => [
 	{ label: "All", value: "all" },

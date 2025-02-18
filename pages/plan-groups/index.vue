@@ -23,7 +23,7 @@ async function getPlans() {
 	planGroups.value = data
 }
 
-await getPlans()
+getPlans()
 
 definePageMeta({
 	breadcrumb: {

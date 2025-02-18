@@ -27,7 +27,8 @@ async function getPlanGroup() {
 	planGroup.value = data[0]
 }
 
-await getPlanGroup()
+getPlanGroup()
+getPlans()
 </script>
 
 <template>
