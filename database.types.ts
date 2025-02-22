@@ -124,45 +124,15 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "plan_cases_plan_fkey"
-            columns: ["plan"]
-            isOneToOne: false
-            referencedRelation: "test_plan_groups"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      test_plan_group_links: {
-        Row: {
-          plan: string
-          plan_group: string
-        }
-        Insert: {
-          plan: string
-          plan_group: string
-        }
-        Update: {
-          plan?: string
-          plan_group?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "test_plan_group_links_plan_fkey"
+            foreignKeyName: "test_plan_case_links_plan_fkey"
             columns: ["plan"]
             isOneToOne: false
             referencedRelation: "test_plans"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "test_plan_group_links_plan_group_fkey"
-            columns: ["plan_group"]
-            isOneToOne: false
-            referencedRelation: "test_plan_groups"
-            referencedColumns: ["id"]
-          },
         ]
       }
-      test_plan_groups: {
+      test_plans: {
         Row: {
           created_at: string
           description: string | null
@@ -186,7 +156,37 @@ export type Database = {
         }
         Relationships: []
       }
-      test_plans: {
+      test_run_group_links: {
+        Row: {
+          run: string
+          run_group: string
+        }
+        Insert: {
+          run: string
+          run_group: string
+        }
+        Update: {
+          run?: string
+          run_group?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "test_plan_group_links_plan_fkey"
+            columns: ["run"]
+            isOneToOne: false
+            referencedRelation: "test_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "test_plan_group_links_plan_group_fkey"
+            columns: ["run_group"]
+            isOneToOne: false
+            referencedRelation: "test_run_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      test_run_groups: {
         Row: {
           created_at: string
           description: string | null
@@ -206,6 +206,57 @@ export type Database = {
           description?: string | null
           id?: string
           name?: string
+          title?: string | null
+        }
+        Relationships: []
+      }
+      test_run_plan_links: {
+        Row: {
+          plan: string
+          run: string
+        }
+        Insert: {
+          plan?: string
+          run?: string
+        }
+        Update: {
+          plan?: string
+          run?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "test_run_plan_links_plan_fkey"
+            columns: ["plan"]
+            isOneToOne: false
+            referencedRelation: "test_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "test_run_plan_links_run_fkey"
+            columns: ["run"]
+            isOneToOne: false
+            referencedRelation: "test_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      test_runs: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          title: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          title?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
           title?: string | null
         }
         Relationships: []

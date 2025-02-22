@@ -10,69 +10,69 @@ const options: typeof Options = {
 const route = useRoute()
 
 const supabase = useSupabaseClient<Database>()
-type PlanGroup = Tables<"test_plan_groups">
-type Plan = Tables<"test_plans">
+type RunGroup = Tables<"test_run_groups">
+type Run = Tables<"test_runs">
 
-const planGroup = ref<PlanGroup>()
-const plans = ref<Plan[]>([])
+const runGroup = ref<RunGroup>()
+const runs = ref<Run[]>([])
 
 // slug group is id
-async function getPlanGroup() {
+async function getRunGroup() {
 	const { data, error } = await supabase
-		.from("test_plan_groups")
+		.from("test_run_groups")
 		.select("*")
 		.eq("id", route.params.group)
 	if (error) {
 		console.error(error)
 		return
 	}
-	planGroup.value = data[0]
+	runGroup.value = data[0]
 }
 
-async function getPlans() {
-	const { data: planLinks, error: planLinksError } = await supabase
-		.from("test_plan_group_links")
-		.select("plan")
-		.eq("plan_group", route.params.group)
+async function getRuns() {
+	const { data: runLinks, error: runLinksError } = await supabase
+		.from("test_run_group_links")
+		.select("run")
+		.eq("run_group", route.params.group)
 
-	if (planLinksError) {
-		console.error(planLinksError)
+	if (runLinksError) {
+		console.error(runLinksError)
 		return
 	}
-	console.log(planLinks)
+	console.log(runLinks)
 
-	const planIds = planLinks.map((link) => link.plan)
+	const runIds = runLinks.map((link) => link.run)
 
-	const { data: plansData, error: plansError } = await supabase
-		.from("test_plans")
+	const { data: runsData, error: runsError } = await supabase
+		.from("test_runs")
 		.select("*")
-		.in("id", planIds)
+		.in("id", runIds)
 
-	if (plansError) {
-		console.error(plansError)
+	if (runsError) {
+		console.error(runsError)
 		return
 	}
 
-	plans.value = plansData
+	runs.value = runsData
 }
 
-getPlanGroup()
-getPlans()
+getRunGroup()
+getRuns()
 </script>
 
 <template>
 	<div class="flex flex-col gap-y-6">
-		<h1 class="text-3xl font-bold text-primary">Plan Groups</h1>
+		<h1 class="text-3xl font-bold text-primary">Run Groups</h1>
 		<div class="flex flex-col lg:flex-row gap-3 w-full">
-			<div v-if="planGroup">
+			<div v-if="runGroup">
 				<h1 class="text-6xl font-bold text-primary mb-8">
-					{{ planGroup?.title }}
+					{{ runGroup?.title }}
 				</h1>
 				<div class="md">
 					<VueMarkdown
-						v-if="planGroup.description"
+						v-if="runGroup.description"
 						:options="options"
-						:source="planGroup.description"
+						:source="runGroup.description"
 					>
 					</VueMarkdown>
 				</div>
@@ -80,10 +80,10 @@ getPlans()
 		</div>
 		<UDivider />
 		<div
-			v-if="plans.length > 0"
+			v-if="runs.length > 0"
 			class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 w-full"
 		>
-			<div v-for="item in plans" :key="item.id">
+			<div v-for="item in runs" :key="item.id">
 				<UCard
 					:ui="{
 						header: { padding: 'px-4 py-3 sm:p-4' },
@@ -97,10 +97,10 @@ getPlans()
 						</div>
 					</template>
 					<template #default>
-						<span v-if="item.description" class="line-clamp-1 text-ellipsis">{{
+						<!-- <span v-if="item.description" class="line-clamp-1 text-ellipsis">{{
 							item.description
 						}}</span>
-						<div v-else class="opacity-50">No description</div>
+						<div v-else class="opacity-50">No description</div> -->
 					</template>
 					<!-- <template #footer>
 						<div class="flex items-center justify-between">
