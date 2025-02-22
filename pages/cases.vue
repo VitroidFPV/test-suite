@@ -352,6 +352,10 @@ defineShortcuts({
 		handler: () => caseModal("")
 	}
 })
+
+useHead({
+	title: `Test Cases | Test Suite`
+})
 </script>
 
 <template>

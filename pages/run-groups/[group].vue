@@ -27,6 +27,10 @@ async function getRunGroup() {
 		return
 	}
 	runGroup.value = data[0]
+
+	useHead({
+		title: `${runGroup.value?.title} | Test Suite`
+	})
 }
 
 async function getRuns() {
