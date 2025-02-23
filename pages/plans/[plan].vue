@@ -12,12 +12,15 @@ const supabase = useSupabaseClient<Database>()
 type TestPlan = Tables<"test_plans">
 type TestPlanCase = Tables<"test_plan_case_links">
 type TestCase = Tables<"test_cases">
+type PlanGroup = Tables<"test_case_groups">
 
 const plan = ref<TestPlan>()
 const planCases = ref<TestPlanCase[]>([])
 const cases = ref<TestCase[]>([])
+const allCases = ref<TestCase[]>([])
+const groupedCases = ref<{ group: string; cases: TestCase[] }[]>([])
 
-const urlPlan = useRoute().params.plan
+const urlPlan = useRoute().params.plan as string
 
 // get plan from url
 async function getPlan() {
@@ -35,6 +38,9 @@ async function getPlan() {
 	useHead({
 		title: `${plan.value?.title} | Test Plans | Test Suite`
 	})
+
+	planTitle.value = plan.value.title ?? ""
+	planDescription.value = plan.value.description ?? ""
 }
 
 // get plan cases
@@ -62,31 +68,166 @@ async function getPlanCases() {
 	}
 	cases.value = casesData
 	console.log(cases.value)
+
+	selectedCases.value = caseIds
+}
+
+async function getAllCases() {
+	const { data: casesData, error: casesError } = await supabase
+		.from("test_cases")
+		.select("*")
+
+	if (casesError) {
+		console.error(casesError)
+		return
+	}
+
+	const { data: groupingsData, error: groupingsError } = await supabase
+		.from("test_case_group_links")
+		.select("*")
+
+	if (groupingsError) {
+		console.error(groupingsError)
+		return
+	}
+
+	allCases.value = casesData
+
+	// get groups from db
+	const groupIds = groupingsData.map((link) => link.group)
+	const { data: groupsData, error: groupsError } = await supabase
+		.from("test_case_groups")
+		.select("*")
+		.in("id", groupIds)
+
+	if (groupsError) {
+		console.error(groupsError)
+		return
+	}
+
+	// group cases by group
+	groupedCases.value = groupsData.map((group) => ({
+		group: group.title,
+		cases: casesData.filter((c) =>
+			groupingsData
+				.filter((link) => link.group === group.id)
+				.map((link) => link.case)
+				.includes(c.id)
+		)
+	}))
+
+	console.log(allCases.value)
+	console.log(groupedCases.value)
+}
+
+const planCaseModalOpen = ref(false)
+
+function planCaseModal() {
+	planCaseModalOpen.value = true
+}
+
+// selected cases as an array of uids
+const selectedCases = ref<string[]>([])
+const planTitle = ref("")
+const planDescription = ref("")
+
+function selectCase(id: string) {
+	if (selectedCases.value.includes(id)) {
+		selectedCases.value = selectedCases.value.filter((i) => i !== id)
+	} else {
+		selectedCases.value = [...selectedCases.value, id]
+	}
+}
+
+// write selected cases to plan
+async function savePlan() {
+	const { error } = await supabase
+		.from("test_plan_case_links")
+		.delete()
+		.eq("plan", urlPlan)
+	if (error) {
+		console.error(error)
+		return
+	}
+
+	const insertData = selectedCases.value.map((id) => ({
+		plan: urlPlan,
+		case: id
+	}))
+
+	const { error: insertDataError } = await supabase
+		.from("test_plan_case_links")
+		.insert(insertData)
+	if (insertDataError) {
+		console.error(insertDataError)
+		return
+	}
+
+	planCaseModalOpen.value = false
+
+	// write plan title and description
+	const { error: updateError } = await supabase
+		.from("test_plans")
+		.update({
+			title: planTitle.value,
+			description: planDescription.value
+		})
+		.eq("id", urlPlan)
+	if (updateError) {
+		console.error(updateError)
+		return
+	}
+
+	getPlanCases()
+	getPlan()
 }
 
 getPlan()
 getPlanCases()
+getAllCases()
+
+const { metaSymbol } = useShortcuts()
 </script>
 
 <template>
 	<div class="flex flex-col gap-y-6">
 		<h1 class="text-3xl font-bold text-primary">Test Plan</h1>
-		<div class="flex flex-col lg:flex-row gap-3 w-full">
-			<div v-if="plan">
-				<h1 class="text-6xl font-bold text-primary mb-8">
-					{{ plan?.title }}
-				</h1>
-				<div class="md">
-					<VueMarkdown
-						v-if="plan.description"
-						:options="options"
-						:source="plan.description"
-					>
-					</VueMarkdown>
+		<div class="flex w-full justify-between">
+			<div class="flex flex-col gap-y-6">
+				<div class="flex flex-col lg:flex-row gap-3 w-full">
+					<div v-if="plan">
+						<h1 class="text-6xl font-bold text-primary mb-8">
+							{{ plan?.title }}
+						</h1>
+						<div class="md">
+							<VueMarkdown
+								v-if="plan.description"
+								:options="options"
+								:source="plan.description"
+							>
+							</VueMarkdown>
+						</div>
+					</div>
 				</div>
 			</div>
+			<div class="flex flex-col">
+				<UTooltip text="Add a case to this plan">
+					<UButton
+						color="primary"
+						size="sm"
+						variant="link"
+						icon="i-lucide-pencil"
+						@click="planCaseModal()"
+					>
+						Edit Plan
+					</UButton>
+				</UTooltip>
+			</div>
 		</div>
+
 		<UDivider />
+
+		<div class="w-full flex gap-x-3"></div>
 		<div
 			v-if="planCases.length > 0"
 			class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 w-full"
@@ -167,5 +308,100 @@ getPlanCases()
 				</UCard>
 			</div>
 		</div>
+
+		<UModal
+			v-model="planCaseModalOpen"
+			:ui="{
+				base: '!max-w-full 2xl:mx-64 xl:mx-32 lg:mx-32 md:mx-16 mx-0 sm:mx-8'
+			}"
+		>
+			<UCard
+				:ui="{
+					header: { padding: 'px-4 py-3 sm:p-4' },
+					body: { padding: 'px-4 py-3 sm:p-4' },
+					footer: { padding: 'px-4 py-3 sm:p-4' }
+				}"
+			>
+				<template #header>
+					<textarea
+						v-if="plan"
+						v-model="planTitle"
+						placeholder="Group Title"
+						color="primary"
+						variant="none"
+						class="font-bold text-primary-500 w-full p-3 rounded-lg resize-none outline-none focus-visible:outline-primary-500/5 placeholder:font-normal bg-gray-800"
+					/>
+				</template>
+				<template #default>
+					<!-- grid of all case titles -->
+					<div class="flex flex-col gap-y-3">
+						<div
+							v-for="group in groupedCases"
+							:key="group.group"
+							class="flex flex-col gap-y-3"
+						>
+							<div class="font-bold text-primary-500 flex items-center gap-2">
+								<UIcon name="i-lucide-folder" class="h-4 w-4" />
+								{{ group.group }}
+							</div>
+							<div
+								class="grid 2xl:grid-cols-4 lg:grid-cols-3 sm:grid-cols-2 grid-cols-1 gap-3"
+							>
+								<UCard
+									v-for="item in group.cases"
+									:key="item.id"
+									:ui="{
+										header: { padding: 'px-4 py-3 sm:p-4' },
+										body: { padding: 'px-4 py-3 sm:p-4' },
+										footer: { padding: 'px-4 py-3 sm:p-4' },
+										base: 'h-full outline outline-2 outline-transparent duration-100'
+									}"
+									:class="{
+										'outline-primary-500/50': selectedCases.includes(item.id)
+									}"
+									@click="selectCase(item.id)"
+								>
+									{{ item.title }}
+								</UCard>
+							</div>
+						</div>
+					</div>
+				</template>
+				<template #footer>
+					<div class="flex items-center justify-between">
+						<UTooltip text="Delete" :shortcuts="[metaSymbol, 'Delete']">
+							<UButton
+								color="red"
+								size="sm"
+								variant="link"
+								icon="i-lucide-trash"
+							/>
+						</UTooltip>
+						<div class="flex items-center gap-2 h-fit">
+							<UTooltip text="Save" :shortcuts="[metaSymbol, 'S']">
+								<UButton
+									color="primary"
+									size="sm"
+									variant="link"
+									icon="i-lucide-save"
+								/>
+							</UTooltip>
+							<UTooltip
+								text="Save & Close"
+								:shortcuts="[metaSymbol, 'Shift', 'S']"
+							>
+								<UButton
+									color="primary"
+									size="sm"
+									variant="link"
+									icon="i-lucide-save-all"
+									@click="savePlan"
+								/>
+							</UTooltip>
+						</div>
+					</div>
+				</template>
+			</UCard>
+		</UModal>
 	</div>
 </template>
