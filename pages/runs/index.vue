@@ -6,7 +6,7 @@ const supabase = useSupabaseClient<Database>()
 type RunGroup = Tables<"test_run_groups">
 
 type Run = Tables<"test_runs">
-type NewRun = Run & { run_group_id?: string; run_plan_id?: string }
+type NewRun = Run
 type TestPlan = Tables<"test_plans">
 
 const runs = ref<Run[]>([])
@@ -32,17 +32,17 @@ const newRun = ref<NewRun>({
 	title: "",
 	created_at: new Date().toDateString(),
 	created_by: user.value?.id || "",
-	run_group_id: "",
-	run_plan_id: ""
+	group: "",
+	plan: ""
 })
 
 function selectGroup(group: RunGroup) {
-	newRun.value.run_group_id = group.id
+	newRun.value.group = group.id
 	console.log(newRun.value)
 }
 
 async function selectPlan(plan: TestPlan) {
-	newRun.value.run_plan_id = plan.id
+	newRun.value.plan = plan.id
 	console.log(newRun.value)
 }
 
@@ -81,24 +81,16 @@ function openCreateRunModal() {
 }
 
 async function createRun() {
-	// strip run_group_id and run_plan_id from newRun
-	const { run_group_id, run_plan_id, ...run } = newRun.value
-	const { error } = await supabase.from("test_runs").insert([run])
+	const { data, error } = await supabase
+		.from("test_runs")
+		.insert([newRun.value])
 	if (error) {
 		console.error(error)
 		return
 	}
 
-	// create link between run and run_group
-	const { error: linkError } = await supabase
-		.from("test_run_group_links")
-		.insert([{ run_group: newRun.value.run_group_id || "", run: run.id }])
-	if (linkError) {
-		console.error(linkError)
-		return
-	}
-
 	createRunModalOpen.value = false
+
 	getRuns()
 }
 
@@ -158,9 +150,14 @@ useHead({
 					}"
 				>
 					<template #header>
-						<div class="font-bold text-primary-500">
+						<!-- <div class="font-bold text-primary-500">
 							{{ item.title }}
-						</div>
+						</div> -->
+						<NuxtLink :to="`/runs/${item.id}`">
+							<div class="font-bold text-primary hover:underline">
+								{{ item.title }}
+							</div>
+						</NuxtLink>
 					</template>
 					<!-- <template #default>
 						<span v-if="item.title" class="line-clamp-1 text-ellipsis">{{
