@@ -9,7 +9,7 @@ export default <Partial<Config>>{
 					100: "#fffac5",
 					200: "#fff685",
 					300: "#ffea46",
-					400: "#ffdb1b",
+					400: "#ffc526",
 					500: "#ffbb00",
 					600: "#e29000",
 					700: "#bb6502",
