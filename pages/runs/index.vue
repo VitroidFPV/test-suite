@@ -6,9 +6,24 @@ const supabase = useSupabaseClient<Database>()
 type RunGroup = Tables<"test_run_groups">
 
 type Run = Tables<"test_runs">
-type NewRun = Run & { run_group_id?: string }
+type NewRun = Run & { run_group_id?: string; run_plan_id?: string }
+type TestPlan = Tables<"test_plans">
+
+const runs = ref<Run[]>([])
+const testPlans = ref<TestPlan[]>([])
+const runGroups = ref<RunGroup[]>([])
+
+async function getRuns() {
+	const { data, error } = await supabase.from("test_runs").select("*")
+	if (error) {
+		console.error(error)
+		return
+	}
+	runs.value = data || []
+}
 
 const selectedRunGroup = ref<RunGroup>()
+const selectedTestPlan = ref<TestPlan>()
 
 const user = useSupabaseUser()
 
@@ -17,7 +32,8 @@ const newRun = ref<NewRun>({
 	title: "",
 	created_at: new Date().toDateString(),
 	created_by: user.value?.id || "",
-	run_group_id: ""
+	run_group_id: "",
+	run_plan_id: ""
 })
 
 function selectGroup(group: RunGroup) {
@@ -25,7 +41,14 @@ function selectGroup(group: RunGroup) {
 	console.log(newRun.value)
 }
 
-const runGroups = ref<RunGroup[]>([])
+async function selectPlan(plan: TestPlan) {
+	newRun.value.run_plan_id = plan.id
+	console.log(newRun.value)
+}
+
+function autoFill() {
+	newRun.value.title = `${selectedRunGroup.value?.title} - ${selectedTestPlan.value?.title}`
+}
 
 async function getRunGroups() {
 	const { data, error } = await supabase.from("test_run_groups").select("*")
@@ -38,7 +61,18 @@ async function getRunGroups() {
 	console.log(runGroups.value)
 }
 
+async function getTestPlans() {
+	const { data, error } = await supabase.from("test_plans").select("*")
+	if (error) {
+		console.error(error)
+		return
+	}
+	testPlans.value = data || []
+}
+
+getRuns()
 getRunGroups()
+getTestPlans()
 
 const createRunModalOpen = ref(false)
 
@@ -47,30 +81,25 @@ function openCreateRunModal() {
 }
 
 async function createRun() {
-	const runWithoutGroup = { ...newRun.value }
-	delete runWithoutGroup.run_group_id
-
-	const { data, error } = await supabase
-		.from("test_runs")
-		.insert([runWithoutGroup])
+	// strip run_group_id and run_plan_id from newRun
+	const { run_group_id, run_plan_id, ...run } = newRun.value
+	const { error } = await supabase.from("test_runs").insert([run])
 	if (error) {
 		console.error(error)
 		return
 	}
 
-	// create link between run and group
-	if (newRun.value.run_group_id) {
-		const { error } = await supabase.from("test_run_group_links").insert([
-			{
-				run: newRun.value.id,
-				run_group: newRun.value.run_group_id
-			}
-		])
-		if (error) {
-			console.error(error)
-			return
-		}
+	// create link between run and run_group
+	const { error: linkError } = await supabase
+		.from("test_run_group_links")
+		.insert([{ run_group: newRun.value.run_group_id || "", run: run.id }])
+	if (linkError) {
+		console.error(linkError)
+		return
 	}
+
+	createRunModalOpen.value = false
+	getRuns()
 }
 
 const { metaSymbol } = useShortcuts()
@@ -102,21 +131,100 @@ useHead({
 				</div>
 			</div>
 			<div class="flex flex-col">
-				<UTooltip text="Create new Test Run">
-					<UButton
-						color="primary"
-						size="sm"
-						variant="solid"
-						icon="i-lucide-plus"
-						@click="openCreateRunModal"
-					>
-						New Test Run
-					</UButton>
-				</UTooltip>
+				<UButton
+					color="primary"
+					size="sm"
+					variant="solid"
+					icon="i-lucide-plus"
+					@click="openCreateRunModal"
+				>
+					New Test Run
+				</UButton>
 			</div>
 		</div>
 
 		<UDivider />
+
+		<div
+			v-if="runs.length > 0"
+			class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 w-full"
+		>
+			<div v-for="item in runs" :key="item.id">
+				<UCard
+					:ui="{
+						header: { padding: 'px-4 py-3 sm:p-4' },
+						body: { padding: 'px-4 py-3 sm:p-4' },
+						footer: { padding: 'px-4 py-3 sm:p-4' }
+					}"
+				>
+					<template #header>
+						<div class="font-bold text-primary-500">
+							{{ item.title }}
+						</div>
+					</template>
+					<!-- <template #default>
+						<span v-if="item.title" class="line-clamp-1 text-ellipsis">{{
+							item.title
+						}}</span>
+						<div v-else class="opacity-50">No description</div>
+					</template> -->
+					<!-- <template #footer>
+						<div class="flex items-center justify-between">
+							<div class="text-sm text-gray-500">
+								{{ dayjs(item.created_at).format("D.MM.YYYY HH:mm") }}
+							</div>
+							<div class="flex items-center gap-2">
+								<UButton
+									color="primary"
+									size="2xs"
+									variant="link"
+									icon="i-lucide-pencil"
+									@click="caseModal(item.id)"
+								/>
+							</div>
+						</div>
+					</template> -->
+				</UCard>
+			</div>
+		</div>
+		<div
+			v-else
+			class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 w-full"
+		>
+			<div v-for="i in 3" :key="i">
+				<UCard
+					:ui="{
+						header: { padding: 'px-4 py-3 sm:p-4' },
+						body: { padding: 'px-4 py-3 sm:p-4' },
+						footer: { padding: 'px-4 py-3 sm:p-4' }
+					}"
+					:style="{
+						opacity: 1 - i / 10
+					}"
+				>
+					<template #header>
+						<div class="font-bold text-primary-500">
+							<USkeleton class="w-1/2 h-6" />
+						</div>
+					</template>
+					<template #default>
+						<span class="line-clamp-1 text-ellipsis">
+							<USkeleton class="h-6 w-full" />
+						</span>
+					</template>
+					<!-- <template #footer>
+						<div class="flex items-center justify-between">
+							<div class="text-sm text-gray-500">
+								<USkeleton class="w-1/2 h-6" />
+							</div>
+							<div class="flex items-center gap-2">
+								<USkeleton width="w-1/2 h-6" />
+							</div>
+						</div>
+					</template> -->
+				</UCard>
+			</div>
+		</div>
 
 		<UModal
 			v-model="createRunModalOpen"
@@ -133,32 +241,72 @@ useHead({
 			>
 				<template #header>
 					<div class="flex flex-col gap-y-3">
-						<textarea
-							v-if="newRun"
-							v-model="newRun.title"
-							placeholder="Run Title"
-							color="primary"
-							variant="none"
-							class="font-bold text-primary-500 w-full p-3 rounded-lg resize-none outline-none focus-visible:outline-primary-500/5 placeholder:font-normal bg-gray-800 h-fit"
-						/>
-						<div class="flex">
-							<USelectMenu
-								v-model="selectedRunGroup"
-								searchable
-								search-placeholder="Search for a group"
-								placeholder="Select a group"
-								:options="runGroups"
-								class="w-full relative"
-								option-attribute="title"
-								@change="selectedRunGroup && selectGroup(selectedRunGroup)"
-							>
-								<template #option="{ option }">
-									<div class="flex items-center gap-2">
-										<!-- <UIcon name="i-lucide-folder" class="h-4 w-4" /> -->
-										{{ option.title }}
-									</div>
-								</template>
-							</USelectMenu>
+						<UButtonGroup>
+							<UInput
+								v-model="newRun.title!"
+								placeholder="Run Title"
+								color="gray"
+								class="w-full"
+							/>
+							<UTooltip text="Automatic Fill (requires Plan and Group)">
+								<UButton
+									color="gray"
+									icon="i-lucide-pencil"
+									:disabled="!selectedRunGroup || !selectedTestPlan"
+									@click="autoFill"
+								/>
+							</UTooltip>
+						</UButtonGroup>
+						<div class="flex gap-x-3">
+							<div class="flex flex-col gap-y-2 w-full">
+								<div class="flex items-center gap-x-1 text-gray-400 text-sm">
+									<UIcon name="i-lucide-book-check" class="h-4 w-4" />
+									Test Plan
+								</div>
+								<USelectMenu
+									v-model="selectedTestPlan"
+									searchable
+									search-placeholder="Search for a plan"
+									placeholder="Select a plan"
+									:options="testPlans"
+									class="w-full relative"
+									option-attribute="title"
+									@change="selectedTestPlan && selectPlan(selectedTestPlan)"
+								>
+									<template #option="{ option }">
+										<div class="flex items-center gap-2">
+											<!-- <UIcon name="i-lucide-folder" class="h-4 w-4" /> -->
+											{{ option.title }}
+										</div>
+									</template>
+								</USelectMenu>
+							</div>
+
+							<UDivider orientation="vertical" />
+
+							<div class="flex flex-col gap-y-2 w-full">
+								<div class="flex items-center gap-x-1 text-gray-400 text-sm">
+									<UIcon name="i-lucide-library-big" class="h-4 w-4" />
+									Run Group
+								</div>
+								<USelectMenu
+									v-model="selectedRunGroup"
+									searchable
+									search-placeholder="Search for a group"
+									placeholder="Select a group"
+									:options="runGroups"
+									class="w-full relative"
+									option-attribute="title"
+									@change="selectedRunGroup && selectGroup(selectedRunGroup)"
+								>
+									<template #option="{ option }">
+										<div class="flex items-center gap-2">
+											<!-- <UIcon name="i-lucide-folder" class="h-4 w-4" /> -->
+											{{ option.title }}
+										</div>
+									</template>
+								</USelectMenu>
+							</div>
 						</div>
 					</div>
 				</template>
@@ -194,37 +342,16 @@ useHead({
 					</div>
 				</template>
 				<template #footer>
-					<div class="flex items-center justify-between">
-						<UTooltip text="Delete" :shortcuts="[metaSymbol, 'Delete']">
-							<UButton
-								color="red"
-								size="sm"
-								variant="link"
-								icon="i-lucide-trash"
-							/>
-						</UTooltip>
-						<div class="flex items-center gap-2 h-fit">
-							<UTooltip text="Save" :shortcuts="[metaSymbol, 'S']">
-								<UButton
-									color="primary"
-									size="sm"
-									variant="link"
-									icon="i-lucide-save"
-								/>
-							</UTooltip>
-							<UTooltip
-								text="Save & Close"
-								:shortcuts="[metaSymbol, 'Shift', 'S']"
-							>
-								<UButton
-									color="primary"
-									size="sm"
-									variant="link"
-									icon="i-lucide-save-all"
-									@click="createRun"
-								/>
-							</UTooltip>
-						</div>
+					<div class="flex items-center gap-2 h-fit w-full justify-end">
+						<UButton
+							color="primary"
+							size="sm"
+							variant="solid"
+							icon="i-lucide-plus"
+							@click="createRun"
+						>
+							Create Run
+						</UButton>
 					</div>
 				</template>
 			</UCard>
