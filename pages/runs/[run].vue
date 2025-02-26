@@ -65,7 +65,8 @@ async function getRunCases() {
 const resultTypes = [
 	{
 		label: "Not Run",
-		value: "gray",
+		value: "not_run",
+		color: "gray",
 		icon: "i-lucide-circle-dot-dashed"
 	},
 	{
@@ -136,21 +137,43 @@ getRun().then(() => {
 							{{ item.title }}
 						</div>
 						<div>
-							<USelect
+							<USelectMenu
 								v-model="selectedResult"
 								:options="resultTypes"
 								variant="none"
+								:ui="{
+									wrapper: 'relative'
+								}"
+								:ui-menu="{
+									background: 'bg-gray-800',
+									option: {
+										base: 'w-full',
+										selected: 'pe-0',
+										selectedIcon: {
+											base: 'hidden'
+										}
+									}
+								}"
 							>
 								<template #default>
-									<div class="flex items-center gap-2">
-										<UIcon
-											:name="selectedResult.icon"
-											:class="`text-${selectedResult.color}-500`"
-										/>
+									<div
+										:class="`font-semibold text-sm text-${selectedResult.color}-400 flex items-center 
+										gap-2 bg-${selectedResult.color}-500 bg-opacity-20 px-2 py-1 rounded-full w-full`"
+									>
+										<UIcon :name="selectedResult.icon" />
 										{{ selectedResult.label }}
 									</div>
 								</template>
-							</USelect>
+								<template #option="{ option }">
+									<div
+										:class="`font-semibold text-sm text-${option.color}-400 flex items-center w-full 
+										gap-2 bg-${option.color}-500 bg-opacity-10 px-2 py-1 rounded-full`"
+									>
+										<UIcon :name="option.icon" class="h-4 w-4 flex-shrink" />
+										<div class="whitespace-nowrap">{{ option.label }}</div>
+									</div>
+								</template>
+							</USelectMenu>
 						</div>
 					</div>
 				</template>
