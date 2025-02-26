@@ -136,7 +136,7 @@ getRun().then(() => {
 						<div class="col-span-2 font-bold text-primary">
 							{{ item.title }}
 						</div>
-						<div>
+						<div class="w-full">
 							<USelectMenu
 								v-model="selectedResult"
 								:options="resultTypes"
@@ -145,7 +145,7 @@ getRun().then(() => {
 									wrapper: 'relative'
 								}"
 								:ui-menu="{
-									background: 'bg-gray-800',
+									background: 'bg-gray-900',
 									option: {
 										base: 'w-full',
 										selected: 'pe-0',
@@ -166,8 +166,13 @@ getRun().then(() => {
 								</template>
 								<template #option="{ option }">
 									<div
-										:class="`font-semibold text-sm text-${option.color}-400 flex items-center w-full 
-										gap-2 bg-${option.color}-500 bg-opacity-10 px-2 py-1 rounded-full`"
+										:class="
+											`font-semibold text-sm text-${option.color}-400 flex items-center w-full flex-nowrap
+										gap-2 bg-${option.color}-500 bg-opacity-10 hover:bg-opacity-15 px-2 py-1 rounded-full` +
+											(option.value === selectedResult.value
+												? ` outline-2 outline outline-${option.color}-500 outline-opacity-50`
+												: '')
+										"
 									>
 										<UIcon :name="option.icon" class="h-4 w-4 flex-shrink" />
 										<div class="whitespace-nowrap">{{ option.label }}</div>
