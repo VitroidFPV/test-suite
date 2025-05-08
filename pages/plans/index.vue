@@ -34,9 +34,9 @@ useHead({
 			<div v-for="item in plans" :key="item.id">
 				<UCard
 					:ui="{
-						header: { padding: 'px-4 py-3 sm:p-4' },
-						body: { padding: 'px-4 py-3 sm:p-4' },
-						footer: { padding: 'px-4 py-3 sm:p-4' }
+						header: 'px-4 py-3 sm:p-4',
+						body: 'px-4 py-3 sm:p-4',
+						footer: 'px-4 py-3 sm:p-4'
 					}"
 				>
 					<template #header>
@@ -58,7 +58,7 @@ useHead({
 					</template>
 					<!-- <template #footer>
 						<div class="flex items-center justify-between">
-							<div class="text-sm text-gray-500">
+							<div class="text-sm text-neutral-500">
 								{{ dayjs(item.created_at).format("D.MM.YYYY HH:mm") }}
 							</div>
 							<div class="flex items-center gap-2">
@@ -82,9 +82,9 @@ useHead({
 			<div v-for="i in 3" :key="i">
 				<UCard
 					:ui="{
-						header: { padding: 'px-4 py-3 sm:p-4' },
-						body: { padding: 'px-4 py-3 sm:p-4' },
-						footer: { padding: 'px-4 py-3 sm:p-4' }
+						header: 'px-4 py-3 sm:p-4',
+						body: 'px-4 py-3 sm:p-4',
+						footer: 'px-4 py-3 sm:p-4'
 					}"
 					:style="{
 						opacity: 1 - i / 10
@@ -102,7 +102,7 @@ useHead({
 					</template>
 					<!-- <template #footer>
 						<div class="flex items-center justify-between">
-							<div class="text-sm text-gray-500">
+							<div class="text-sm text-neutral-500">
 								<USkeleton class="w-1/2 h-6" />
 							</div>
 							<div class="flex items-center gap-2">

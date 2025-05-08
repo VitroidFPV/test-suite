@@ -1,4 +1,23 @@
+@import "tailwindcss";
+@import "@nuxt/ui";
+
 /* Tailwind */
+
+@theme static {
+	--color-primary-50: #fffeea;
+	--color-primary-100: #fffac5;
+	--color-primary-200: #fff685;
+	--color-primary-300: #ffea46;
+	--color-primary-400: #ffc526;
+	--color-primary-500: #ffbb00;
+	--color-primary-600: #e29000;
+	--color-primary-700: #bb6502;
+	--color-primary-800: #984e08;
+	--color-primary-900: #7c400b;
+	--color-primary-950: #482100;
+
+	--full-nav: calc(100vh - 4rem);
+}
 
 body {
 	@apply  bg-[#111111]
@@ -27,5 +46,5 @@ body {
 }
 
 .dark\:disabled\:text-primary-400:disabled:is(.dark *) {
-	color: rgb(var(--color-gray-500) / var(--tw-text-opacity, 1));
+	color: rgb(var(--color-neutral-500) / var(--tw-text-opacity, 1));
 }

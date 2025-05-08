@@ -19,7 +19,10 @@ const name = computed(() => {
 
 async function signIn() {
 	const { error } = await supabase.auth.signInWithOAuth({
-		provider: "github"
+		provider: "github",
+		options: {
+			redirectTo: window.location.origin
+		}
 	})
 	if (error) {
 		console.error(error)
@@ -76,20 +79,27 @@ function signOut() {
 					<UAvatar
 						v-if="avatar != ''"
 						:src="avatar"
-						class="outline outline-1 outline-gray-700 justify-self-end"
+						class="outline outline-1 outline-neutral-700 justify-self-end"
 						size="md"
 					/>
 					<template #panel>
 						<div>
 							<div class="w-48 flex flex-col gap-2 p-4">
 								<div class="font-bold">{{ name }}</div>
-								<UDivider />
-								<UButton color="white" @click="signOut">Sign Out</UButton>
+								<USeparator />
+								<UButton color="neutral" variant="subtle" @click="signOut"
+									>Sign Out</UButton
+								>
 							</div>
 						</div>
 					</template>
 				</UPopover>
-				<UButton v-else color="white" icon="i-lucide-github" @click="signIn"
+				<UButton
+					v-else
+					color="neutral"
+					variant="subtle"
+					icon="i-lucide-github"
+					@click="signIn"
 					>Sign In</UButton
 				>
 			</div>

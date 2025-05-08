@@ -67,7 +67,7 @@ getRuns()
 				</div>
 			</div>
 		</div>
-		<UDivider />
+		<USeparator />
 		<div
 			v-if="runs.length > 0"
 			class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 w-full"
@@ -93,7 +93,7 @@ getRuns()
 					</template>
 					<!-- <template #footer>
 						<div class="flex items-center justify-between">
-							<div class="text-sm text-gray-500">
+							<div class="text-sm text-neutral-500">
 								{{ dayjs(item.created_at).format("D.MM.YYYY HH:mm") }}
 							</div>
 							<div class="flex items-center gap-2">
@@ -137,7 +137,7 @@ getRuns()
 					</template>
 					<!-- <template #footer>
 						<div class="flex items-center justify-between">
-							<div class="text-sm text-gray-500">
+							<div class="text-sm text-neutral-500">
 								<USkeleton class="w-1/2 h-6" />
 							</div>
 							<div class="flex items-center gap-2">

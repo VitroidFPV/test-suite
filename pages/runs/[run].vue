@@ -66,7 +66,7 @@ const resultTypes = [
 	{
 		label: "Not Run",
 		value: "not_run",
-		color: "gray",
+		color: "neutral",
 		icon: "i-lucide-circle-dot-dashed"
 	},
 	{
@@ -90,7 +90,7 @@ const resultTypes = [
 	{
 		label: "Skipped",
 		value: "skipped",
-		color: "gray",
+		color: "neutral",
 		icon: "i-lucide-circle-arrow-right"
 	}
 ]
@@ -120,15 +120,15 @@ getRun().then(() => {
 				</div> -->
 			</div>
 		</div>
-		<UDivider />
+		<USeparator />
 		<div class="flex flex-col gap-y-3">
 			<UCard
 				v-for="item in runCases"
 				:key="item.id"
 				:ui="{
-					header: { padding: 'px-4 py-3 sm:p-4' },
-					body: { padding: 'px-4 py-3 sm:p-4' },
-					footer: { padding: 'px-4 py-3 sm:p-4' }
+					header: 'px-4 py-3 sm:p-4',
+					body: 'px-4 py-3 sm:p-4',
+					footer: 'px-4 py-3 sm:p-4'
 				}"
 			>
 				<template #default>
@@ -139,13 +139,13 @@ getRun().then(() => {
 						<div class="w-full">
 							<USelectMenu
 								v-model="selectedResult"
-								:options="resultTypes"
+								:items="resultTypes"
 								variant="none"
 								:ui="{
-									wrapper: 'relative'
+									base: 'relative'
 								}"
 								:ui-menu="{
-									background: 'bg-gray-900',
+									background: 'bg-neutral-900',
 									option: {
 										base: 'w-full',
 										selected: 'pe-0',
@@ -164,18 +164,18 @@ getRun().then(() => {
 										{{ selectedResult.label }}
 									</div>
 								</template>
-								<template #option="{ option }">
+								<template #item="{ item }">
 									<div
 										:class="
-											`font-semibold text-sm text-${option.color}-400 flex items-center w-full flex-nowrap
-										gap-2 bg-${option.color}-500 bg-opacity-10 hover:bg-opacity-15 px-2 py-1 rounded-full` +
-											(option.value === selectedResult.value
-												? ` outline-2 outline outline-${option.color}-500 outline-opacity-50`
+											`font-semibold text-sm text-${item.color}-400 flex items-center w-full flex-nowrap
+										gap-2 bg-${item.color}-500 bg-opacity-10 hover:bg-opacity-15 px-2 py-1 rounded-full` +
+											(item.value === selectedResult.value
+												? ` outline-2 outline outline-${item.color}-500 outline-opacity-50`
 												: '')
 										"
 									>
-										<UIcon :name="option.icon" class="h-4 w-4 flex-shrink" />
-										<div class="whitespace-nowrap">{{ option.label }}</div>
+										<UIcon :name="item.icon" class="h-4 w-4 shrink" />
+										<div class="whitespace-nowrap">{{ item.label }}</div>
 									</div>
 								</template>
 							</USelectMenu>

@@ -9,6 +9,9 @@ type Run = Tables<"test_runs">
 type NewRun = Run
 type TestPlan = Tables<"test_plans">
 
+type TestPlanWithLabel = TestPlan & { label: string }
+type RunGroupWithLabel = RunGroup & { label: string }
+
 const runs = ref<Run[]>([])
 const testPlans = ref<TestPlan[]>([])
 const runGroups = ref<RunGroup[]>([])
@@ -22,8 +25,22 @@ async function getRuns() {
 	runs.value = data || []
 }
 
-const selectedRunGroup = ref<RunGroup>()
-const selectedTestPlan = ref<TestPlan>()
+const selectedRunGroup = ref<RunGroupWithLabel>()
+const selectedTestPlan = ref<TestPlanWithLabel>()
+
+const transformedTestPlans = computed(() =>
+	testPlans.value.map((plan) => ({
+		...plan,
+		label: plan.title || ""
+	}))
+)
+
+const transformedRunGroups = computed(() =>
+	runGroups.value.map((group) => ({
+		...group,
+		label: group.title || ""
+	}))
+)
 
 const user = useSupabaseUser()
 
@@ -94,8 +111,6 @@ async function createRun() {
 	getRuns()
 }
 
-const { metaSymbol } = useShortcuts()
-
 useHead({
 	title: `Test Runs | Test Suite`
 })
@@ -135,7 +150,7 @@ useHead({
 			</div>
 		</div>
 
-		<UDivider />
+		<USeparator />
 
 		<div
 			v-if="runs.length > 0"
@@ -144,9 +159,9 @@ useHead({
 			<div v-for="item in runs" :key="item.id">
 				<UCard
 					:ui="{
-						header: { padding: 'px-4 py-3 sm:p-4' },
-						body: { padding: 'px-4 py-3 sm:p-4' },
-						footer: { padding: 'px-4 py-3 sm:p-4' }
+						header: 'px-4 py-3 sm:p-4',
+						body: 'px-4 py-3 sm:p-4',
+						footer: 'px-4 py-3 sm:p-4'
 					}"
 				>
 					<template #header>
@@ -167,7 +182,7 @@ useHead({
 					</template> -->
 					<!-- <template #footer>
 						<div class="flex items-center justify-between">
-							<div class="text-sm text-gray-500">
+							<div class="text-sm text-neutral-500">
 								{{ dayjs(item.created_at).format("D.MM.YYYY HH:mm") }}
 							</div>
 							<div class="flex items-center gap-2">
@@ -191,9 +206,9 @@ useHead({
 			<div v-for="i in 3" :key="i">
 				<UCard
 					:ui="{
-						header: { padding: 'px-4 py-3 sm:p-4' },
-						body: { padding: 'px-4 py-3 sm:p-4' },
-						footer: { padding: 'px-4 py-3 sm:p-4' }
+						header: 'px-4 py-3 sm:p-4',
+						body: 'px-4 py-3 sm:p-4',
+						footer: 'px-4 py-3 sm:p-4'
 					}"
 					:style="{
 						opacity: 1 - i / 10
@@ -211,7 +226,7 @@ useHead({
 					</template>
 					<!-- <template #footer>
 						<div class="flex items-center justify-between">
-							<div class="text-sm text-gray-500">
+							<div class="text-sm text-neutral-500">
 								<USkeleton class="w-1/2 h-6" />
 							</div>
 							<div class="flex items-center gap-2">
@@ -224,134 +239,142 @@ useHead({
 		</div>
 
 		<UModal
-			v-model="createRunModalOpen"
+			v-model:open="createRunModalOpen"
 			:ui="{
-				base: '!max-w-full 2xl:mx-64 xl:mx-32 lg:mx-32 md:mx-16 mx-0 sm:mx-8'
+				body: 'max-w-full! 2xl:mx-64 xl:mx-32 lg:mx-32 md:mx-16 mx-0 sm:mx-8'
 			}"
 		>
-			<UCard
-				:ui="{
-					header: { padding: 'px-4 py-3 sm:p-4' },
-					body: { padding: 'px-4 py-3 sm:p-4' },
-					footer: { padding: 'px-4 py-3 sm:p-4' }
-				}"
-			>
-				<template #header>
-					<div class="flex flex-col gap-y-3">
-						<UButtonGroup>
-							<UInput
-								v-model="newRun.title!"
-								placeholder="Run Title"
-								color="gray"
-								class="w-full"
-							/>
-							<UTooltip text="Automatic Fill (requires Plan and Group)">
-								<UButton
-									color="gray"
-									icon="i-lucide-pencil"
-									:disabled="!selectedRunGroup || !selectedTestPlan"
-									@click="autoFill"
-								/>
-							</UTooltip>
-						</UButtonGroup>
-						<div class="flex gap-x-3">
-							<div class="flex flex-col gap-y-2 w-full">
-								<div class="flex items-center gap-x-1 text-gray-400 text-sm">
-									<UIcon name="i-lucide-book-check" class="h-4 w-4" />
-									Test Plan
-								</div>
-								<USelectMenu
-									v-model="selectedTestPlan"
-									searchable
-									search-placeholder="Search for a plan"
-									placeholder="Select a plan"
-									:options="testPlans"
-									class="w-full relative"
-									option-attribute="title"
-									@change="selectedTestPlan && selectPlan(selectedTestPlan)"
-								>
-									<template #option="{ option }">
-										<div class="flex items-center gap-2">
-											<!-- <UIcon name="i-lucide-folder" class="h-4 w-4" /> -->
-											{{ option.title }}
-										</div>
-									</template>
-								</USelectMenu>
-							</div>
-
-							<UDivider orientation="vertical" />
-
-							<div class="flex flex-col gap-y-2 w-full">
-								<div class="flex items-center gap-x-1 text-gray-400 text-sm">
-									<UIcon name="i-lucide-library-big" class="h-4 w-4" />
-									Run Group
-								</div>
-								<USelectMenu
-									v-model="selectedRunGroup"
-									searchable
-									search-placeholder="Search for a group"
-									placeholder="Select a group"
-									:options="runGroups"
-									class="w-full relative"
-									option-attribute="title"
-									@change="selectedRunGroup && selectGroup(selectedRunGroup)"
-								>
-									<template #option="{ option }">
-										<div class="flex items-center gap-2">
-											<!-- <UIcon name="i-lucide-folder" class="h-4 w-4" /> -->
-											{{ option.title }}
-										</div>
-									</template>
-								</USelectMenu>
-							</div>
-						</div>
-					</div>
-				</template>
-				<template #default>
-					<!-- grid of all case titles -->
-					<div class="flex flex-col gap-y-3">
+			<template #title>Create Run</template>
+			<template #description>
+				Create a new test run with a title, group and plan
+			</template>
+			<template #content>
+				<UCard
+					:ui="{
+						header: 'px-4 py-3 sm:p-4',
+						body: 'px-4 py-3 sm:p-4',
+						footer: 'px-4 py-3 sm:p-4'
+					}"
+				>
+					<template #header>
 						<div class="flex flex-col gap-y-3">
-							<div class="font-bold text-primary-500 flex items-center gap-2">
-								<!-- <UIcon name="i-lucide-folder" class="h-4 w-4" /> -->
-								<!-- {{ group.group }} -->
-							</div>
-							<div
-								class="grid 2xl:grid-cols-4 lg:grid-cols-3 sm:grid-cols-2 grid-cols-1 gap-3"
-							>
-								<!-- <UCard
-									v-for="item in group.cases"
-									:key="item.id"
-									:ui="{
-										header: { padding: 'px-4 py-3 sm:p-4' },
-										body: { padding: 'px-4 py-3 sm:p-4' },
-										footer: { padding: 'px-4 py-3 sm:p-4' },
-										base: 'h-full outline outline-2 outline-transparent duration-100'
-									}"
-									:class="{
-										'outline-primary-500/50': selectedCases.includes(item.id)
-									}"
-									@click="selectCase(item.id)"
-								>
-									{{ item.title }}
-								</UCard> -->
+							<UButtonGroup>
+								<UInput
+									v-model="newRun.title!"
+									placeholder="Run Title"
+									color="neutral"
+									class="w-full"
+								/>
+								<UTooltip text="Automatic Fill (requires Plan and Group)">
+									<UButton
+										color="neutral"
+										icon="i-lucide-pencil"
+										:disabled="!selectedRunGroup || !selectedTestPlan"
+										@click="autoFill"
+									/>
+								</UTooltip>
+							</UButtonGroup>
+							<div class="flex gap-x-3">
+								<div class="flex flex-col gap-y-2 w-full">
+									<div
+										class="flex items-center gap-x-1 text-neutral-400 text-sm"
+									>
+										<UIcon name="i-lucide-book-check" class="h-4 w-4" />
+										Test Plan
+									</div>
+									<USelectMenu
+										v-model="selectedTestPlan"
+										searchable
+										search-placeholder="Search for a plan"
+										placeholder="Select a plan"
+										:items="transformedTestPlans"
+										class="w-full relative"
+										option-attribute="label"
+										@change="selectedTestPlan && selectPlan(selectedTestPlan)"
+									>
+										<template #item="{ item }">
+											<div class="flex items-center gap-2">
+												<!-- <UIcon name="i-lucide-folder" class="h-4 w-4" /> -->
+												{{ item.label }}
+											</div>
+										</template>
+									</USelectMenu>
+								</div>
+								<USeparator orientation="vertical" />
+								<div class="flex flex-col gap-y-2 w-full">
+									<div
+										class="flex items-center gap-x-1 text-neutral-400 text-sm"
+									>
+										<UIcon name="i-lucide-library-big" class="h-4 w-4" />
+										Run Group
+									</div>
+									<USelectMenu
+										v-model="selectedRunGroup"
+										searchable
+										search-placeholder="Search for a group"
+										placeholder="Select a group"
+										:items="transformedRunGroups"
+										class="w-full relative"
+										option-attribute="label"
+										@change="selectedRunGroup && selectGroup(selectedRunGroup)"
+									>
+										<template #item="{ item }">
+											<div class="flex items-center gap-2">
+												<!-- <UIcon name="i-lucide-folder" class="h-4 w-4" /> -->
+												{{ item.label }}
+											</div>
+										</template>
+									</USelectMenu>
+								</div>
 							</div>
 						</div>
-					</div>
-				</template>
-				<template #footer>
-					<div class="flex items-center gap-2 h-fit w-full justify-end">
-						<UButton
-							color="primary"
-							size="sm"
-							variant="solid"
-							icon="i-lucide-plus"
-							@click="createRun"
-						>
-							Create Run
-						</UButton>
-					</div>
-				</template>
-			</UCard>
+					</template>
+					<template #default>
+						<!-- grid of all case titles -->
+						<div class="flex flex-col gap-y-3">
+							<div class="flex flex-col gap-y-3">
+								<div class="font-bold text-primary-500 flex items-center gap-2">
+									<!-- <UIcon name="i-lucide-folder" class="h-4 w-4" /> -->
+									<!-- {{ group.group }} -->
+								</div>
+								<div
+									class="grid 2xl:grid-cols-4 lg:grid-cols-3 sm:grid-cols-2 grid-cols-1 gap-3"
+								>
+									<!-- <UCard
+										v-for="item in group.cases"
+										:key="item.id"
+										:ui="{
+											header: { padding: 'px-4 py-3 sm:p-4' },
+											body: { padding: 'px-4 py-3 sm:p-4' },
+											footer: { padding: 'px-4 py-3 sm:p-4' },
+											base: 'h-full outline outline-2 outline-transparent duration-100'
+										}"
+										:class="{
+											'outline-primary-500/50': selectedCases.includes(item.id)
+										}"
+										@click="selectCase(item.id)"
+									>
+										{{ item.title }}
+									</UCard> -->
+								</div>
+							</div>
+						</div>
+					</template>
+					<template #footer>
+						<div class="flex items-center gap-2 h-fit w-full justify-end">
+							<UButton
+								color="primary"
+								size="sm"
+								variant="solid"
+								icon="i-lucide-plus"
+								@click="createRun"
+							>
+								Create Run
+							</UButton>
+						</div>
+					</template>
+				</UCard>
+			</template>
 		</UModal>
 	</div>
 </template>

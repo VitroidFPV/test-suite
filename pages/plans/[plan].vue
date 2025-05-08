@@ -185,8 +185,6 @@ async function savePlan() {
 getPlan()
 getPlanCases()
 getAllCases()
-
-const { metaSymbol } = useShortcuts()
 </script>
 
 <template>
@@ -225,7 +223,7 @@ const { metaSymbol } = useShortcuts()
 			</div>
 		</div>
 
-		<UDivider />
+		<USeparator />
 
 		<div class="w-full flex gap-x-3"></div>
 		<div
@@ -235,9 +233,9 @@ const { metaSymbol } = useShortcuts()
 			<div v-for="item in cases" :key="item.id">
 				<UCard
 					:ui="{
-						header: { padding: 'px-4 py-3 sm:p-4' },
-						body: { padding: 'px-4 py-3 sm:p-4' },
-						footer: { padding: 'px-4 py-3 sm:p-4' }
+						header: 'px-4 py-3 sm:p-4',
+						body: 'px-4 py-3 sm:p-4',
+						footer: 'px-4 py-3 sm:p-4'
 					}"
 				>
 					<template #header>
@@ -253,7 +251,7 @@ const { metaSymbol } = useShortcuts()
 					</template>
 					<!-- <template #footer>
 						<div class="flex items-center justify-between">
-							<div class="text-sm text-gray-500">
+							<div class="text-sm text-neutral-500">
 								{{ dayjs(item.created_at).format("D.MM.YYYY HH:mm") }}
 							</div>
 							<div class="flex items-center gap-2">
@@ -277,9 +275,9 @@ const { metaSymbol } = useShortcuts()
 			<div v-for="i in 3" :key="i">
 				<UCard
 					:ui="{
-						header: { padding: 'px-4 py-3 sm:p-4' },
-						body: { padding: 'px-4 py-3 sm:p-4' },
-						footer: { padding: 'px-4 py-3 sm:p-4' }
+						header: 'px-4 py-3 sm:p-4',
+						body: 'px-4 py-3 sm:p-4',
+						footer: 'px-4 py-3 sm:p-4'
 					}"
 					:style="{
 						opacity: 1 - i / 10
@@ -297,7 +295,7 @@ const { metaSymbol } = useShortcuts()
 					</template>
 					<!-- <template #footer>
 						<div class="flex items-center justify-between">
-							<div class="text-sm text-gray-500">
+							<div class="text-sm text-neutral-500">
 								<USkeleton class="w-1/2 h-6" />
 							</div>
 							<div class="flex items-center gap-2">
@@ -310,98 +308,104 @@ const { metaSymbol } = useShortcuts()
 		</div>
 
 		<UModal
-			v-model="planCaseModalOpen"
+			v-model:open="planCaseModalOpen"
 			:ui="{
-				base: '!max-w-full 2xl:mx-64 xl:mx-32 lg:mx-32 md:mx-16 mx-0 sm:mx-8'
+				body: 'max-w-full! 2xl:mx-64 xl:mx-32 lg:mx-32 md:mx-16 mx-0 sm:mx-8'
 			}"
 		>
-			<UCard
-				:ui="{
-					header: { padding: 'px-4 py-3 sm:p-4' },
-					body: { padding: 'px-4 py-3 sm:p-4' },
-					footer: { padding: 'px-4 py-3 sm:p-4' }
-				}"
+			<template #title>Edit Plan</template>
+			<template #description>
+				Edit the plan title, description and cases</template
 			>
-				<template #header>
-					<textarea
-						v-if="plan"
-						v-model="planTitle"
-						placeholder="Group Title"
-						color="primary"
-						variant="none"
-						class="font-bold text-primary-500 w-full p-3 rounded-lg resize-none outline-none focus-visible:outline-primary-500/5 placeholder:font-normal bg-gray-800"
-					/>
-				</template>
-				<template #default>
-					<!-- grid of all case titles -->
-					<div class="flex flex-col gap-y-3">
-						<div
-							v-for="group in groupedCases"
-							:key="group.group"
-							class="flex flex-col gap-y-3"
-						>
-							<div class="font-bold text-primary-500 flex items-center gap-2">
-								<UIcon name="i-lucide-folder" class="h-4 w-4" />
-								{{ group.group }}
-							</div>
+			<template #content>
+				<UCard
+					:ui="{
+						header: 'px-4 py-3 sm:p-4',
+						body: 'px-4 py-3 sm:p-4',
+						footer: 'px-4 py-3 sm:p-4'
+					}"
+				>
+					<template #header>
+						<textarea
+							v-if="plan"
+							v-model="planTitle"
+							placeholder="Group Title"
+							color="primary"
+							variant="none"
+							class="font-bold text-primary-500 w-full p-3 rounded-lg resize-none outline-none focus-visible:outline-primary-500/5 placeholder:font-normal bg-neutral-800"
+						/>
+					</template>
+					<template #default>
+						<!-- grid of all case titles -->
+						<div class="flex flex-col gap-y-3">
 							<div
-								class="grid 2xl:grid-cols-4 lg:grid-cols-3 sm:grid-cols-2 grid-cols-1 gap-3"
+								v-for="group in groupedCases"
+								:key="group.group"
+								class="flex flex-col gap-y-3"
 							>
-								<UCard
-									v-for="item in group.cases"
-									:key="item.id"
-									:ui="{
-										header: { padding: 'px-4 py-3 sm:p-4' },
-										body: { padding: 'px-4 py-3 sm:p-4' },
-										footer: { padding: 'px-4 py-3 sm:p-4' },
-										base: 'h-full outline outline-2 outline-transparent duration-100'
-									}"
-									:class="{
-										'outline-primary-500/50': selectedCases.includes(item.id)
-									}"
-									@click="selectCase(item.id)"
+								<div class="font-bold text-primary-500 flex items-center gap-2">
+									<UIcon name="i-lucide-folder" class="h-4 w-4" />
+									{{ group.group }}
+								</div>
+								<div
+									class="grid 2xl:grid-cols-4 lg:grid-cols-3 sm:grid-cols-2 grid-cols-1 gap-3"
 								>
-									{{ item.title }}
-								</UCard>
+									<UCard
+										v-for="item in group.cases"
+										:key="item.id"
+										:ui="{
+											header: 'px-4 py-3 sm:p-4',
+											body: 'px-4 py-3 sm:p-4',
+											footer: 'px-4 py-3 sm:p-4'
+										}"
+										:class="{
+											'outline-primary-500/50': selectedCases.includes(item.id),
+											'h-full outline outline-2 outline-transparent duration-100': true
+										}"
+										@click="selectCase(item.id)"
+									>
+										{{ item.title }}
+									</UCard>
+								</div>
 							</div>
 						</div>
-					</div>
-				</template>
-				<template #footer>
-					<div class="flex items-center justify-between">
-						<UTooltip text="Delete" :shortcuts="[metaSymbol, 'Delete']">
-							<UButton
-								color="red"
-								size="sm"
-								variant="link"
-								icon="i-lucide-trash"
-							/>
-						</UTooltip>
-						<div class="flex items-center gap-2 h-fit">
-							<UTooltip text="Save" :shortcuts="[metaSymbol, 'S']">
+					</template>
+					<template #footer>
+						<div class="flex items-center justify-between">
+							<UTooltip text="Delete" :shortcuts="['meta', 'Delete']">
 								<UButton
-									color="primary"
+									color="error"
 									size="sm"
 									variant="link"
-									icon="i-lucide-save"
+									icon="i-lucide-trash"
 								/>
 							</UTooltip>
-							<UTooltip
-								text="Save & Close"
-								:shortcuts="[metaSymbol, 'Shift', 'S']"
-							>
-								<UButton
-									color="primary"
-									size="sm"
-									variant="link"
-									icon="i-lucide-save-all"
-									@click="savePlan"
-								/>
-							</UTooltip>
+							<div class="flex items-center gap-2 h-fit">
+								<UTooltip text="Save" :shortcuts="['meta', 'S']">
+									<UButton
+										color="primary"
+										size="sm"
+										variant="link"
+										icon="i-lucide-save"
+									/>
+								</UTooltip>
+								<UTooltip
+									text="Save & Close"
+									:shortcuts="['meta', 'Shift', 'S']"
+								>
+									<UButton
+										color="primary"
+										size="sm"
+										variant="link"
+										icon="i-lucide-save-all"
+										@click="savePlan"
+									/>
+								</UTooltip>
+							</div>
 						</div>
-					</div>
-				</template>
-			</UCard>
+					</template>
+				</UCard>
+			</template>
 		</UModal>
 	</div>
 </template>

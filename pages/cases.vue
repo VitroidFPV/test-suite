@@ -75,9 +75,15 @@ const groups = computed(() => [
 
 let selectedTabGroup: number = 0
 
-function filterGroup(index: number) {
-	selectedGroup.value = caseGroups.value[index - 1]
-	selectedTabGroup = index
+function filterGroup(value: string) {
+	if (value === "all") {
+		selectedGroup.value = undefined
+		selectedTabGroup = 0
+	} else {
+		selectedGroup.value = caseGroups.value.find((group) => group.name === value)
+		selectedTabGroup =
+			caseGroups.value.findIndex((group) => group.name === value) + 1
+	}
 	editedGroup.value = selectedGroup.value
 }
 
@@ -331,12 +337,10 @@ async function deleteGroup(id: string) {
 
 	linkModalOpen.value = false
 	await getCaseGroups()
-	filterGroup(0)
+	filterGroup("all")
 }
 
 const editedGroup = ref<CaseGroup>()
-
-const { metaSymbol } = useShortcuts()
 
 defineShortcuts({
 	meta_s: {
@@ -362,7 +366,7 @@ useHead({
 	<div class="flex flex-col gap-y-6">
 		<h1 class="text-3xl font-bold text-primary">Test Cases</h1>
 		<div class="flex flex-col lg:flex-row gap-3 w-full">
-			<div class="w-52 lg:w-min space-y-3 h-full">
+			<div class="w-full lg:w-52 space-y-3 h-full">
 				<div class="flex justify-between px-1">
 					<div class="text-primary font-bold">Groups</div>
 					<UButton
@@ -372,28 +376,23 @@ useHead({
 						@click="groupModal('')"
 					/>
 				</div>
-				<UDivider />
+				<USeparator />
 				<UTabs
 					v-if="groups.length > 1"
 					v-model="selectedTabGroup"
 					:items="groups"
 					orientation="vertical"
 					as="ul"
-					class="w-52"
 					:ui="{
-						list: {
-							background: 'dark:!bg-gray-900',
-							marker: {
-								background: '!bg-primary-500/10'
-							}
-						}
+						list: 'dark:bg-neutral-900! lg:w-52 w-full',
+						indicator: 'bg-primary-500/10!'
 					}"
-					@change="filterGroup"
+					@update:model-value="(val) => filterGroup(String(val))"
 				>
-					<template #default="{ item, selected }">
+					<template #default="{ item, index }">
 						<li
-							class="!w-full flex items-center !justify-start whitespace-nowrap"
-							:class="[selected ? '!text-primary-500' : '']"
+							class="w-full! flex items-center justify-start! whitespace-nowrap"
+							:class="[index === selectedTabGroup ? 'text-primary-500!' : '']"
 						>
 							<UIcon name="i-lucide-folder" class="mr-2 h-4 w-4" />
 							{{ item.label }}
@@ -402,16 +401,16 @@ useHead({
 				</UTabs>
 				<div v-else>
 					<div
-						class="w-52 flex flex-col dark:!bg-gray-900 h-fit rounded-lg p-1"
+						class="w-52 flex flex-col dark:bg-neutral-900! h-fit rounded-lg p-1"
 					>
 						<div
 							v-for="i in 3"
 							:key="i"
-							class="!w-full flex items-center !justify-start whitespace-nowrap h-8 px-3"
+							class="w-full! flex items-center justify-start! whitespace-nowrap h-8 px-3"
 						>
 							<UIcon
 								name="i-lucide-folder"
-								class="mr-2 h-4 w-4 animate-pulse dark:text-gray-400"
+								class="mr-2 h-4 w-4 animate-pulse dark:text-neutral-400"
 							/>
 							<USkeleton
 								class="h-4"
@@ -427,10 +426,10 @@ useHead({
 				<div class="flex justify-between px-1">
 					<div class="text-primary font-bold">Cases</div>
 					<div class="flex">
-						<UTooltip text="Create new Case" :shortcuts="[metaSymbol, 'N']">
+						<UTooltip text="Create new Case" :shortcuts="['meta', 'N']">
 							<UButton
 								color="primary"
-								size="sm"
+								size="xs"
 								variant="link"
 								icon="i-lucide-plus"
 								@click="caseModal('')"
@@ -438,14 +437,14 @@ useHead({
 								Create Case
 							</UButton>
 						</UTooltip>
-						<UDivider orientation="vertical" />
+						<USeparator orientation="vertical" />
 						<UTooltip
 							text="Add existing case to group"
-							:shortcuts="[metaSymbol, 'L']"
+							:shortcuts="['meta', 'L']"
 						>
 							<UButton
 								color="primary"
-								size="sm"
+								size="xs"
 								variant="link"
 								icon="i-lucide-pen"
 								:disabled="selectedGroup === undefined"
@@ -456,7 +455,7 @@ useHead({
 						</UTooltip>
 					</div>
 				</div>
-				<UDivider />
+				<USeparator />
 				<div
 					v-if="filteredCases.length > 0"
 					class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 w-full"
@@ -464,9 +463,9 @@ useHead({
 					<div v-for="item in filteredCases" :key="item.id">
 						<UCard
 							:ui="{
-								header: { padding: 'px-4 py-3 sm:p-4' },
-								body: { padding: 'px-4 py-3 sm:p-4' },
-								footer: { padding: 'px-4 py-3 sm:p-4' }
+								header: 'px-4 py-3 sm:p-4',
+								body: 'px-4 py-3 sm:p-4',
+								footer: 'px-4 py-3 sm:p-4'
 							}"
 						>
 							<template #header>
@@ -482,13 +481,13 @@ useHead({
 							</template>
 							<template #footer>
 								<div class="flex items-center justify-between">
-									<div class="text-sm text-gray-500">
+									<div class="text-sm text-neutral-500">
 										{{ dayjs(item.created_at).format("D.MM.YYYY HH:mm") }}
 									</div>
 									<div class="flex items-center gap-2">
 										<UButton
 											color="primary"
-											size="2xs"
+											size="xs"
 											variant="link"
 											icon="i-lucide-pencil"
 											@click="caseModal(item.id)"
@@ -506,9 +505,9 @@ useHead({
 					<div v-for="i in 12" :key="i">
 						<UCard
 							:ui="{
-								header: { padding: 'px-4 py-3 sm:p-4' },
-								body: { padding: 'px-4 py-3 sm:p-4' },
-								footer: { padding: 'px-4 py-3 sm:p-4' }
+								header: 'px-4 py-3 sm:p-4',
+								body: 'px-4 py-3 sm:p-4',
+								footer: 'px-4 py-3 sm:p-4'
 							}"
 							:style="{
 								opacity: 1 - i / 10
@@ -526,7 +525,7 @@ useHead({
 							</template>
 							<template #footer>
 								<div class="flex items-center justify-between">
-									<div class="text-sm text-gray-500">
+									<div class="text-sm text-neutral-500">
 										<USkeleton class="w-1/2 h-6" />
 									</div>
 									<div class="flex items-center gap-2">
@@ -538,189 +537,202 @@ useHead({
 					</div>
 				</div>
 			</div>
-			<UModal v-if="editedCase" v-model="caseModalOpen">
-				<UCard
-					:ui="{
-						header: { padding: 'px-4 py-3 sm:p-4' },
-						body: { padding: 'px-4 py-3 sm:p-4' },
-						footer: { padding: 'px-4 py-3 sm:p-4' }
-					}"
-				>
-					<template #header>
-						<textarea
-							v-model="editedCase.title"
-							color="primary"
-							variant="none"
-							placeholder="Case Title"
-							class="font-bold text-primary-500 w-full p-3 rounded-lg resize-none outline-none focus-visible:outline-primary-500/50 placeholder:font-normal"
-						/>
-					</template>
-					<template #default>
-						<textarea
-							v-model="editedCase.text"
-							:autoresize="true"
-							:rows="5"
-							:maxrows="10"
-							color="primary"
-							variant="none"
-							class="w-full p-3 rounded-lg resize-none outline-none focus-visible:outline-primary-500/50"
-							placeholder="Description"
-						/>
-					</template>
-					<template #footer>
-						<div class="flex items-center justify-between">
-							<div class="flex items-center gap-2 h-fit">
-								<UTooltip
-									v-if="editedCase.id"
-									text="Delete"
-									:shortcuts="[metaSymbol, 'Delete']"
-								>
-									<UButton
-										color="red"
-										size="sm"
-										variant="link"
-										icon="i-lucide-trash"
-										@click="deleteCase(editedCase.id)"
-									/>
-								</UTooltip>
-								<UTooltip
-									v-if="
-										editedCase.id &&
-										selectedGroup &&
-										selectedGroup.name !== 'All'
-									"
-									text="Remove from group"
-									:shortcuts="[metaSymbol, 'Delete']"
-								>
-									<UButton
-										color="red"
-										size="sm"
-										variant="link"
-										icon="i-lucide-unlink"
-										@click="removeFromGroup(editedCase.id)"
-									/>
-								</UTooltip>
-							</div>
-							<div class="flex items-center gap-2 h-fit">
-								<UTooltip text="Save" :shortcuts="[metaSymbol, 'S']">
-									<UButton
-										color="primary"
-										size="sm"
-										variant="link"
-										icon="i-lucide-save"
-										@click="
-											saveCase(false, editedCase.id !== '' ? true : false)
+			<UModal v-if="editedCase" v-model:open="caseModalOpen">
+				<template #title>Case Edit Modal</template>
+				<template #description>
+					Modal for editing the case title and description
+				</template>
+				<template #content>
+					<UCard
+						:ui="{
+							header: 'px-4 py-3 sm:p-4',
+							body: 'px-4 py-3 sm:p-4',
+							footer: 'px-4 py-3 sm:p-4'
+						}"
+					>
+						<template #header>
+							<textarea
+								v-model="editedCase.title"
+								color="primary"
+								variant="none"
+								placeholder="Case Title"
+								class="font-bold text-primary-500 w-full p-3 rounded-lg resize-none outline-none focus-visible:outline-primary-500/50 placeholder:font-normal"
+							/>
+						</template>
+						<template #default>
+							<textarea
+								v-model="editedCase.text"
+								:autoresize="true"
+								:rows="5"
+								:maxrows="10"
+								color="primary"
+								variant="none"
+								class="w-full p-3 rounded-lg resize-none outline-none focus-visible:outline-primary-500/50"
+								placeholder="Description"
+							/>
+						</template>
+						<template #footer>
+							<div class="flex items-center justify-between">
+								<div class="flex items-center gap-2 h-fit">
+									<UTooltip
+										v-if="editedCase.id"
+										text="Delete"
+										:shortcuts="['meta', 'Delete']"
+									>
+										<UButton
+											color="error"
+											size="xs"
+											variant="link"
+											icon="i-lucide-trash"
+											@click="deleteCase(editedCase.id)"
+										/>
+									</UTooltip>
+									<UTooltip
+										v-if="
+											editedCase.id &&
+											selectedGroup &&
+											selectedGroup.name !== 'All'
 										"
-									/>
-								</UTooltip>
-								<UTooltip
-									text="Save & Close"
-									:shortcuts="[metaSymbol, 'Shift', 'S']"
-								>
-									<UButton
-										color="primary"
-										size="sm"
-										variant="link"
-										icon="i-lucide-save-all"
-										@click="saveCase(true, editedCase.id !== '' ? true : false)"
-									/>
-								</UTooltip>
+										text="Remove from group"
+										:shortcuts="['meta', 'Delete']"
+									>
+										<UButton
+											color="error"
+											size="xs"
+											variant="link"
+											icon="i-lucide-unlink"
+											@click="removeFromGroup(editedCase.id)"
+										/>
+									</UTooltip>
+								</div>
+								<div class="flex items-center gap-2 h-fit">
+									<UTooltip text="Save" :shortcuts="['meta', 'S']">
+										<UButton
+											color="primary"
+											size="xs"
+											variant="link"
+											icon="i-lucide-save"
+											@click="
+												saveCase(false, editedCase.id !== '' ? true : false)
+											"
+										/>
+									</UTooltip>
+									<UTooltip
+										text="Save & Close"
+										:shortcuts="['meta', 'Shift', 'S']"
+									>
+										<UButton
+											color="primary"
+											size="xs"
+											variant="link"
+											icon="i-lucide-save-all"
+											@click="
+												saveCase(true, editedCase.id !== '' ? true : false)
+											"
+										/>
+									</UTooltip>
+								</div>
 							</div>
-						</div>
-					</template>
-				</UCard>
+						</template>
+					</UCard>
+				</template>
 			</UModal>
 			<UModal
 				v-if="editedGroup"
-				v-model="linkModalOpen"
+				v-model:open="linkModalOpen"
 				:ui="{
-					base: '!max-w-full 2xl:mx-64 xl:mx-32 lg:mx-32 md:mx-16 mx-0 sm:mx-8'
+					content: 'max-w-full lg:max-w-6xl'
 				}"
 			>
-				<UCard
-					:ui="{
-						header: { padding: 'px-4 py-3 sm:p-4' },
-						body: { padding: 'px-4 py-3 sm:p-4' },
-						footer: { padding: 'px-4 py-3 sm:p-4' }
-					}"
-				>
-					<template #header>
-						<textarea
-							v-model="editedGroup.title"
-							placeholder="Group Title"
-							color="primary"
-							variant="none"
-							class="font-bold text-primary-500 w-full p-3 rounded-lg resize-none outline-none focus-visible:outline-primary-500/5 placeholder:font-normal"
-						/>
-					</template>
-					<template #default>
-						<!-- grid of all case titles -->
-						<div
-							class="grid 2xl:grid-cols-4 lg:grid-cols-3 sm:grid-cols-2 grid-cols-1 gap-3"
-						>
-							<div v-for="item in cases" :key="item.id">
-								<UCard
-									:ui="{
-										header: { padding: 'px-4 py-3 sm:p-4' },
-										body: { padding: 'px-4 py-3 sm:p-4' },
-										footer: { padding: 'px-4 py-3 sm:p-4' },
-										base: 'h-full outline outline-2 outline-transparent duration-100'
-									}"
-									:class="{
-										'outline-primary-500/50': selectedCases.includes(item.id)
-									}"
-									@click="selectCase(item.id)"
-								>
-									{{ item.title }}
-								</UCard>
-							</div>
-						</div>
-					</template>
-					<template #footer>
-						<div class="flex items-center justify-between">
-							<UTooltip
-								v-if="editedGroup.id"
-								text="Delete"
-								:shortcuts="[metaSymbol, 'Delete']"
+				<template #title>Edit Group</template>
+				<template #description>
+					Edit the group title and add/remove cases from it
+				</template>
+				<template #content>
+					<UCard
+						:ui="{
+							header: 'px-4 py-3 sm:p-4',
+							body: 'px-4 py-3 sm:p-4',
+							footer: 'px-4 py-3 sm:p-4'
+						}"
+					>
+						<template #header>
+							<textarea
+								v-model="editedGroup.title"
+								placeholder="Group Title"
+								color="primary"
+								variant="none"
+								class="font-bold text-primary-500 w-full p-3 rounded-lg resize-none outline-none focus-visible:outline-primary-500/5 placeholder:font-normal"
+							/>
+						</template>
+						<template #default>
+							<div
+								class="grid 2xl:grid-cols-4 lg:grid-cols-3 sm:grid-cols-2 grid-cols-1 gap-3"
 							>
-								<UButton
-									color="red"
-									size="sm"
-									variant="link"
-									icon="i-lucide-trash"
-									@click="deleteGroup(editedGroup.id)"
-								/>
-							</UTooltip>
-							<div class="flex items-center gap-2 h-fit">
-								<UTooltip text="Save" :shortcuts="[metaSymbol, 'S']">
-									<UButton
-										color="primary"
-										size="sm"
-										variant="link"
-										icon="i-lucide-save"
-										@click="
-											saveGroup(false, editedGroup.id !== '' ? true : false)
-										"
-									/>
-								</UTooltip>
+								<div v-for="item in cases" :key="item.id">
+									<UCard
+										:ui="{
+											header: 'px-4 py-3 sm:p-4',
+											body: 'px-4 py-3 sm:p-4',
+											footer: 'px-4 py-3 sm:p-4',
+											root: 'h-full outline outline-2 outline-transparent duration-100'
+										}"
+										:class="{
+											'outline-primary-500/50': selectedCases.includes(item.id)
+										}"
+										@click="selectCase(item.id)"
+									>
+										{{ item.title }}
+									</UCard>
+								</div>
+							</div>
+						</template>
+						<template #footer>
+							<div class="flex items-center justify-between">
 								<UTooltip
-									text="Save & Close"
-									:shortcuts="[metaSymbol, 'Shift', 'S']"
+									v-if="editedGroup.id"
+									text="Delete"
+									:shortcuts="['meta', 'Delete']"
 								>
 									<UButton
-										color="primary"
-										size="sm"
+										color="error"
+										size="xs"
 										variant="link"
-										icon="i-lucide-save-all"
-										@click="
-											saveGroup(true, editedGroup.id !== '' ? true : false)
-										"
+										icon="i-lucide-trash"
+										@click="deleteGroup(editedGroup.id)"
 									/>
 								</UTooltip>
+								<div class="flex items-center gap-2 h-fit">
+									<UTooltip text="Save" :shortcuts="['meta', 'S']">
+										<UButton
+											color="primary"
+											size="xs"
+											variant="link"
+											icon="i-lucide-save"
+											@click="
+												saveGroup(false, editedGroup.id !== '' ? true : false)
+											"
+										/>
+									</UTooltip>
+									<UTooltip
+										text="Save & Close"
+										:shortcuts="['meta', 'Shift', 'S']"
+									>
+										<UButton
+											color="primary"
+											size="xs"
+											variant="link"
+											icon="i-lucide-save-all"
+											@click="
+												saveGroup(true, editedGroup.id !== '' ? true : false)
+											"
+										/>
+									</UTooltip>
+								</div>
 							</div>
-						</div>
-					</template>
-				</UCard>
+						</template>
+					</UCard>
+				</template>
 			</UModal>
 			<!-- <UModal>
 			</UModal> -->
