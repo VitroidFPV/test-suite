@@ -34,30 +34,15 @@ async function getRunGroup() {
 }
 
 async function getRuns() {
-	const { data: runLinks, error: runLinksError } = await supabase
-		.from("test_run_group_links")
-		.select("run")
-		.eq("run_group", route.params.group)
-
-	if (runLinksError) {
-		console.error(runLinksError)
-		return
-	}
-	console.log(runLinks)
-
-	const runIds = runLinks.map((link) => link.run)
-
-	const { data: runsData, error: runsError } = await supabase
+	const { data, error } = await supabase
 		.from("test_runs")
 		.select("*")
-		.in("id", runIds)
-
-	if (runsError) {
-		console.error(runsError)
+		.eq("group", route.params.group)
+	if (error) {
+		console.error(error)
 		return
 	}
-
-	runs.value = runsData
+	runs.value = data || []
 }
 
 getRunGroup()

@@ -156,36 +156,6 @@ export type Database = {
         }
         Relationships: []
       }
-      test_run_group_links: {
-        Row: {
-          run: string
-          run_group: string
-        }
-        Insert: {
-          run: string
-          run_group: string
-        }
-        Update: {
-          run?: string
-          run_group?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "test_plan_group_links_plan_fkey"
-            columns: ["run"]
-            isOneToOne: false
-            referencedRelation: "test_plans"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "test_plan_group_links_plan_group_fkey"
-            columns: ["run_group"]
-            isOneToOne: false
-            referencedRelation: "test_run_groups"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       test_run_groups: {
         Row: {
           created_at: string
@@ -210,56 +180,47 @@ export type Database = {
         }
         Relationships: []
       }
-      test_run_plan_links: {
-        Row: {
-          plan: string
-          run: string
-        }
-        Insert: {
-          plan?: string
-          run?: string
-        }
-        Update: {
-          plan?: string
-          run?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "test_run_plan_links_plan_fkey"
-            columns: ["plan"]
-            isOneToOne: false
-            referencedRelation: "test_plans"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "test_run_plan_links_run_fkey"
-            columns: ["run"]
-            isOneToOne: false
-            referencedRelation: "test_runs"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       test_runs: {
         Row: {
           created_at: string
           created_by: string | null
+          group: string | null
           id: string
+          plan: string | null
           title: string | null
         }
         Insert: {
           created_at?: string
           created_by?: string | null
+          group?: string | null
           id?: string
+          plan?: string | null
           title?: string | null
         }
         Update: {
           created_at?: string
           created_by?: string | null
+          group?: string | null
           id?: string
+          plan?: string | null
           title?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "test_runs_group_fkey"
+            columns: ["group"]
+            isOneToOne: false
+            referencedRelation: "test_run_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "test_runs_plan_fkey"
+            columns: ["plan"]
+            isOneToOne: false
+            referencedRelation: "test_plans"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_metadata: {
         Row: {
