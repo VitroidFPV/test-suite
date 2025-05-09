@@ -263,19 +263,25 @@ export type Database = {
       }
       user_metadata: {
         Row: {
+          avatar: string | null
           created_at: string
           id: string
           role: string | null
+          username: string
         }
         Insert: {
+          avatar?: string | null
           created_at?: string
           id: string
           role?: string | null
+          username?: string
         }
         Update: {
+          avatar?: string | null
           created_at?: string
           id?: string
           role?: string | null
+          username?: string
         }
         Relationships: []
       }

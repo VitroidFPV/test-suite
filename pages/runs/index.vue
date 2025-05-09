@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Database, Tables } from "~/database.types"
+import dayjs from "dayjs"
 
 const supabase = useSupabaseClient<Database>()
 
@@ -8,21 +9,61 @@ type RunGroup = Tables<"test_run_groups">
 type Run = Tables<"test_runs">
 type NewRun = Run
 type TestPlan = Tables<"test_plans">
+type UserMetadata = Tables<"user_metadata">
 
 type TestPlanWithLabel = TestPlan & { label: string }
 type RunGroupWithLabel = RunGroup & { label: string }
+type RunWithUser = Run & { creator?: UserMetadata }
 
-const runs = ref<Run[]>([])
+const runs = ref<RunWithUser[]>([])
 const testPlans = ref<TestPlan[]>([])
 const runGroups = ref<RunGroup[]>([])
 
 async function getRuns() {
-	const { data, error } = await supabase.from("test_runs").select("*")
-	if (error) {
-		console.error(error)
+	const { data: runsData, error: runsError } = await supabase
+		.from("test_runs")
+		.select("*")
+
+	if (runsError) {
+		console.error(runsError)
 		return
 	}
-	runs.value = data || []
+
+	const runsArray = runsData || []
+
+	// Get unique creator IDs
+	const creatorIds = [
+		...new Set(
+			runsArray.filter((run) => run.created_by).map((run) => run.created_by)
+		)
+	]
+
+	if (creatorIds.length > 0) {
+		// Fetch user metadata for all creators
+		const { data: usersData, error: usersError } = await supabase
+			.from("user_metadata")
+			.select("*")
+			.in("id", creatorIds)
+
+		if (usersError) {
+			console.error(usersError)
+			runs.value = runsArray
+			return
+		}
+
+		// Map users to their respective runs
+		const runsWithUsers = runsArray.map((run) => {
+			const creator = usersData?.find((user) => user.id === run.created_by)
+			return {
+				...run,
+				creator
+			}
+		})
+
+		runs.value = runsWithUsers
+	} else {
+		runs.value = runsArray
+	}
 }
 
 const selectedRunGroup = ref<RunGroupWithLabel>()
@@ -47,7 +88,7 @@ const user = useSupabaseUser()
 const newRun = ref<NewRun>({
 	id: crypto.randomUUID(),
 	title: "",
-	created_at: new Date().toDateString(),
+	created_at: new Date().toISOString(),
 	created_by: user.value?.id || "",
 	group: "",
 	plan: ""
@@ -174,12 +215,23 @@ useHead({
 							</div>
 						</NuxtLink>
 					</template>
-					<!-- <template #default>
-						<span v-if="item.title" class="line-clamp-1 text-ellipsis">{{
-							item.title
-						}}</span>
-						<div v-else class="opacity-50">No description</div>
-					</template> -->
+					<template #default>
+						<div
+							class="text-sm text-neutral-500 flex items-center justify-between gap-1"
+						>
+							<div class="flex items-center gap-1">
+								<UAvatar
+									:src="item.creator?.avatar ?? ''"
+									size="sm"
+									class="rounded-full"
+								/>
+								{{ item.creator?.username || "Unknown user" }}
+							</div>
+							<div class="text-sm text-neutral-500">
+								{{ dayjs(item.created_at).format("D.MM.YYYY HH:mm") }}
+							</div>
+						</div>
+					</template>
 					<!-- <template #footer>
 						<div class="flex items-center justify-between">
 							<div class="text-sm text-neutral-500">
