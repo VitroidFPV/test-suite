@@ -66,31 +66,46 @@ const resultTypes = [
 	{
 		label: "Not Run",
 		value: "not_run",
-		color: "neutral",
+		textColor: "text-neutral-400",
+		bgColor: "bg-neutral-500/20",
+		hoverBgColor: "hover:bg-neutral-500/30",
+		outlineColor: "outline-neutral-500/50",
 		icon: "i-lucide-circle-dot-dashed"
 	},
 	{
 		label: "Passed",
 		value: "passed",
-		color: "lime",
+		textColor: "text-lime-400",
+		bgColor: "bg-lime-500/20",
+		hoverBgColor: "hover:bg-lime-500/30",
+		outlineColor: "outline-lime-500/50",
 		icon: "i-lucide-circle-check"
 	},
 	{
 		label: "Failed",
 		value: "failed",
-		color: "red",
+		textColor: "text-red-400",
+		bgColor: "bg-red-500/20",
+		hoverBgColor: "hover:bg-red-500/30",
+		outlineColor: "outline-red-500/50",
 		icon: "i-lucide-circle-x"
 	},
 	{
 		label: "Blocked",
 		value: "blocked",
-		color: "yellow",
+		textColor: "text-yellow-400",
+		bgColor: "bg-yellow-500/20",
+		hoverBgColor: "hover:bg-yellow-500/30",
+		outlineColor: "outline-yellow-500/50",
 		icon: "i-lucide-circle-alert"
 	},
 	{
 		label: "Skipped",
 		value: "skipped",
-		color: "neutral",
+		textColor: "text-neutral-400",
+		bgColor: "bg-neutral-500/20",
+		hoverBgColor: "hover:bg-neutral-500/30",
+		outlineColor: "outline-neutral-500/50",
 		icon: "i-lucide-circle-arrow-right"
 	}
 ]
@@ -142,40 +157,30 @@ getRun().then(() => {
 								:items="resultTypes"
 								variant="none"
 								:ui="{
-									base: 'relative'
-								}"
-								:ui-menu="{
-									background: 'bg-neutral-900',
-									option: {
-										base: 'w-full',
-										selected: 'pe-0',
-										selectedIcon: {
-											base: 'hidden'
-										}
-									}
+									// it's impressive that I can get this low into it but damn
+									base: `relative *:flex *:items-center *:gap-2 w-36 px-2 py-1 rounded-full ${selectedResult.textColor} ${selectedResult.bgColor} ${selectedResult.outlineColor} ${selectedResult.hoverBgColor}`,
+									trailingIcon: `group-data-[state=open]:rotate-180 transition-transform duration-200 ${selectedResult.textColor}`,
+									item: `data-highlighted:not-data-disabled:before:bg-transparent`
 								}"
 							>
 								<template #default>
-									<div
-										:class="`font-semibold text-sm text-${selectedResult.color}-400 flex items-center 
-										gap-2 bg-${selectedResult.color}-500 bg-opacity-20 px-2 py-1 rounded-full w-full`"
-									>
+									<div :class="`font-semibold text-sm`">
 										<UIcon :name="selectedResult.icon" />
 										{{ selectedResult.label }}
 									</div>
 								</template>
-								<template #item="{ item }">
+								<template #item="{ item: resultItem }">
 									<div
 										:class="
-											`font-semibold text-sm text-${item.color}-400 flex items-center w-full flex-nowrap
-										gap-2 bg-${item.color}-500 bg-opacity-10 hover:bg-opacity-15 px-2 py-1 rounded-full` +
-											(item.value === selectedResult.value
-												? ` outline-2 outline outline-${item.color}-500 outline-opacity-50`
+											`font-semibold text-sm ${resultItem.textColor} flex items-center w-full flex-nowrap
+										gap-2 ${resultItem.bgColor} ${resultItem.hoverBgColor} backdrop-opacity-10 px-2 py-1 rounded-full cursor-pointer` +
+											(resultItem.value === selectedResult.value
+												? ` outline-2 ${resultItem.outlineColor}`
 												: '')
 										"
 									>
-										<UIcon :name="item.icon" class="h-4 w-4 shrink" />
-										<div class="whitespace-nowrap">{{ item.label }}</div>
+										<UIcon :name="resultItem.icon" class="h-4 w-4 shrink" />
+										<div class="whitespace-nowrap">{{ resultItem.label }}</div>
 									</div>
 								</template>
 							</USelectMenu>
