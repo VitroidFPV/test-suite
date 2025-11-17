@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Database, Tables } from "~/database.types"
+import type { Database, Tables } from "~/types/database.types"
 import dayjs from "dayjs"
 
 const supabase = useSupabaseClient<Database>()

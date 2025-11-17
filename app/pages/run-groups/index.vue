@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Database, Tables } from "~/database.types"
+import type { Database, Tables } from "~/types/database.types"
 import VueMarkdown from "vue-markdown-render"
 import type Options from "vue-markdown-render"
 import type { BreadcrumbLink } from "#ui/types"
