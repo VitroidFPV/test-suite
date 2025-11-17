@@ -20,7 +20,7 @@
 		"@nuxtjs/supabase": "^1.4.3",
 		"@types/markdown-it": "^14.1.2",
 		"eslint": "^9.16.0",
-		"nuxt": "^3.17.2",
+		"nuxt": "^4.2.1",
 		"supabase": "^1.226.3",
 		"typescript": "^5.7.2"
 	},
