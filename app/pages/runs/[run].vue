@@ -1,11 +1,5 @@
 <script setup lang="ts">
 import type { Database, Tables } from "~/types/database.types"
-import VueMarkdown from "vue-markdown-render"
-import type Options from "vue-markdown-render"
-
-const options: typeof Options = {
-	html: true
-}
 
 const urlRun = useRoute().params.run as string
 
@@ -14,8 +8,12 @@ const supabase = useSupabaseClient<Database>()
 type Run = Tables<"test_runs">
 type RunCase = Tables<"test_cases">
 
+interface RunCaseWithResult extends RunCase {
+	result: string | null
+}
+
 const run = ref<Run>()
-const runCases = ref<RunCase[]>([])
+const runCases = ref<RunCaseWithResult[]>([])
 
 async function getRun() {
 	const { data, error } = await supabase
@@ -34,13 +32,13 @@ async function getRunCases() {
 		console.error("Run not selected")
 		return
 	}
-	// table test_runs contains run id and test plan id
-	// table test_plan_case_links contains test plan id and test case ids
+	// table test_runs contains run id
+	// table test_run_case_links contains test run id and test case ids
 
 	const { data: runCasesDb, error: runCasesError } = await supabase
-		.from("test_plan_case_links")
-		.select("case")
-		.eq("plan", run.value.plan as string)
+		.from("test_run_case_links")
+		.select("case_id, result")
+		.eq("run_id", run.value.id)
 	if (runCasesError) {
 		console.error(runCasesError)
 		return
@@ -52,14 +50,35 @@ async function getRunCases() {
 		.select("*")
 		.in(
 			"id",
-			runCasesDb.map((c) => c.case)
+			runCasesDb.map((c) => c.case_id)
 		)
 	if (casesError) {
 		console.error(casesError)
 		return
 	}
 
-	runCases.value = cases || []
+	// Merge cases with their results
+	runCases.value = cases.map((testCase) => {
+		const linkData = runCasesDb.find((link) => link.case_id === testCase.id)
+		return {
+			...testCase,
+			result: linkData?.result || null
+		}
+	})
+}
+
+async function updateCaseResult(caseId: string, resultValue: string) {
+	if (!run.value) return
+
+	const { error } = await supabase
+		.from("test_run_case_links")
+		.update({ result: resultValue })
+		.eq("run_id", run.value.id)
+		.eq("case_id", caseId)
+
+	if (error) {
+		console.error("Error updating result:", error)
+	}
 }
 
 const resultTypes = [
@@ -110,7 +129,10 @@ const resultTypes = [
 	}
 ]
 
-const selectedResult = ref(resultTypes[0])
+function getResultType(resultValue: string | null) {
+	const result = resultTypes.find((r) => r.value === resultValue)
+	return result || resultTypes[0]!
+}
 
 getRun().then(() => {
 	getRunCases()
@@ -153,20 +175,26 @@ getRun().then(() => {
 						</div>
 						<div class="w-full">
 							<USelectMenu
-								v-model="selectedResult"
+								:model-value="getResultType(item.result)"
 								:items="resultTypes"
 								variant="none"
 								:ui="{
 									// it's impressive that I can get this low into it but damn
-									base: `relative *:flex *:items-center *:gap-2 w-36 px-2 py-1 rounded-full ${selectedResult.textColor} ${selectedResult.bgColor} ${selectedResult.outlineColor} ${selectedResult.hoverBgColor}`,
-									trailingIcon: `group-data-[state=open]:rotate-180 transition-transform duration-200 ${selectedResult.textColor}`,
+									base: `relative *:flex *:items-center *:gap-2 w-36 px-2 py-1 rounded-full ${getResultType(item.result).textColor} ${getResultType(item.result).bgColor} ${getResultType(item.result).outlineColor} ${getResultType(item.result).hoverBgColor}`,
+									trailingIcon: `group-data-[state=open]:rotate-180 transition-transform duration-200 ${getResultType(item.result).textColor}`,
 									item: `data-highlighted:not-data-disabled:before:bg-transparent`
 								}"
+								@update:model-value="
+									(newResult) => {
+										item.result = newResult.value
+										updateCaseResult(item.id, newResult.value)
+									}
+								"
 							>
 								<template #default>
 									<div :class="`font-semibold text-sm`">
-										<UIcon :name="selectedResult.icon" />
-										{{ selectedResult.label }}
+										<UIcon :name="getResultType(item.result).icon" />
+										{{ getResultType(item.result).label }}
 									</div>
 								</template>
 								<template #item="{ item: resultItem }">
@@ -174,7 +202,7 @@ getRun().then(() => {
 										:class="
 											`font-semibold text-sm ${resultItem.textColor} flex items-center w-full flex-nowrap
 										gap-2 ${resultItem.bgColor} ${resultItem.hoverBgColor} backdrop-opacity-10 px-2 py-1 rounded-full cursor-pointer` +
-											(resultItem.value === selectedResult.value
+											(resultItem.value === getResultType(item.result).value
 												? ` outline-2 ${resultItem.outlineColor}`
 												: '')
 										"
