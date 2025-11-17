@@ -48,3 +48,13 @@ body {
 .dark\:disabled\:text-primary-400:disabled:is(.dark *) {
 	color: rgb(var(--color-neutral-500) / var(--tw-text-opacity, 1));
 }
+
+.stripe-gradient {
+	background: repeating-linear-gradient(
+		45deg,
+		var(--ui-color-neutral-900),
+		var(--ui-color-neutral-900) 5px,
+		var(--ui-color-neutral-800) 5px,
+		var(--ui-color-neutral-800) 10px /* cool stripy gradient */
+	);
+}

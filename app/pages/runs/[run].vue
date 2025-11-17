@@ -7,6 +7,7 @@ const supabase = useSupabaseClient<Database>()
 
 type Run = Tables<"test_runs">
 type RunCase = Tables<"test_cases">
+type RunGroup = Tables<"test_run_groups">
 
 interface RunCaseWithResult extends RunCase {
 	result: string | null
@@ -14,6 +15,16 @@ interface RunCaseWithResult extends RunCase {
 
 const run = ref<Run>()
 const runCases = ref<RunCaseWithResult[]>([])
+const runGroup = ref<RunGroup>()
+
+const statusStats = ref<{ title: string; value: string; number: number }[]>([
+	{ title: "Total", value: "total", number: 0 },
+	{ title: "Passed", value: "passed", number: 0 },
+	{ title: "Failed", value: "failed", number: 0 },
+	{ title: "Blocked", value: "blocked", number: 0 },
+	{ title: "Skipped", value: "skipped", number: 0 },
+	{ title: "Not Run", value: "not_run", number: 0 }
+])
 
 async function getRun() {
 	const { data, error } = await supabase
@@ -25,6 +36,16 @@ async function getRun() {
 		return
 	}
 	run.value = data[0]
+
+	const { data: runGroupData, error: runGroupError } = await supabase
+		.from("test_run_groups")
+		.select("*")
+		.eq("id", run.value?.group || "")
+	if (runGroupError) {
+		console.error(runGroupError)
+		return
+	}
+	runGroup.value = runGroupData[0] || undefined
 }
 
 async function getRunCases() {
@@ -65,6 +86,7 @@ async function getRunCases() {
 			result: linkData?.result || null
 		}
 	})
+	updateStatusStats()
 }
 
 async function updateCaseResult(caseId: string, resultValue: string) {
@@ -76,9 +98,20 @@ async function updateCaseResult(caseId: string, resultValue: string) {
 		.eq("run_id", run.value.id)
 		.eq("case_id", caseId)
 
+	updateStatusStats()
+
 	if (error) {
 		console.error("Error updating result:", error)
 	}
+}
+
+function updateStatusStats() {
+	// Calculate status stats
+	statusStats.value.forEach((s) => {
+		s.number = runCases.value.filter((c) => c.result === s.value).length
+	})
+	statusStats.value.find((s) => s.value === "total")!.number =
+		runCases.value.length
 }
 
 const resultTypes = [
@@ -121,8 +154,8 @@ const resultTypes = [
 	{
 		label: "Skipped",
 		value: "skipped",
-		textColor: "text-neutral-400",
-		bgColor: "bg-neutral-500/20",
+		textColor: "text-neutral-200",
+		bgColor: "stripe-gradient",
 		hoverBgColor: "hover:bg-neutral-500/30",
 		outlineColor: "outline-neutral-500/50",
 		icon: "i-lucide-circle-arrow-right"
@@ -134,6 +167,17 @@ function getResultType(resultValue: string | null) {
 	return result || resultTypes[0]!
 }
 
+function getStatusStatsPercentage(value: string) {
+	const valueStats = statusStats.value.find((s) => s.value === value)
+	const totalStats = statusStats.value.find((s) => s.value === "total")
+
+	if (!valueStats || !totalStats || totalStats.number === 0) {
+		return 0
+	}
+
+	return (valueStats.number / totalStats.number) * 100
+}
+
 getRun().then(() => {
 	getRunCases()
 })
@@ -142,12 +186,19 @@ getRun().then(() => {
 <template>
 	<div class="flex flex-col gap-y-6">
 		<h1 class="text-3xl font-bold text-primary">Test Run</h1>
-		<div class="flex flex-col lg:flex-row gap-3 w-full">
-			<div v-if="run">
-				<h1 class="text-3xl font-bold text-primary mb-8">
-					{{ run?.title }}
-				</h1>
-				<!-- <div class="md">
+		<div v-if="run" class="flex flex-col lg:flex-row gap-8 w-full">
+			<h1 class="text-3xl font-bold text-primary">
+				{{ run?.title }}
+			</h1>
+			<a
+				v-if="runGroup"
+				class="text-neutral-500 font-semibold flex items-center gap-2 hover:underline"
+				:href="`/run-groups/${runGroup.id}`"
+			>
+				<UIcon name="i-lucide-folder" class="h-4 w-4" />
+				<span>{{ runGroup.title }}</span>
+			</a>
+			<!-- <div class="md">
 					<VueMarkdown
 						v-if="run.description"
 						:options="options"
@@ -155,6 +206,49 @@ getRun().then(() => {
 					>
 					</VueMarkdown>
 				</div> -->
+		</div>
+		<div class="h-2 w-full rounded-full bg-neutral-500/20 flex overflow-hidden">
+			<div
+				class="h-full bg-lime-500 transition-all duration-200"
+				:style="{ width: `${getStatusStatsPercentage('passed')}%` }"
+			></div>
+			<div
+				class="h-full bg-yellow-500 transition-all duration-200"
+				:style="{
+					width: `${getStatusStatsPercentage('blocked')}%`
+				}"
+			></div>
+			<div
+				class="h-full bg-red-500 transition-all duration-200"
+				:style="{ width: `${getStatusStatsPercentage('failed')}%` }"
+			></div>
+			<div
+				class="h-full transition-all duration-200 stripe-gradient"
+				:style="{
+					width: `${getStatusStatsPercentage('skipped')}%`
+				}"
+			></div>
+			<div
+				class="h-full bg-transparent transition-all duration-200"
+				:style="{ width: `${getStatusStatsPercentage('not_run')}%` }"
+			></div>
+		</div>
+		<div class="text-sm text-neutral-400 flex gap-4">
+			<div
+				v-for="item in statusStats.filter((s) => s.value !== 'total')"
+				:key="item.value"
+				class="flex gap-1"
+			>
+				<UBadge
+					:ui="{
+						base: `${getResultType(item.value).bgColor} ${getResultType(item.value).textColor} rounded-full`
+					}"
+					>{{ item.title }}</UBadge
+				>
+				<span class="text-neutral-400">{{ item.number }}</span>
+				<span class="text-neutral-400"
+					>({{ getStatusStatsPercentage(item.value) }}%)</span
+				>
 			</div>
 		</div>
 		<USeparator />
@@ -170,7 +264,7 @@ getRun().then(() => {
 			>
 				<template #default>
 					<div class="grid grid-cols-6">
-						<div class="col-span-2 font-bold text-primary">
+						<div class="col-span-2 font-bold">
 							{{ item.title }}
 						</div>
 						<div class="w-full">
