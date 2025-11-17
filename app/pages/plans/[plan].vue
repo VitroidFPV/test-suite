@@ -12,7 +12,6 @@ const supabase = useSupabaseClient<Database>()
 type TestPlan = Tables<"test_plans">
 type TestPlanCase = Tables<"test_plan_case_links">
 type TestCase = Tables<"test_cases">
-type PlanGroup = Tables<"test_case_groups">
 
 const plan = ref<TestPlan>()
 const planCases = ref<TestPlanCase[]>([])
@@ -39,8 +38,8 @@ async function getPlan() {
 		title: `${plan.value?.title} | Test Plans | Test Suite`
 	})
 
-	planTitle.value = plan.value.title ?? ""
-	planDescription.value = plan.value.description ?? ""
+	planTitle.value = plan.value?.title ?? ""
+	planDescription.value = plan.value?.description ?? ""
 }
 
 // get plan cases
@@ -115,6 +114,18 @@ async function getAllCases() {
 				.includes(c.id)
 		)
 	}))
+
+	// add ungrouped cases
+	const groupedCaseIds = groupedCases.value.flatMap((group) =>
+		group.cases.map((c) => c.id)
+	)
+	const ungrouped = casesData.filter((c) => !groupedCaseIds.includes(c.id))
+	if (ungrouped.length > 0) {
+		groupedCases.value.push({
+			group: "Ungrouped",
+			cases: ungrouped
+		})
+	}
 
 	console.log(allCases.value)
 	console.log(groupedCases.value)
@@ -310,7 +321,7 @@ getAllCases()
 		<UModal
 			v-model:open="planCaseModalOpen"
 			:ui="{
-				body: 'max-w-full! 2xl:mx-64 xl:mx-32 lg:mx-32 md:mx-16 mx-0 sm:mx-8'
+				content: 'max-w-6xl'
 			}"
 		>
 			<template #title>Edit Plan</template>
@@ -344,7 +355,14 @@ getAllCases()
 								class="flex flex-col gap-y-3"
 							>
 								<div class="font-bold text-primary-500 flex items-center gap-2">
-									<UIcon name="i-lucide-folder" class="h-4 w-4" />
+									<UIcon
+										:name="
+											group.group === 'Ungrouped'
+												? 'i-lucide-folder-open'
+												: 'i-lucide-folder'
+										"
+										class="h-4 w-4"
+									/>
 									{{ group.group }}
 								</div>
 								<div
@@ -359,8 +377,12 @@ getAllCases()
 											footer: 'px-4 py-3 sm:p-4'
 										}"
 										:class="{
-											'outline-primary-500/50': selectedCases.includes(item.id),
-											'h-full outline outline-2 outline-transparent duration-100': true
+											'outline-2 outline-primary-500/50':
+												selectedCases.includes(item.id),
+											'outline-2 outline-transparent': !selectedCases.includes(
+												item.id
+											),
+											'h-full duration-100 cursor-pointer': true
 										}"
 										@click="selectCase(item.id)"
 									>
