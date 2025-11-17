@@ -10,7 +10,7 @@
 		"postinstall": "nuxt prepare",
 		"lint": "eslint .",
 		"lint:fix": "eslint . --fix",
-		"db-types": "npx supabase gen types --lang=typescript --project-id yxnhoaudgrpzerbyoqle > database.types.ts"
+		"db-types": "npx supabase gen types --lang=typescript --project-id kvfbdwiqpedungemknmu > app/types/database.types.ts"
 	},
 	"devDependencies": {
 		"@iconify-json/lucide": "^1.2.20",

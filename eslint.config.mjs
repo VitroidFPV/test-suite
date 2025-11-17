@@ -5,7 +5,7 @@ import eslintPluginPrettierRecommended from "eslint-plugin-prettier/recommended"
 export default withNuxt([
 	// Your custom configs here
 	{
-		ignores: ["database.types.ts"]
+		ignores: ["app/types/database.types.ts"]
 	},
 	eslintPluginPrettierRecommended,
 	{
