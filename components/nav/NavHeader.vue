@@ -82,7 +82,7 @@ function signOut() {
 						class="outline outline-1 outline-neutral-700 justify-self-end"
 						size="md"
 					/>
-					<template #panel>
+					<template #content>
 						<div>
 							<div class="w-48 flex flex-col gap-2 p-4">
 								<div class="font-bold">{{ name }}</div>
