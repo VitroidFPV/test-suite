@@ -11,8 +11,14 @@ type NewRun = Run
 type TestPlan = Tables<"test_plans">
 type UserMetadata = Tables<"user_metadata">
 
-type TestPlanWithLabel = TestPlan & { label: string }
-type RunGroupWithLabel = RunGroup & { label: string }
+type TestPlanWithLabel = Omit<TestPlan, "description"> & {
+	label: string
+	description: string | undefined
+}
+type RunGroupWithLabel = Omit<RunGroup, "description"> & {
+	label: string
+	description: string | undefined
+}
 type RunWithUser = Run & { creator?: UserMetadata }
 
 const runs = ref<RunWithUser[]>([])
@@ -72,14 +78,16 @@ const selectedTestPlan = ref<TestPlanWithLabel>()
 const transformedTestPlans = computed(() =>
 	testPlans.value.map((plan) => ({
 		...plan,
-		label: plan.title || ""
+		label: plan.title || "",
+		description: plan.description ?? undefined
 	}))
 )
 
 const transformedRunGroups = computed(() =>
 	runGroups.value.map((group) => ({
 		...group,
-		label: group.title || ""
+		label: group.title || "",
+		description: group.description ?? undefined
 	}))
 )
 
@@ -94,12 +102,12 @@ const newRun = ref<NewRun>({
 	plan: ""
 })
 
-function selectGroup(group: RunGroup) {
+function selectGroup(group: RunGroupWithLabel) {
 	newRun.value.group = group.id
 	console.log(newRun.value)
 }
 
-async function selectPlan(plan: TestPlan) {
+async function selectPlan(plan: TestPlanWithLabel) {
 	newRun.value.plan = plan.id
 	console.log(newRun.value)
 }
@@ -139,12 +147,37 @@ function openCreateRunModal() {
 }
 
 async function createRun() {
-	const { data, error } = await supabase
-		.from("test_runs")
-		.insert([newRun.value])
+	const { error } = await supabase.from("test_runs").insert([newRun.value])
 	if (error) {
 		console.error(error)
 		return
+	}
+
+	// Get test cases from the selected plan
+	if (newRun.value.plan) {
+		const { data: planCases, error: planCasesError } = await supabase
+			.from("test_plan_case_links")
+			.select("case")
+			.eq("plan", newRun.value.plan)
+
+		if (planCasesError) {
+			console.error("Error fetching plan cases:", planCasesError)
+		} else if (planCases && planCases.length > 0) {
+			// Create run-case links for each case in the plan
+			const runCaseLinks = planCases.map((link) => ({
+				run_id: newRun.value.id,
+				case_id: link.case,
+				result: null
+			}))
+
+			const { error: linkError } = await supabase
+				.from("test_run_case_links")
+				.insert(runCaseLinks)
+
+			if (linkError) {
+				console.error("Error creating run-case links:", linkError)
+			}
+		}
 	}
 
 	createRunModalOpen.value = false
