@@ -4,9 +4,12 @@ definePageMeta({
 })
 const supabase = useSupabaseClient()
 
-async function signIn() {
+const signInWithOAuth = async () => {
 	const { error } = await supabase.auth.signInWithOAuth({
-		provider: "github"
+		provider: "github",
+		options: {
+			redirectTo: `${window.location.origin}/confirm`
+		}
 	})
 	if (error) {
 		console.error(error)
@@ -16,6 +19,6 @@ async function signIn() {
 
 <template>
 	<div>
-		<UButton @click="signIn">Sign In with GitHub</UButton>
+		<UButton @click="signInWithOAuth">Sign In with GitHub</UButton>
 	</div>
 </template>

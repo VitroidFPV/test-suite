@@ -17,11 +17,11 @@ const name = computed(() => {
 	return ""
 })
 
-async function signIn() {
+const signInWithOAuth = async () => {
 	const { error } = await supabase.auth.signInWithOAuth({
 		provider: "github",
 		options: {
-			redirectTo: window.location.origin
+			redirectTo: `${window.location.origin}/confirm`
 		}
 	})
 	if (error) {
@@ -79,7 +79,7 @@ function signOut() {
 					<UAvatar
 						v-if="avatar != ''"
 						:src="avatar"
-						class="outline outline-1 outline-neutral-700 justify-self-end"
+						class="outline-1 outline-neutral-700 justify-self-end"
 						size="md"
 					/>
 					<template #content>
@@ -99,7 +99,7 @@ function signOut() {
 					color="neutral"
 					variant="subtle"
 					icon="i-lucide-github"
-					@click="signIn"
+					@click="signInWithOAuth"
 					>Sign In</UButton
 				>
 			</div>
