@@ -310,7 +310,7 @@ useHead({
 				>
 					<template #header>
 						<div class="flex flex-col gap-y-3">
-							<UButtonGroup>
+							<UFieldGroup>
 								<UInput
 									v-model="newRun.title!"
 									placeholder="Run Title"
@@ -325,7 +325,7 @@ useHead({
 										@click="autoFill"
 									/>
 								</UTooltip>
-							</UButtonGroup>
+							</UFieldGroup>
 							<div class="flex gap-x-3">
 								<div class="flex flex-col gap-y-2 w-full">
 									<div
