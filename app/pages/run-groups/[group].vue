@@ -2,6 +2,7 @@
 import type { Database, Tables } from "~/types/database.types"
 import VueMarkdown from "vue-markdown-render"
 import type Options from "vue-markdown-render"
+import dayjs from "dayjs"
 
 const options: typeof Options = {
 	html: true
@@ -12,37 +13,88 @@ const route = useRoute()
 const supabase = useSupabaseClient<Database>()
 type RunGroup = Tables<"test_run_groups">
 type Run = Tables<"test_runs">
+type UserMetadata = Tables<"user_metadata">
+
+type RunWithUser = Run & { creator?: UserMetadata }
 
 const runGroup = ref<RunGroup>()
-const runs = ref<Run[]>([])
+const runs = ref<RunWithUser[]>([])
 
 // slug group is id
 async function getRunGroup() {
 	const { data, error } = await supabase
 		.from("test_run_groups")
 		.select("*")
-		.eq("id", route.params.group)
+		.eq("id", route.params.group as string)
+		.single()
 	if (error) {
 		console.error(error)
 		return
 	}
-	runGroup.value = data[0]
+	runGroup.value = data
 
 	useHead({
 		title: `${runGroup.value?.title} | Test Suite`
 	})
 }
 
+// async function getRuns() {
+// 	const { data, error } = await supabase
+// 		.from("test_runs")
+// 		.select("*")
+// 		.eq("group", route.params.group as string)
+// 	if (error) {
+// 		console.error(error)
+// 		return
+// 	}
+// 	runs.value = data || []
+// }
+
 async function getRuns() {
-	const { data, error } = await supabase
+	const { data: runsData, error: runsError } = await supabase
 		.from("test_runs")
 		.select("*")
-		.eq("group", route.params.group)
-	if (error) {
-		console.error(error)
+		.eq("group", route.params.group as string)
+	if (runsError) {
+		console.error(runsError)
 		return
 	}
-	runs.value = data || []
+
+	const runsArray = runsData || []
+
+	// Get unique creator IDs
+	const creatorIds = [
+		...new Set(
+			runsArray.filter((run) => run.created_by).map((run) => run.created_by)
+		)
+	]
+
+	if (creatorIds.length > 0) {
+		// Fetch user metadata for all creators
+		const { data: usersData, error: usersError } = await supabase
+			.from("user_metadata")
+			.select("*")
+			.in("id", creatorIds)
+
+		if (usersError) {
+			console.error(usersError)
+			runs.value = runsArray
+			return
+		}
+
+		// Map users to their respective runs
+		const runsWithUsers = runsArray.map((run) => {
+			const creator = usersData?.find((user) => user.id === run.created_by)
+			return {
+				...run,
+				creator
+			}
+		})
+
+		runs.value = runsWithUsers
+	} else {
+		runs.value = runsArray
+	}
 }
 
 getRunGroup()
@@ -75,21 +127,37 @@ getRuns()
 			<div v-for="item in runs" :key="item.id">
 				<UCard
 					:ui="{
-						header: { padding: 'px-4 py-3 sm:p-4' },
-						body: { padding: 'px-4 py-3 sm:p-4' },
-						footer: { padding: 'px-4 py-3 sm:p-4' }
+						header: 'px-4 py-3 sm:p-4',
+						body: 'px-4 py-3 sm:p-4',
+						footer: 'px-4 py-3 sm:p-4'
 					}"
 				>
 					<template #header>
-						<div class="font-bold text-primary-500">
+						<!-- <div class="font-bold text-primary-500">
 							{{ item.title }}
-						</div>
+						</div> -->
+						<NuxtLink :to="`/runs/${item.id}`">
+							<div class="font-bold text-primary hover:underline">
+								{{ item.title }}
+							</div>
+						</NuxtLink>
 					</template>
 					<template #default>
-						<!-- <span v-if="item.description" class="line-clamp-1 text-ellipsis">{{
-							item.description
-						}}</span>
-						<div v-else class="opacity-50">No description</div> -->
+						<div
+							class="text-sm text-neutral-500 flex items-center justify-between gap-1"
+						>
+							<div class="flex items-center gap-1">
+								<UAvatar
+									:src="item.creator?.avatar ?? ''"
+									size="sm"
+									class="rounded-full"
+								/>
+								{{ item.creator?.username || "Unknown user" }}
+							</div>
+							<div class="text-sm text-neutral-500">
+								{{ dayjs(item.created_at).format("D.MM.YYYY HH:mm") }}
+							</div>
+						</div>
 					</template>
 					<!-- <template #footer>
 						<div class="flex items-center justify-between">
@@ -117,9 +185,9 @@ getRuns()
 			<div v-for="i in 3" :key="i">
 				<UCard
 					:ui="{
-						header: { padding: 'px-4 py-3 sm:p-4' },
-						body: { padding: 'px-4 py-3 sm:p-4' },
-						footer: { padding: 'px-4 py-3 sm:p-4' }
+						header: 'px-4 py-3 sm:p-4',
+						body: 'px-4 py-3 sm:p-4',
+						footer: 'px-4 py-3 sm:p-4'
 					}"
 					:style="{
 						opacity: 1 - i / 10

@@ -190,14 +190,14 @@ getRun().then(() => {
 			<h1 class="text-3xl font-bold text-primary">
 				{{ run?.title }}
 			</h1>
-			<a
+			<NuxtLink
 				v-if="runGroup"
 				class="text-neutral-500 font-semibold flex items-center gap-2 hover:underline"
-				:href="`/run-groups/${runGroup.id}`"
+				:to="`/run-groups/${runGroup.id}`"
 			>
-				<UIcon name="i-lucide-folder" class="h-4 w-4" />
+				<UIcon name="i-lucide-library-big" class="h-4 w-4" />
 				<span>{{ runGroup.title }}</span>
-			</a>
+			</NuxtLink>
 			<!-- <div class="md">
 					<VueMarkdown
 						v-if="run.description"
