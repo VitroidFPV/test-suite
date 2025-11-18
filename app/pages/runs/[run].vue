@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Database, Tables } from "~/types/database.types"
+import BaseCard from "~/components/cards/BaseCard.vue"
 
 const urlRun = useRoute().params.run as string
 

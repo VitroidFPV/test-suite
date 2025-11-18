@@ -386,13 +386,14 @@ useHead({
 					as="ul"
 					:ui="{
 						list: 'dark:bg-neutral-900! lg:w-52 w-full',
-						indicator: 'bg-primary-500/10!'
+						indicator: 'bg-primary-500/10!',
+						trigger: 'w-full'
 					}"
 					@update:model-value="(val) => filterGroup(String(val))"
 				>
 					<template #default="{ item, index }">
 						<li
-							class="w-full! flex items-center justify-start! whitespace-nowrap"
+							class="flex items-center justify-start! whitespace-nowrap"
 							:class="[index === selectedTabGroup ? 'text-primary-500!' : '']"
 						>
 							<UIcon name="i-lucide-folder" class="mr-2 h-4 w-4" />
