@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Database, Tables } from "~/types/database.types"
+import BaseCard from "~/components/cards/BaseCard.vue"
 
 const supabase = useSupabaseClient<Database>()
 
@@ -32,13 +33,7 @@ useHead({
 			class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 w-full"
 		>
 			<div v-for="item in plans" :key="item.id">
-				<UCard
-					:ui="{
-						header: 'px-4 py-3 sm:p-4',
-						body: 'px-4 py-3 sm:p-4',
-						footer: 'px-4 py-3 sm:p-4'
-					}"
-				>
+				<BaseCard>
 					<template #header>
 						<!-- <div class="font-bold text-primary-500">
 							{{ item.title }}
@@ -72,7 +67,7 @@ useHead({
 							</div>
 						</div>
 					</template> -->
-				</UCard>
+				</BaseCard>
 			</div>
 		</div>
 		<div
@@ -80,12 +75,7 @@ useHead({
 			class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 w-full"
 		>
 			<div v-for="i in 3" :key="i">
-				<UCard
-					:ui="{
-						header: 'px-4 py-3 sm:p-4',
-						body: 'px-4 py-3 sm:p-4',
-						footer: 'px-4 py-3 sm:p-4'
-					}"
+				<BaseCard
 					:style="{
 						opacity: 1 - i / 10
 					}"
@@ -110,7 +100,7 @@ useHead({
 							</div>
 						</div>
 					</template> -->
-				</UCard>
+				</BaseCard>
 			</div>
 		</div>
 	</div>

@@ -253,15 +253,7 @@ getRun().then(() => {
 		</div>
 		<USeparator />
 		<div class="flex flex-col gap-y-3">
-			<UCard
-				v-for="item in runCases"
-				:key="item.id"
-				:ui="{
-					header: 'px-4 py-3 sm:p-4',
-					body: 'px-4 py-3 sm:p-4',
-					footer: 'px-4 py-3 sm:p-4'
-				}"
-			>
+			<BaseCard v-for="item in runCases" :key="item.id">
 				<template #default>
 					<div class="grid grid-cols-6">
 						<div class="col-span-2 font-bold">
@@ -309,7 +301,7 @@ getRun().then(() => {
 						</div>
 					</div>
 				</template>
-			</UCard>
+			</BaseCard>
 		</div>
 	</div>
 </template>

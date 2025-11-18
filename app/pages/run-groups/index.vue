@@ -2,7 +2,7 @@
 import type { Database, Tables } from "~/types/database.types"
 import VueMarkdown from "vue-markdown-render"
 import type Options from "vue-markdown-render"
-import type { BreadcrumbLink } from "#ui/types"
+import BaseCard from "~/components/cards/BaseCard.vue"
 
 const options: typeof Options = {
 	html: true
@@ -36,13 +36,7 @@ useHead({
 		<div class="flex flex-col lg:flex-row gap-3 w-full">
 			<div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 w-full">
 				<div v-for="run in runGroups" :key="run.id">
-					<UCard
-						:ui="{
-							header: { padding: 'px-4 py-3 sm:p-4' },
-							body: { padding: 'px-4 py-3 sm:p-4' },
-							footer: { padding: 'px-4 py-3 sm:p-4' }
-						}"
-					>
+					<BaseCard>
 						<template #header>
 							<NuxtLink
 								class="font-bold text-primary hover:underline"
@@ -73,7 +67,7 @@ useHead({
 								</VueMarkdown>
 							</div>
 						</template>
-					</UCard>
+					</BaseCard>
 				</div>
 			</div>
 		</div>

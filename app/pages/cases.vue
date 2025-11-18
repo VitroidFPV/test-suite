@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import dayjs from "dayjs"
 import type { Database, Tables } from "~/types/database.types"
+import BaseCard from "~/components/cards/BaseCard.vue"
 
 const supabase = useSupabaseClient<Database>()
 
@@ -461,13 +462,7 @@ useHead({
 					class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 w-full"
 				>
 					<div v-for="item in filteredCases" :key="item.id">
-						<UCard
-							:ui="{
-								header: 'px-4 py-3 sm:p-4',
-								body: 'px-4 py-3 sm:p-4',
-								footer: 'px-4 py-3 sm:p-4'
-							}"
-						>
+						<BaseCard>
 							<template #header>
 								<div class="font-bold text-primary-500">
 									{{ item.title }}
@@ -495,7 +490,7 @@ useHead({
 									</div>
 								</div>
 							</template>
-						</UCard>
+						</BaseCard>
 					</div>
 				</div>
 				<div
@@ -503,12 +498,7 @@ useHead({
 					class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 w-full"
 				>
 					<div v-for="i in 12" :key="i">
-						<UCard
-							:ui="{
-								header: 'px-4 py-3 sm:p-4',
-								body: 'px-4 py-3 sm:p-4',
-								footer: 'px-4 py-3 sm:p-4'
-							}"
+						<BaseCard
 							:style="{
 								opacity: 1 - i / 10
 							}"
@@ -533,7 +523,7 @@ useHead({
 									</div>
 								</div>
 							</template>
-						</UCard>
+						</BaseCard>
 					</div>
 				</div>
 			</div>
@@ -543,13 +533,7 @@ useHead({
 					Modal for editing the case title and description
 				</template>
 				<template #content>
-					<UCard
-						:ui="{
-							header: 'px-4 py-3 sm:p-4',
-							body: 'px-4 py-3 sm:p-4',
-							footer: 'px-4 py-3 sm:p-4'
-						}"
-					>
+					<BaseCard>
 						<template #header>
 							<textarea
 								v-model="editedCase.title"
@@ -634,7 +618,7 @@ useHead({
 								</div>
 							</div>
 						</template>
-					</UCard>
+					</BaseCard>
 				</template>
 			</UModal>
 			<UModal
@@ -649,13 +633,7 @@ useHead({
 					Edit the group title and add/remove cases from it
 				</template>
 				<template #content>
-					<UCard
-						:ui="{
-							header: 'px-4 py-3 sm:p-4',
-							body: 'px-4 py-3 sm:p-4',
-							footer: 'px-4 py-3 sm:p-4'
-						}"
-					>
+					<BaseCard>
 						<template #header>
 							<textarea
 								v-model="editedGroup.title"
@@ -675,7 +653,7 @@ useHead({
 											header: 'px-4 py-3 sm:p-4',
 											body: 'px-4 py-3 sm:p-4',
 											footer: 'px-4 py-3 sm:p-4',
-											root: 'h-full outline outline-2 outline-transparent duration-100'
+											root: 'h-full outline-2 outline-transparent duration-100'
 										}"
 										:class="{
 											'outline-primary-500/50': selectedCases.includes(item.id)
@@ -731,7 +709,7 @@ useHead({
 								</div>
 							</div>
 						</template>
-					</UCard>
+					</BaseCard>
 				</template>
 			</UModal>
 			<!-- <UModal>

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { Database, Tables } from "~/types/database.types"
-import dayjs from "dayjs"
+import TestRunCard from "~/components/cards/TestRunCard.vue"
+import BaseCard from "~/components/cards/BaseCard.vue"
 
 const supabase = useSupabaseClient<Database>()
 
@@ -230,71 +231,14 @@ useHead({
 			v-if="runs.length > 0"
 			class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 w-full"
 		>
-			<div v-for="item in runs" :key="item.id">
-				<UCard
-					:ui="{
-						header: 'px-4 py-3 sm:p-4',
-						body: 'px-4 py-3 sm:p-4',
-						footer: 'px-4 py-3 sm:p-4'
-					}"
-				>
-					<template #header>
-						<!-- <div class="font-bold text-primary-500">
-							{{ item.title }}
-						</div> -->
-						<NuxtLink :to="`/runs/${item.id}`">
-							<div class="font-bold text-primary hover:underline">
-								{{ item.title }}
-							</div>
-						</NuxtLink>
-					</template>
-					<template #default>
-						<div
-							class="text-sm text-neutral-500 flex items-center justify-between gap-1"
-						>
-							<div class="flex items-center gap-1">
-								<UAvatar
-									:src="item.creator?.avatar ?? ''"
-									size="sm"
-									class="rounded-full"
-								/>
-								{{ item.creator?.username || "Unknown user" }}
-							</div>
-							<div class="text-sm text-neutral-500">
-								{{ dayjs(item.created_at).format("D.MM.YYYY HH:mm") }}
-							</div>
-						</div>
-					</template>
-					<!-- <template #footer>
-						<div class="flex items-center justify-between">
-							<div class="text-sm text-neutral-500">
-								{{ dayjs(item.created_at).format("D.MM.YYYY HH:mm") }}
-							</div>
-							<div class="flex items-center gap-2">
-								<UButton
-									color="primary"
-									size="2xs"
-									variant="link"
-									icon="i-lucide-pencil"
-									@click="caseModal(item.id)"
-								/>
-							</div>
-						</div>
-					</template> -->
-				</UCard>
-			</div>
+			<TestRunCard v-for="item in runs" :key="item.id" :run="item" />
 		</div>
 		<div
 			v-else
 			class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 w-full"
 		>
 			<div v-for="i in 3" :key="i">
-				<UCard
-					:ui="{
-						header: 'px-4 py-3 sm:p-4',
-						body: 'px-4 py-3 sm:p-4',
-						footer: 'px-4 py-3 sm:p-4'
-					}"
+				<BaseCard
 					:style="{
 						opacity: 1 - i / 10
 					}"
@@ -319,7 +263,7 @@ useHead({
 							</div>
 						</div>
 					</template> -->
-				</UCard>
+				</BaseCard>
 			</div>
 		</div>
 
@@ -334,13 +278,7 @@ useHead({
 				Create a new test run with a title, group and plan
 			</template>
 			<template #content>
-				<UCard
-					:ui="{
-						header: 'px-4 py-3 sm:p-4',
-						body: 'px-4 py-3 sm:p-4',
-						footer: 'px-4 py-3 sm:p-4'
-					}"
-				>
+				<BaseCard>
 					<template #header>
 						<div class="flex flex-col gap-y-3">
 							<UFieldGroup>
@@ -458,7 +396,7 @@ useHead({
 							</UButton>
 						</div>
 					</template>
-				</UCard>
+				</BaseCard>
 			</template>
 		</UModal>
 	</div>

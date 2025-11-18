@@ -2,6 +2,7 @@
 import type { Database, Tables } from "~/types/database.types"
 import type Options from "vue-markdown-render"
 import VueMarkdown from "vue-markdown-render"
+import BaseCard from "~/components/cards/BaseCard.vue"
 
 const options: typeof Options = {
 	html: true
@@ -242,13 +243,7 @@ getAllCases()
 			class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 w-full"
 		>
 			<div v-for="item in cases" :key="item.id">
-				<UCard
-					:ui="{
-						header: 'px-4 py-3 sm:p-4',
-						body: 'px-4 py-3 sm:p-4',
-						footer: 'px-4 py-3 sm:p-4'
-					}"
-				>
+				<BaseCard>
 					<template #header>
 						<div class="font-bold text-primary-500">
 							{{ item.title }}
@@ -276,7 +271,7 @@ getAllCases()
 							</div>
 						</div>
 					</template> -->
-				</UCard>
+				</BaseCard>
 			</div>
 		</div>
 		<div
@@ -284,12 +279,7 @@ getAllCases()
 			class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 w-full"
 		>
 			<div v-for="i in 3" :key="i">
-				<UCard
-					:ui="{
-						header: 'px-4 py-3 sm:p-4',
-						body: 'px-4 py-3 sm:p-4',
-						footer: 'px-4 py-3 sm:p-4'
-					}"
+				<BaseCard
 					:style="{
 						opacity: 1 - i / 10
 					}"
@@ -314,7 +304,7 @@ getAllCases()
 							</div>
 						</div>
 					</template> -->
-				</UCard>
+				</BaseCard>
 			</div>
 		</div>
 
@@ -329,13 +319,7 @@ getAllCases()
 				Edit the plan title, description and cases</template
 			>
 			<template #content>
-				<UCard
-					:ui="{
-						header: 'px-4 py-3 sm:p-4',
-						body: 'px-4 py-3 sm:p-4',
-						footer: 'px-4 py-3 sm:p-4'
-					}"
-				>
+				<BaseCard>
 					<template #header>
 						<textarea
 							v-if="plan"
@@ -368,14 +352,9 @@ getAllCases()
 								<div
 									class="grid 2xl:grid-cols-4 lg:grid-cols-3 sm:grid-cols-2 grid-cols-1 gap-3"
 								>
-									<UCard
+									<BaseCard
 										v-for="item in group.cases"
 										:key="item.id"
-										:ui="{
-											header: 'px-4 py-3 sm:p-4',
-											body: 'px-4 py-3 sm:p-4',
-											footer: 'px-4 py-3 sm:p-4'
-										}"
 										:class="{
 											'outline-2 outline-primary-500/50':
 												selectedCases.includes(item.id),
@@ -387,7 +366,7 @@ getAllCases()
 										@click="selectCase(item.id)"
 									>
 										{{ item.title }}
-									</UCard>
+									</BaseCard>
 								</div>
 							</div>
 						</div>
@@ -426,7 +405,7 @@ getAllCases()
 							</div>
 						</div>
 					</template>
-				</UCard>
+				</BaseCard>
 			</template>
 		</UModal>
 	</div>
