@@ -194,24 +194,7 @@ useHead({
 <template>
 	<div class="flex flex-col gap-y-6">
 		<div class="flex w-full justify-between">
-			<div class="flex flex-col gap-y-6">
-				<h1 class="text-3xl font-bold text-primary">Test Runs</h1>
-				<div class="flex flex-col lg:flex-row gap-3 w-full">
-					<!-- <div v-if="plan">
-						<h1 class="text-6xl font-bold text-primary mb-8">
-							{{ plan?.title }}
-						</h1>
-						<div class="md">
-							<VueMarkdown
-								v-if="plan.description"
-								:options="options"
-								:source="plan.description"
-							>
-							</VueMarkdown>
-						</div>
-					</div> -->
-				</div>
-			</div>
+			<h1 class="text-3xl font-bold text-primary">Test Runs</h1>
 			<div class="flex flex-col">
 				<UButton
 					color="primary"
@@ -225,7 +208,7 @@ useHead({
 			</div>
 		</div>
 
-		<USeparator />
+		<!-- <USeparator /> -->
 
 		<div
 			v-if="runs.length > 0"
