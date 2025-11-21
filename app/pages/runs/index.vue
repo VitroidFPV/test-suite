@@ -202,6 +202,17 @@ async function createRun() {
 
 	createRunModalOpen.value = false
 
+	// Reset form state for next run creation
+	newRun.value = {
+		id: crypto.randomUUID(),
+		title: "",
+		created_at: new Date().toISOString(),
+		created_by: user.value?.id || "",
+		plan: null
+	}
+	selectedRunGroup.value = undefined
+	selectedTestPlan.value = undefined
+
 	getRuns()
 }
 

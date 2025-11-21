@@ -111,9 +111,7 @@ function sortTestRuns(sortBy: string, sortOrder: string) {
 			const aTime = aValue ? new Date(aValue as string).getTime() : 0
 			const bTime = bValue ? new Date(bValue as string).getTime() : 0
 			comparison = aTime - bTime
-		}
-
-		if (typeof aValue === "string" && typeof bValue === "string") {
+		} else if (typeof aValue === "string" && typeof bValue === "string") {
 			comparison = aValue.localeCompare(bValue)
 		} else if (typeof aValue === "number" && typeof bValue === "number") {
 			comparison = aValue - bValue
