@@ -166,34 +166,64 @@ export type Database = {
       }
       test_run_case_links: {
         Row: {
-          case_id: string
+          case: string
           notes: string | null
-          result: string | null
-          run_id: string
+          result: Database["public"]["Enums"]["test_run_result"]
+          run: string
         }
         Insert: {
-          case_id: string
+          case: string
           notes?: string | null
-          result?: string | null
-          run_id: string
+          result?: Database["public"]["Enums"]["test_run_result"]
+          run: string
         }
         Update: {
-          case_id?: string
+          case?: string
           notes?: string | null
-          result?: string | null
-          run_id?: string
+          result?: Database["public"]["Enums"]["test_run_result"]
+          run?: string
         }
         Relationships: [
           {
             foreignKeyName: "test_run_case_links_case_id_fkey"
-            columns: ["case_id"]
+            columns: ["case"]
             isOneToOne: false
             referencedRelation: "test_cases"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "test_run_case_links_run_id_fkey"
-            columns: ["run_id"]
+            columns: ["run"]
+            isOneToOne: false
+            referencedRelation: "test_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      test_run_group_links: {
+        Row: {
+          group: string
+          run: string
+        }
+        Insert: {
+          group: string
+          run: string
+        }
+        Update: {
+          group?: string
+          run?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "test_run_group_links_group_fkey"
+            columns: ["group"]
+            isOneToOne: false
+            referencedRelation: "test_run_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "test_run_group_links_run_fkey"
+            columns: ["run"]
             isOneToOne: false
             referencedRelation: "test_runs"
             referencedColumns: ["id"]
@@ -228,7 +258,6 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string | null
-          group: string | null
           id: string
           plan: string | null
           title: string | null
@@ -236,7 +265,6 @@ export type Database = {
         Insert: {
           created_at?: string
           created_by?: string | null
-          group?: string | null
           id?: string
           plan?: string | null
           title?: string | null
@@ -244,19 +272,11 @@ export type Database = {
         Update: {
           created_at?: string
           created_by?: string | null
-          group?: string | null
           id?: string
           plan?: string | null
           title?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "test_runs_group_fkey"
-            columns: ["group"]
-            isOneToOne: false
-            referencedRelation: "test_run_groups"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "test_runs_plan_fkey"
             columns: ["plan"]
@@ -299,6 +319,7 @@ export type Database = {
     }
     Enums: {
       priority_string: "low" | "medium" | "high"
+      test_run_result: "not_run" | "passed" | "failed" | "blocked" | "skipped"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -427,6 +448,7 @@ export const Constants = {
   public: {
     Enums: {
       priority_string: ["low", "medium", "high"],
+      test_run_result: ["not_run", "passed", "failed", "blocked", "skipped"],
     },
   },
 } as const
