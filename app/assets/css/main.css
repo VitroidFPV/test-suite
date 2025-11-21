@@ -35,6 +35,22 @@ body {
 	@apply list-decimal list-inside
 }
 
+.md h1 {
+	@apply text-3xl font-bold
+}
+
+.md h2 {
+	@apply text-2xl font-bold
+}
+
+.md h3 {
+	@apply text-xl font-bold
+}
+
+.md p {
+	@apply text-base
+}
+
 /* CSS */
 
 .dark {
