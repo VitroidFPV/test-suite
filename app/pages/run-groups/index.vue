@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { Database, Tables } from "~/types/database.types"
 import VueMarkdown from "vue-markdown-render"
+import dayjs from "dayjs"
 import type Options from "vue-markdown-render"
 import BaseCard from "~/components/cards/BaseCard.vue"
 
@@ -11,10 +12,61 @@ const options: typeof Options = {
 const supabase = useSupabaseClient<Database>()
 
 type RunGroup = Tables<"test_run_groups">
+type TestRun = Tables<"test_runs">
+type UserMetadata = Tables<"user_metadata">
+type TestRunWithUser = TestRun & { creator?: UserMetadata }
+
+const sortedTestRuns = ref<TestRunWithUser[]>([])
+async function getTestRuns() {
+	const { data: runsData, error: runsError } = await supabase
+		.from("test_runs")
+		.select("*")
+
+	if (runsError) {
+		console.error(runsError)
+		return
+	}
+
+	const runsArray = runsData || []
+
+	// Get unique creator IDs
+	const creatorIds = [
+		...new Set(
+			runsArray.filter((run) => run.created_by).map((run) => run.created_by)
+		)
+	]
+
+	if (creatorIds.length > 0) {
+		// Fetch user metadata for all creators
+		const { data: usersData, error: usersError } = await supabase
+			.from("user_metadata")
+			.select("*")
+			.in("id", creatorIds)
+
+		if (usersError) {
+			console.error(usersError)
+			sortedTestRuns.value = runsArray
+			return
+		}
+
+		// Map users to their respective runs
+		const runsWithUsers = runsArray.map((run) => {
+			const creator = usersData?.find((user) => user.id === run.created_by)
+			return {
+				...run,
+				creator
+			}
+		})
+
+		sortedTestRuns.value = runsWithUsers
+	} else {
+		sortedTestRuns.value = runsArray
+	}
+	sortTestRuns("title", "asc")
+}
 
 const runGroups = ref<RunGroup[]>([])
-
-async function getPlans() {
+async function getRunGroups() {
 	const { data, error } = await supabase.from("test_run_groups").select("*")
 	if (error) {
 		console.error(error)
@@ -23,7 +75,83 @@ async function getPlans() {
 	runGroups.value = data
 }
 
-getPlans()
+const testRunsSortOptions = ref<{ label: string; value: string }[]>([
+	{ label: "Title", value: "title" },
+	{ label: "Created At", value: "created_at" },
+	{ label: "Created By", value: "created_by" }
+])
+const testRunsSortOrders = ref<{ label: string; value: string }[]>([
+	{ label: "Ascending", value: "asc" },
+	{ label: "Descending", value: "desc" }
+])
+const testRunsSortBy = ref<{ label: string; value: string }>(
+	testRunsSortOptions.value[0]!
+)
+const testRunsSortOrder = ref<{ label: string; value: string }>(
+	testRunsSortOrders.value[0]!
+)
+
+function sortTestRuns(sortBy: string, sortOrder: string) {
+	if (!sortedTestRuns.value) return
+
+	sortedTestRuns.value = [...sortedTestRuns.value].sort((a, b) => {
+		let aValue = a[sortBy as keyof TestRunWithUser]
+		let bValue = b[sortBy as keyof TestRunWithUser]
+
+		// Convert undefined/null to empty string for consistent sorting
+		aValue = aValue ?? ""
+		bValue = bValue ?? ""
+
+		// For date fields, compare as Date
+		let comparison = 0
+		if (sortBy === "created_at") {
+			const aTime = aValue ? new Date(aValue as string).getTime() : 0
+			const bTime = bValue ? new Date(bValue as string).getTime() : 0
+			comparison = aTime - bTime
+		}
+
+		if (typeof aValue === "string" && typeof bValue === "string") {
+			comparison = aValue.localeCompare(bValue)
+		} else if (typeof aValue === "number" && typeof bValue === "number") {
+			comparison = aValue - bValue
+		}
+		if (sortOrder === "desc") {
+			return -comparison
+		}
+		return comparison
+	})
+}
+
+watch([testRunsSortBy, testRunsSortOrder], () => {
+	sortTestRuns(testRunsSortBy.value.value, testRunsSortOrder.value.value)
+	console.log(sortedTestRuns.value)
+})
+
+const selectedTestRuns = ref<string[]>([])
+
+function selectTestRun(runId: string) {
+	if (selectedTestRuns.value.includes(runId)) {
+		selectedTestRuns.value = selectedTestRuns.value.filter((id) => id !== runId)
+	} else {
+		selectedTestRuns.value = [...selectedTestRuns.value, runId]
+	}
+	console.log("selectedTestRuns", selectedTestRuns.value)
+}
+
+const newRunGroup = ref<RunGroup>({
+	name: "",
+	id: crypto.randomUUID(),
+	title: "",
+	description: "",
+	created_at: new Date().toISOString()
+})
+
+function createRunGroup() {
+	console.log("createRunGroup")
+}
+
+getRunGroups()
+getTestRuns()
 
 useHead({
 	title: `Run Groups | Test Suite`
@@ -32,7 +160,100 @@ useHead({
 
 <template>
 	<div class="flex flex-col gap-y-6">
-		<h1 class="text-3xl font-bold text-primary">Run Groups</h1>
+		<div class="flex w-full justify-between">
+			<h1 class="text-3xl font-bold text-primary">Run Groups</h1>
+			<div class="flex flex-col">
+				<UModal
+					title="Create Run Group"
+					description="Create a new run group, optionally add a description and include test runs"
+					:ui="{
+						title: 'text-primary',
+						content: 'max-w-6xl'
+					}"
+				>
+					<UButton
+						color="primary"
+						size="sm"
+						variant="solid"
+						icon="i-lucide-plus"
+					>
+						Create Run Group
+					</UButton>
+					<template #body>
+						<div class="flex flex-col gap-3">
+							<UInput
+								v-model="newRunGroup.title"
+								placeholder="Run Group Title"
+								class="w-full"
+								size="xl"
+							/>
+							<UInput
+								v-model="newRunGroup.description"
+								placeholder="Run Group Description"
+								class="w-full"
+							/>
+							<div class="flex gap-3 items-center">
+								<div class="text-sm text-neutral-500">Sort by:</div>
+								<USelectMenu
+									v-model="testRunsSortBy"
+									:items="testRunsSortOptions"
+									:ui="{
+										content: 'min-w-fit'
+									}"
+									class="w-32"
+								/>
+								<div class="text-sm text-neutral-500">Sort order:</div>
+								<USelectMenu
+									v-model="testRunsSortOrder"
+									:items="testRunsSortOrders"
+									:ui="{
+										content: 'min-w-fit'
+									}"
+									class="w-32"
+								/>
+							</div>
+							<div
+								class="grid gap-3 2xl:grid-cols-4 lg:grid-cols-3 grid-cols-2"
+							>
+								<BaseCard
+									v-for="run in sortedTestRuns"
+									:key="run.id"
+									:ui="{
+										root:
+											'outline-2 outline-transparent duration-100 cursor-pointer' +
+											(selectedTestRuns.includes(run.id)
+												? ' outline-primary-500/50'
+												: '')
+									}"
+									@click="selectTestRun(run.id)"
+								>
+									<template #header>
+										<div>{{ run.title }}</div>
+									</template>
+									<template #footer>
+										<div>
+											{{ dayjs(run.created_at).format("D.MM.YYYY HH:mm") }}
+										</div>
+										<div>{{ run.creator?.username || "Unknown user" }}</div>
+									</template>
+								</BaseCard>
+							</div>
+							<div class="flex gap-3 justify-end">
+								<UButton
+									color="primary"
+									size="sm"
+									variant="solid"
+									icon="i-lucide-plus"
+									@click="createRunGroup"
+								>
+									Create Run Group
+								</UButton>
+							</div>
+						</div>
+					</template>
+				</UModal>
+			</div>
+		</div>
 		<div class="flex flex-col lg:flex-row gap-3 w-full">
 			<div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 w-full">
 				<div v-for="run in runGroups" :key="run.id">
