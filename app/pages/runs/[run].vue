@@ -16,7 +16,7 @@ interface RunCaseWithResult extends RunCase {
 
 const run = ref<Run>()
 const runCases = ref<RunCaseWithResult[]>([])
-const runGroup = ref<RunGroup>()
+const runGroups = ref<RunGroup[]>([])
 
 const statusStats = ref<{ title: string; value: string; number: number }[]>([
 	{ title: "Total", value: "total", number: 0 },
@@ -37,16 +37,32 @@ async function getRun() {
 		return
 	}
 	run.value = data[0]
-
-	const { data: runGroupData, error: runGroupError } = await supabase
-		.from("test_run_groups")
-		.select("*")
-		.eq("id", run.value?.group || "")
-	if (runGroupError) {
-		console.error(runGroupError)
+	if (!run.value) {
+		console.error("Run not found")
 		return
 	}
-	runGroup.value = runGroupData[0] || undefined
+
+	// get run groups from link table
+	const { data: runGroupsData, error: runGroupsError } = await supabase
+		.from("test_run_group_links")
+		.select("group")
+		.eq("run", run.value.id)
+	if (runGroupsError) {
+		console.error(runGroupsError)
+		return
+	}
+
+	// Fetch full group details for each group ID
+	const groupIds = runGroupsData.map((link) => link.group)
+	const { data: groupsData, error: groupsError } = await supabase
+		.from("test_run_groups")
+		.select("*")
+		.in("id", groupIds)
+	if (groupsError) {
+		console.error(groupsError)
+		return
+	}
+	runGroups.value = groupsData
 }
 
 async function getRunCases() {
@@ -59,8 +75,8 @@ async function getRunCases() {
 
 	const { data: runCasesDb, error: runCasesError } = await supabase
 		.from("test_run_case_links")
-		.select("case_id, result")
-		.eq("run_id", run.value.id)
+		.select("case, result")
+		.eq("run", run.value.id)
 	if (runCasesError) {
 		console.error(runCasesError)
 		return
@@ -72,7 +88,7 @@ async function getRunCases() {
 		.select("*")
 		.in(
 			"id",
-			runCasesDb.map((c) => c.case_id)
+			runCasesDb.map((c) => c.case)
 		)
 	if (casesError) {
 		console.error(casesError)
@@ -81,7 +97,7 @@ async function getRunCases() {
 
 	// Merge cases with their results
 	runCases.value = cases.map((testCase) => {
-		const linkData = runCasesDb.find((link) => link.case_id === testCase.id)
+		const linkData = runCasesDb.find((link) => link.case === testCase.id)
 		return {
 			...testCase,
 			result: linkData?.result || null
@@ -95,9 +111,16 @@ async function updateCaseResult(caseId: string, resultValue: string) {
 
 	const { error } = await supabase
 		.from("test_run_case_links")
-		.update({ result: resultValue })
-		.eq("run_id", run.value.id)
-		.eq("case_id", caseId)
+		.update({
+			result: resultValue as
+				| "passed"
+				| "failed"
+				| "blocked"
+				| "skipped"
+				| "not_run"
+		})
+		.eq("run", run.value.id)
+		.eq("case", caseId)
 
 	updateStatusStats()
 
@@ -187,18 +210,25 @@ getRun().then(() => {
 <template>
 	<div class="flex flex-col gap-y-6">
 		<h1 class="text-3xl font-bold text-primary">Test Run</h1>
-		<div v-if="run" class="flex flex-col lg:flex-row gap-8 w-full">
-			<h1 class="text-3xl font-bold text-primary">
+		<div class="flex flex-col gap-2 w-full">
+			<h1 v-if="run" class="text-3xl font-bold text-primary">
 				{{ run?.title }}
 			</h1>
-			<NuxtLink
-				v-if="runGroup"
-				class="text-neutral-500 font-semibold flex items-center gap-2 hover:underline"
-				:to="`/run-groups/${runGroup.id}`"
+			<USkeleton v-else class="h-9 w-1/2" />
+
+			<div
+				v-if="runGroups.length > 0"
+				class="flex gap-1 items-center text-neutral-500 font-semibold"
 			>
 				<UIcon name="i-lucide-library-big" class="h-4 w-4" />
-				<span>{{ runGroup.title }}</span>
-			</NuxtLink>
+				<div v-for="runGroup in runGroups" :key="runGroup.id" class="flex">
+					<NuxtLink class="hover:underline" :to="`/run-groups/${runGroup.id}`">
+						<span>{{ runGroup.title }}</span>
+					</NuxtLink>
+					<span v-if="runGroup !== runGroups[runGroups.length - 1]">,</span>
+				</div>
+			</div>
+			<USkeleton v-else class="h-6 w-1/4" />
 			<!-- <div class="md">
 					<VueMarkdown
 						v-if="run.description"

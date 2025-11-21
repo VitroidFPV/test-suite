@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import type { Database, Tables } from "~/types/database.types"
 import VueMarkdown from "vue-markdown-render"
-import dayjs from "dayjs"
 import type Options from "vue-markdown-render"
 import BaseCard from "~/components/cards/BaseCard.vue"
+import TestRunCard from "~/components/cards/TestRunCard.vue"
 
 const options: typeof Options = {
 	html: true
@@ -41,7 +41,10 @@ async function getTestRuns() {
 		const { data: usersData, error: usersError } = await supabase
 			.from("user_metadata")
 			.select("*")
-			.in("id", creatorIds)
+			.in(
+				"id",
+				creatorIds.filter((id): id is string => id !== null)
+			)
 
 		if (usersError) {
 			console.error(usersError)
@@ -146,8 +149,47 @@ const newRunGroup = ref<RunGroup>({
 	created_at: new Date().toISOString()
 })
 
-function createRunGroup() {
+const createRunGroupModalOpen = ref(false)
+
+async function createRunGroup() {
 	console.log("createRunGroup")
+	console.log("selectedTestRuns", selectedTestRuns.value)
+	console.log("newRunGroup", newRunGroup.value)
+
+	// create run group, name is kebab-case of title
+	const { error } = await supabase.from("test_run_groups").insert([
+		{
+			id: newRunGroup.value.id,
+			name: newRunGroup.value.title?.toLowerCase().replace(/\s/g, "-") ?? "",
+			title: newRunGroup.value.title,
+			description: newRunGroup.value.description,
+			created_at: newRunGroup.value.created_at
+		}
+	])
+	if (error) {
+		console.error(error)
+		return
+	}
+
+	// Link selected test runs to the newly created group
+	if (selectedTestRuns.value.length > 0) {
+		const runGroupLinks = selectedTestRuns.value.map((runId) => ({
+			run: runId,
+			group: newRunGroup.value.id
+		}))
+
+		const { error: linkError } = await supabase
+			.from("test_run_group_links")
+			.insert(runGroupLinks)
+
+		if (linkError) {
+			console.error("Error linking runs to group:", linkError)
+		}
+	}
+
+	getRunGroups()
+	getTestRuns()
+	createRunGroupModalOpen.value = false
 }
 
 getRunGroups()
@@ -164,6 +206,7 @@ useHead({
 			<h1 class="text-3xl font-bold text-primary">Run Groups</h1>
 			<div class="flex flex-col">
 				<UModal
+					v-model:open="createRunGroupModalOpen"
 					title="Create Run Group"
 					description="Create a new run group, optionally add a description and include test runs"
 					:ui="{
@@ -185,13 +228,14 @@ useHead({
 								v-model="newRunGroup.title"
 								placeholder="Run Group Title"
 								class="w-full"
-								size="xl"
 							/>
-							<UInput
+							<UTextarea
 								v-model="newRunGroup.description"
 								placeholder="Run Group Description"
 								class="w-full"
+								:rows="5"
 							/>
+							<USeparator />
 							<div class="flex gap-3 items-center">
 								<div class="text-sm text-neutral-500">Sort by:</div>
 								<USelectMenu
@@ -215,7 +259,7 @@ useHead({
 							<div
 								class="grid gap-3 2xl:grid-cols-4 lg:grid-cols-3 grid-cols-2"
 							>
-								<BaseCard
+								<!-- <BaseCard
 									v-for="run in sortedTestRuns"
 									:key="run.id"
 									:ui="{
@@ -236,7 +280,20 @@ useHead({
 										</div>
 										<div>{{ run.creator?.username || "Unknown user" }}</div>
 									</template>
-								</BaseCard>
+								</BaseCard> -->
+								<TestRunCard
+									v-for="run in sortedTestRuns"
+									:key="run.id"
+									:run="run"
+									:ui="{
+										root:
+											'outline-2 outline-transparent duration-100 cursor-pointer' +
+											(selectedTestRuns.includes(run.id)
+												? ' outline-primary-500/50'
+												: '')
+									}"
+									@click="selectTestRun(run.id)"
+								/>
 							</div>
 							<div class="flex gap-3 justify-end">
 								<UButton

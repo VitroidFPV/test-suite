@@ -50,7 +50,10 @@ async function getRuns() {
 		const { data: usersData, error: usersError } = await supabase
 			.from("user_metadata")
 			.select("*")
-			.in("id", creatorIds)
+			.in(
+				"id",
+				creatorIds.filter((id): id is string => id !== null)
+			)
 
 		if (usersError) {
 			console.error(usersError)
@@ -99,12 +102,11 @@ const newRun = ref<NewRun>({
 	title: "",
 	created_at: new Date().toISOString(),
 	created_by: user.value?.id || "",
-	group: "",
 	plan: ""
 })
 
 function selectGroup(group: RunGroupWithLabel) {
-	newRun.value.group = group.id
+	selectedRunGroup.value = group
 	console.log(newRun.value)
 }
 
@@ -154,6 +156,22 @@ async function createRun() {
 		return
 	}
 
+	// Link run to group
+	if (selectedRunGroup.value?.id) {
+		const { error: groupLinkError } = await supabase
+			.from("test_run_group_links")
+			.insert([
+				{
+					run: newRun.value.id,
+					group: selectedRunGroup.value.id
+				}
+			])
+
+		if (groupLinkError) {
+			console.error("Error linking run to group:", groupLinkError)
+		}
+	}
+
 	// Get test cases from the selected plan
 	if (newRun.value.plan) {
 		const { data: planCases, error: planCasesError } = await supabase
@@ -166,9 +184,14 @@ async function createRun() {
 		} else if (planCases && planCases.length > 0) {
 			// Create run-case links for each case in the plan
 			const runCaseLinks = planCases.map((link) => ({
-				run_id: newRun.value.id,
-				case_id: link.case,
-				result: null
+				run: newRun.value.id,
+				case: link.case,
+				result: "not_run" as
+					| "not_run"
+					| "passed"
+					| "failed"
+					| "blocked"
+					| "skipped"
 			}))
 
 			const { error: linkError } = await supabase

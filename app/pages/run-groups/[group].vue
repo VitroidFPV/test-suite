@@ -52,10 +52,30 @@ async function getRunGroup() {
 // }
 
 async function getRuns() {
+	// Get run IDs from the link table
+	const { data: linkData, error: linkError } = await supabase
+		.from("test_run_group_links")
+		.select("run")
+		.eq("group", route.params.group as string)
+
+	if (linkError) {
+		console.error(linkError)
+		return
+	}
+
+	const runIds = linkData?.map((link) => link.run) || []
+
+	if (runIds.length === 0) {
+		runs.value = []
+		return
+	}
+
+	// Fetch the actual runs
 	const { data: runsData, error: runsError } = await supabase
 		.from("test_runs")
 		.select("*")
-		.eq("group", route.params.group as string)
+		.in("id", runIds)
+
 	if (runsError) {
 		console.error(runsError)
 		return
@@ -75,7 +95,10 @@ async function getRuns() {
 		const { data: usersData, error: usersError } = await supabase
 			.from("user_metadata")
 			.select("*")
-			.in("id", creatorIds)
+			.in(
+				"id",
+				creatorIds.filter((id): id is string => id !== null)
+			)
 
 		if (usersError) {
 			console.error(usersError)

@@ -14,12 +14,13 @@ const props = defineProps<{
 </script>
 
 <template>
-	<BaseCard>
+	<BaseCard class="flex flex-col justify-between">
 		<template #header>
-			<NuxtLink :to="`/runs/${props.run.id}`">
-				<div class="font-bold text-primary hover:underline">
-					{{ props.run.title }}
-				</div>
+			<NuxtLink
+				:to="`/runs/${props.run.id}`"
+				class="font-bold text-primary hover:underline"
+			>
+				{{ props.run.title }}
 			</NuxtLink>
 		</template>
 		<template #default>
