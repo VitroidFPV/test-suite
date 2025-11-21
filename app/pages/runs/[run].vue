@@ -202,6 +202,17 @@ function getStatusStatsPercentage(value: string) {
 	return (valueStats.number / totalStats.number) * 100
 }
 
+const confirmDeleteModalOpen = ref(false)
+
+async function deleteRun() {
+	const { error } = await supabase.from("test_runs").delete().eq("id", urlRun)
+	if (error) {
+		console.error(error)
+		return
+	}
+	navigateTo("/runs")
+}
+
 getRun().then(() => {
 	getRunCases()
 })
@@ -209,7 +220,42 @@ getRun().then(() => {
 
 <template>
 	<div class="flex flex-col gap-y-6">
-		<h1 class="text-3xl font-bold text-primary">Test Run</h1>
+		<div class="flex justify-between items-center">
+			<h1 class="text-3xl font-bold text-primary">Test Run</h1>
+			<UModal
+				v-model:open="confirmDeleteModalOpen"
+				title="Delete Test Run"
+				description="Are you sure you want to delete this test run? This action cannot be undone."
+				:ui="{
+					title: 'text-error'
+				}"
+			>
+				<UButton color="error" size="sm" variant="solid" icon="i-lucide-trash">
+					Delete Test Run
+				</UButton>
+
+				<template #footer>
+					<div class="flex gap-3 justify-end w-full">
+						<UButton
+							color="neutral"
+							size="sm"
+							variant="soft"
+							@click="confirmDeleteModalOpen = false"
+							>Cancel</UButton
+						>
+						<UButton
+							color="error"
+							size="sm"
+							variant="solid"
+							icon="i-lucide-trash"
+							@click="deleteRun"
+						>
+							Delete Test Run
+						</UButton>
+					</div>
+				</template>
+			</UModal>
+		</div>
 		<div class="flex flex-col gap-2 w-full">
 			<h1 v-if="run" class="text-3xl font-bold text-primary">
 				{{ run?.title }}

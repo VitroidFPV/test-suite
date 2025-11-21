@@ -121,27 +121,78 @@ async function getRuns() {
 	}
 }
 
+async function deleteRunGroup() {
+	const { error } = await supabase
+		.from("test_run_groups")
+		.delete()
+		.eq("id", route.params.group as string)
+	if (error) {
+		console.error(error)
+		return
+	}
+	navigateTo("/run-groups")
+}
+
+const confirmDeleteModalOpen = ref(false)
+
 getRunGroup()
 getRuns()
 </script>
 
 <template>
 	<div class="flex flex-col gap-y-6">
-		<h1 class="text-3xl font-bold text-primary">Run Groups</h1>
-		<div class="flex flex-col lg:flex-row gap-3 w-full">
-			<div v-if="runGroup">
-				<h1 class="text-6xl font-bold text-primary mb-8">
-					{{ runGroup?.title }}
-				</h1>
-				<div class="md">
-					<VueMarkdown
-						v-if="runGroup.description"
-						:options="options"
-						:source="runGroup.description"
-					>
-					</VueMarkdown>
-				</div>
+		<div class="flex justify-between items-center">
+			<h1 class="text-3xl font-bold text-primary">Run Group</h1>
+			<UModal
+				v-model:open="confirmDeleteModalOpen"
+				title="Delete Run Group"
+				description="Are you sure you want to delete this run group? This action cannot be undone."
+				:ui="{
+					title: 'text-error'
+				}"
+			>
+				<UButton color="error" size="sm" variant="solid" icon="i-lucide-trash">
+					Delete Run Group
+				</UButton>
+
+				<template #footer>
+					<div class="flex gap-3 justify-end w-full">
+						<UButton
+							color="neutral"
+							size="sm"
+							variant="soft"
+							@click="confirmDeleteModalOpen = false"
+							>Cancel</UButton
+						>
+						<UButton
+							color="error"
+							size="sm"
+							variant="solid"
+							icon="i-lucide-trash"
+							@click="deleteRunGroup"
+						>
+							Delete Run Group
+						</UButton>
+					</div>
+				</template>
+			</UModal>
+		</div>
+		<div class="flex flex-col gap-3 w-full">
+			<!-- <div v-if="runGroup"> -->
+			<h1 v-if="runGroup?.title" class="text-6xl font-bold text-primary mb-4">
+				{{ runGroup.title }}
+			</h1>
+			<USkeleton v-else class="h-15 w-1/2 mb-4" />
+			<div v-if="runGroup" class="md">
+				<VueMarkdown
+					v-if="runGroup.description"
+					:options="options"
+					:source="runGroup.description"
+				>
+				</VueMarkdown>
 			</div>
+			<USkeleton v-else class="h-6 w-1/3" />
+			<!-- </div> -->
 		</div>
 		<USeparator />
 		<div
