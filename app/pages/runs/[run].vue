@@ -223,8 +223,34 @@ async function deleteRun() {
 	navigateTo("/runs")
 }
 const editMode = ref(false)
-const editedRun = ref<Run>({} as Run)
+const editedRun = ref<Run>({
+	created_at: new Date().toISOString(),
+	created_by: "",
+	id: "",
+	plan: null,
+	title: ""
+})
 const selectedRunGroups = ref<string[]>([])
+
+function enterEditMode() {
+	if (run.value) {
+		editedRun.value = { ...run.value }
+		selectedRunGroups.value = runGroupsContainingTestRun.value.map(
+			(group) => group.id
+		)
+	}
+	editMode.value = true
+}
+
+function cancelEdit() {
+	if (run.value) {
+		editedRun.value = { ...run.value }
+		selectedRunGroups.value = runGroupsContainingTestRun.value.map(
+			(group) => group.id
+		)
+	}
+	editMode.value = false
+}
 
 function selectRunGroup(runGroupId: string) {
 	// called when user clicks on a run group in the edit mode
@@ -296,7 +322,7 @@ async function saveRun() {
 getRun().then(() => {
 	getRunCases()
 	if (run.value) {
-		editedRun.value = run.value
+		editedRun.value = { ...run.value }
 		selectedRunGroups.value = runGroupsContainingTestRun.value.map(
 			(group) => group.id
 		)
@@ -334,9 +360,9 @@ getRun().then(() => {
 					size="sm"
 					variant="soft"
 					icon="i-lucide-pencil"
-					@click="editMode = !editMode"
+					@click="editMode ? cancelEdit() : enterEditMode()"
 				>
-					Toggle Edit Mode
+					{{ editMode ? "Cancel" : "Edit" }}
 				</UButton>
 				<UModal
 					v-model:open="confirmDeleteModalOpen"
