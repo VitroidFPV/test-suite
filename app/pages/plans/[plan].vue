@@ -310,102 +310,95 @@ getAllCases()
 
 		<UModal
 			v-model:open="planCaseModalOpen"
+			title="Edit Plan"
+			description="Edit the plan title, description and cases"
 			:ui="{
-				content: 'max-w-6xl'
+				content: 'max-w-6xl',
+				title: 'text-primary'
 			}"
 		>
-			<template #title>Edit Plan</template>
-			<template #description>
-				Edit the plan title, description and cases</template
-			>
-			<template #content>
-				<BaseCard>
-					<template #header>
-						<textarea
-							v-if="plan"
-							v-model="planTitle"
-							placeholder="Group Title"
-							color="primary"
-							variant="none"
-							class="font-bold text-primary-500 w-full p-3 rounded-lg resize-none outline-none focus-visible:outline-primary-500/5 placeholder:font-normal bg-neutral-800"
-						/>
-					</template>
-					<template #default>
-						<!-- grid of all case titles -->
-						<div class="flex flex-col gap-y-3">
-							<div
-								v-for="group in groupedCases"
-								:key="group.group"
-								class="flex flex-col gap-y-3"
-							>
-								<div class="font-bold text-primary-500 flex items-center gap-2">
-									<UIcon
-										:name="
-											group.group === 'Ungrouped'
-												? 'i-lucide-folder-open'
-												: 'i-lucide-folder'
-										"
-										class="h-4 w-4"
-									/>
-									{{ group.group }}
-								</div>
-								<div
-									class="grid 2xl:grid-cols-4 lg:grid-cols-3 sm:grid-cols-2 grid-cols-1 gap-3"
-								>
-									<BaseCard
-										v-for="item in group.cases"
-										:key="item.id"
-										:class="{
-											'outline-2 outline-primary-500/50':
-												selectedCases.includes(item.id),
-											'outline-2 outline-transparent': !selectedCases.includes(
-												item.id
-											),
-											'h-full duration-100 cursor-pointer': true
-										}"
-										@click="selectCase(item.id)"
-									>
-										{{ item.title }}
-									</BaseCard>
-								</div>
-							</div>
-						</div>
-					</template>
-					<template #footer>
-						<div class="flex items-center justify-between">
-							<UTooltip text="Delete" :shortcuts="['meta', 'Delete']">
-								<UButton
-									color="error"
-									size="sm"
-									variant="link"
-									icon="i-lucide-trash"
+			<template #body>
+				<div class="flex flex-col gap-3">
+					<textarea
+						v-if="plan"
+						v-model="planTitle"
+						placeholder="Plan Title"
+						color="primary"
+						variant="none"
+						class="font-bold text-primary-500 w-full p-3 rounded-lg resize-none outline-none focus-visible:outline-primary-500/5 placeholder:font-normal bg-neutral-800"
+					/>
+					<!-- grid of all case titles -->
+					<div class="flex flex-col gap-y-3">
+						<div
+							v-for="group in groupedCases"
+							:key="group.group"
+							class="flex flex-col gap-y-3"
+						>
+							<div class="font-bold text-primary-500 flex items-center gap-2">
+								<UIcon
+									:name="
+										group.group === 'Ungrouped'
+											? 'i-lucide-folder-open'
+											: 'i-lucide-folder'
+									"
+									class="h-4 w-4"
 								/>
-							</UTooltip>
-							<div class="flex items-center gap-2 h-fit">
-								<UTooltip text="Save" :shortcuts="['meta', 'S']">
-									<UButton
-										color="primary"
-										size="sm"
-										variant="link"
-										icon="i-lucide-save"
-									/>
-								</UTooltip>
-								<UTooltip
-									text="Save & Close"
-									:shortcuts="['meta', 'Shift', 'S']"
+								{{ group.group }}
+							</div>
+							<div
+								class="grid 2xl:grid-cols-4 lg:grid-cols-3 sm:grid-cols-2 grid-cols-1 gap-3"
+							>
+								<BaseCard
+									v-for="item in group.cases"
+									:key="item.id"
+									:class="{
+										'outline-2 outline-primary-500/50': selectedCases.includes(
+											item.id
+										),
+										'outline-2 outline-transparent': !selectedCases.includes(
+											item.id
+										),
+										'h-full duration-100 cursor-pointer': true
+									}"
+									@click="selectCase(item.id)"
 								>
-									<UButton
-										color="primary"
-										size="sm"
-										variant="link"
-										icon="i-lucide-save-all"
-										@click="savePlan"
-									/>
-								</UTooltip>
+									{{ item.title }}
+								</BaseCard>
 							</div>
 						</div>
-					</template>
-				</BaseCard>
+					</div>
+				</div>
+			</template>
+			<template #footer>
+				<div class="flex items-center justify-between w-full">
+					<UTooltip text="Delete" :shortcuts="['meta', 'Delete']">
+						<UButton
+							color="error"
+							size="sm"
+							variant="link"
+							icon="i-lucide-trash"
+						/>
+					</UTooltip>
+					<div class="flex items-center gap-2 h-fit">
+						<UTooltip text="Save" :shortcuts="['meta', 'S']">
+							<UButton
+								color="primary"
+								size="sm"
+								variant="link"
+								icon="i-lucide-save"
+							/>
+						</UTooltip>
+						<UTooltip text="Save & Close" :shortcuts="['meta', 'Shift', 'S']">
+							<UButton
+								color="primary"
+								size="sm"
+								variant="link"
+								icon="i-lucide-save-all"
+								@click="savePlan"
+							/>
+						</UTooltip>
+					</div>
+				</div>
 			</template>
 		</UModal>
 	</div>
