@@ -197,6 +197,7 @@ async function createRunGroup() {
 		description: "",
 		created_at: new Date().toISOString()
 	}
+	selectedTestRuns.value = []
 }
 
 getRunGroups()

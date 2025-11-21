@@ -266,6 +266,8 @@ function selectRunGroup(runGroupId: string) {
 }
 
 async function saveRun() {
+	let hasErrors = false
+
 	const { error } = await supabase
 		.from("test_runs")
 		.update({
@@ -273,8 +275,8 @@ async function saveRun() {
 		})
 		.eq("id", run.value!.id)
 	if (error) {
-		console.error(error)
-		return
+		console.error("Error updating run title:", error)
+		hasErrors = true
 	}
 
 	// Handle run group links
@@ -297,7 +299,7 @@ async function saveRun() {
 			.insert(linksToInsert)
 		if (insertError) {
 			console.error("Error adding group links:", insertError)
-			return
+			hasErrors = true
 		}
 	}
 
@@ -310,13 +312,19 @@ async function saveRun() {
 			.in("group", groupsToRemove)
 		if (deleteError) {
 			console.error("Error removing group links:", deleteError)
-			return
+			hasErrors = true
 		}
 	}
 
+	// Always exit edit mode and refresh data, even if there were errors
 	editMode.value = false
 	getRun()
 	getRunCases()
+
+	if (hasErrors) {
+		// TODO: Show user-friendly error notification
+		console.warn("Some operations failed. Please verify the changes.")
+	}
 }
 
 getRun().then(() => {

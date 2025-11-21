@@ -242,6 +242,9 @@ async function writeRunsToGroup() {
 	const runsToRemove = currentRunIds.filter(
 		(id: string) => !selectedRuns.value.includes(id)
 	)
+
+	let hasErrors = false
+
 	if (runsToAdd.length > 0) {
 		const { error } = await supabase
 			.from("test_run_group_links")
@@ -249,8 +252,8 @@ async function writeRunsToGroup() {
 				runsToAdd.map((runId) => ({ run: runId, group: runGroup.value!.id }))
 			)
 		if (error) {
-			console.error(error)
-			return
+			console.error("Error adding runs to group:", error)
+			hasErrors = true
 		}
 	}
 	if (runsToRemove.length > 0) {
@@ -260,12 +263,19 @@ async function writeRunsToGroup() {
 			.in("run", runsToRemove)
 			.eq("group", runGroup.value!.id)
 		if (error) {
-			console.error(error)
-			return
+			console.error("Error removing runs from group:", error)
+			hasErrors = true
 		}
 	}
+
+	// Always refresh data and close modal, even if there were errors
 	await getRuns()
 	selectRunModalOpen.value = false
+
+	if (hasErrors) {
+		// TODO: Show user-friendly error notification
+		console.warn("Some operations failed. Please verify the changes.")
+	}
 }
 
 getRunGroup().then(() => {
