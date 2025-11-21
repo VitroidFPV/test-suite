@@ -14,7 +14,7 @@
 	},
 	"devDependencies": {
 		"@iconify-json/lucide": "^1.2.20",
-		"@nuxt/devtools": "latest",
+		"@nuxt/devtools": "^3.1.0",
 		"@nuxt/eslint": "^0.7.2",
 		"@nuxt/ui": "^4.1.0",
 		"@nuxtjs/supabase": "^1.4.3",
