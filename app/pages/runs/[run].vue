@@ -55,15 +55,20 @@ async function getRun() {
 
 	// Fetch full group details for each group ID
 	const groupIds = runGroupsData.map((link) => link.group)
-	const { data: groupsData, error: groupsError } = await supabase
-		.from("test_run_groups")
-		.select("*")
-		.in("id", groupIds)
-	if (groupsError) {
-		console.error(groupsError)
-		return
+
+	if (groupIds.length === 0) {
+		runGroupsContainingTestRun.value = []
+	} else {
+		const { data: groupsData, error: groupsError } = await supabase
+			.from("test_run_groups")
+			.select("*")
+			.in("id", groupIds)
+		if (groupsError) {
+			console.error(groupsError)
+			return
+		}
+		runGroupsContainingTestRun.value = groupsData
 	}
-	runGroupsContainingTestRun.value = groupsData
 
 	const { data: allRunGroupsData, error: allRunGroupsError } = await supabase
 		.from("test_run_groups")
