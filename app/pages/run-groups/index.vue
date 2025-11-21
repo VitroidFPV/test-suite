@@ -190,6 +190,15 @@ async function createRunGroup() {
 	getRunGroups()
 	getTestRuns()
 	createRunGroupModalOpen.value = false
+
+	// Reset the form for next use
+	newRunGroup.value = {
+		name: "",
+		id: crypto.randomUUID(),
+		title: "",
+		description: "",
+		created_at: new Date().toISOString()
+	}
 }
 
 getRunGroups()
