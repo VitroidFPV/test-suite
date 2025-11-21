@@ -217,7 +217,7 @@ getRun().then(() => {
 			<USkeleton v-else class="h-9 w-1/2" />
 
 			<div
-				v-if="runGroups.length > 0"
+				v-if="runGroups.length > 0 || run"
 				class="flex gap-1 items-center text-neutral-500 font-semibold"
 			>
 				<UIcon name="i-lucide-library-big" class="h-4 w-4" />
@@ -226,6 +226,9 @@ getRun().then(() => {
 						<span>{{ runGroup.title }}</span>
 					</NuxtLink>
 					<span v-if="runGroup !== runGroups[runGroups.length - 1]">,</span>
+				</div>
+				<div v-if="runGroups.length === 0 && run">
+					<span>This test run is not associated with any run groups</span>
 				</div>
 			</div>
 			<USkeleton v-else class="h-6 w-1/4" />

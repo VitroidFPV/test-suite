@@ -259,28 +259,6 @@ useHead({
 							<div
 								class="grid gap-3 2xl:grid-cols-4 lg:grid-cols-3 grid-cols-2"
 							>
-								<!-- <BaseCard
-									v-for="run in sortedTestRuns"
-									:key="run.id"
-									:ui="{
-										root:
-											'outline-2 outline-transparent duration-100 cursor-pointer' +
-											(selectedTestRuns.includes(run.id)
-												? ' outline-primary-500/50'
-												: '')
-									}"
-									@click="selectTestRun(run.id)"
-								>
-									<template #header>
-										<div>{{ run.title }}</div>
-									</template>
-									<template #footer>
-										<div>
-											{{ dayjs(run.created_at).format("D.MM.YYYY HH:mm") }}
-										</div>
-										<div>{{ run.creator?.username || "Unknown user" }}</div>
-									</template>
-								</BaseCard> -->
 								<TestRunCard
 									v-for="run in sortedTestRuns"
 									:key="run.id"
@@ -295,17 +273,19 @@ useHead({
 									@click="selectTestRun(run.id)"
 								/>
 							</div>
-							<div class="flex gap-3 justify-end">
-								<UButton
-									color="primary"
-									size="sm"
-									variant="solid"
-									icon="i-lucide-plus"
-									@click="createRunGroup"
-								>
-									Create Run Group
-								</UButton>
-							</div>
+						</div>
+					</template>
+					<template #footer>
+						<div class="flex gap-3 justify-end w-full">
+							<UButton
+								color="primary"
+								size="sm"
+								variant="solid"
+								icon="i-lucide-plus"
+								@click="createRunGroup"
+							>
+								Create Run Group
+							</UButton>
 						</div>
 					</template>
 				</UModal>

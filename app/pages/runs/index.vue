@@ -102,7 +102,7 @@ const newRun = ref<NewRun>({
 	title: "",
 	created_at: new Date().toISOString(),
 	created_by: user.value?.id || "",
-	plan: ""
+	plan: null
 })
 
 function selectGroup(group: RunGroupWithLabel) {
@@ -144,10 +144,6 @@ getRunGroups()
 getTestPlans()
 
 const createRunModalOpen = ref(false)
-
-function openCreateRunModal() {
-	createRunModalOpen.value = true
-}
 
 async function createRun() {
 	const { error } = await supabase.from("test_runs").insert([newRun.value])
@@ -219,15 +215,109 @@ useHead({
 		<div class="flex w-full justify-between">
 			<h1 class="text-3xl font-bold text-primary">Test Runs</h1>
 			<div class="flex flex-col">
-				<UButton
-					color="primary"
-					size="sm"
-					variant="solid"
-					icon="i-lucide-plus"
-					@click="openCreateRunModal"
+				<UModal
+					v-model:open="createRunModalOpen"
+					title="Create Run"
+					description="Create a new test run with a title, group and plan"
+					:ui="{
+						title: 'text-primary'
+					}"
 				>
-					New Test Run
-				</UButton>
+					<UButton
+						color="primary"
+						size="sm"
+						variant="solid"
+						icon="i-lucide-plus"
+					>
+						New Test Run
+					</UButton>
+
+					<template #body>
+						<div class="flex flex-col gap-3">
+							<UFieldGroup class="w-full">
+								<UInput
+									v-model="newRun.title!"
+									placeholder="Run Title"
+									color="neutral"
+									class="w-full"
+								/>
+								<UTooltip text="Automatic Fill (requires Plan and Group)">
+									<UButton
+										color="primary"
+										icon="i-lucide-pencil"
+										:disabled="!selectedRunGroup || !selectedTestPlan"
+										@click="autoFill"
+									/>
+								</UTooltip>
+							</UFieldGroup>
+							<div class="flex gap-x-3">
+								<div class="flex flex-col gap-y-2 w-full">
+									<div
+										class="flex items-center gap-x-1 text-neutral-400 text-sm"
+									>
+										<UIcon name="i-lucide-book-check" class="h-4 w-4" />
+										Test Plan
+									</div>
+									<USelectMenu
+										v-model="selectedTestPlan"
+										searchable
+										search-placeholder="Search for a plan"
+										placeholder="Select a plan"
+										:items="transformedTestPlans"
+										class="w-full relative"
+										option-attribute="label"
+										@change="selectedTestPlan && selectPlan(selectedTestPlan)"
+									>
+										<template #item="{ item }">
+											<div class="flex items-center gap-2">
+												{{ item.label }}
+											</div>
+										</template>
+									</USelectMenu>
+								</div>
+								<USeparator orientation="vertical" />
+								<div class="flex flex-col gap-y-2 w-full">
+									<div
+										class="flex items-center gap-x-1 text-neutral-400 text-sm"
+									>
+										<UIcon name="i-lucide-library-big" class="h-4 w-4" />
+										Run Group
+									</div>
+									<USelectMenu
+										v-model="selectedRunGroup"
+										searchable
+										search-placeholder="Search for a group"
+										placeholder="Select a group"
+										:items="transformedRunGroups"
+										class="w-full relative"
+										option-attribute="label"
+										@change="selectedRunGroup && selectGroup(selectedRunGroup)"
+									>
+										<template #item="{ item }">
+											<div class="flex items-center gap-2">
+												{{ item.label }}
+											</div>
+										</template>
+									</USelectMenu>
+								</div>
+							</div>
+						</div>
+					</template>
+					<template #footer>
+						<div class="flex gap-3 justify-end w-full">
+							<UButton
+								color="primary"
+								size="sm"
+								variant="solid"
+								icon="i-lucide-plus"
+								:disabled="!newRun.title"
+								@click="createRun"
+							>
+								Create Run
+							</UButton>
+						</div>
+					</template>
+				</UModal>
 			</div>
 		</div>
 
@@ -272,138 +362,5 @@ useHead({
 				</BaseCard>
 			</div>
 		</div>
-
-		<UModal
-			v-model:open="createRunModalOpen"
-			:ui="{
-				body: 'max-w-full! 2xl:mx-64 xl:mx-32 lg:mx-32 md:mx-16 mx-0 sm:mx-8'
-			}"
-		>
-			<template #title>Create Run</template>
-			<template #description>
-				Create a new test run with a title, group and plan
-			</template>
-			<template #content>
-				<BaseCard>
-					<template #header>
-						<div class="flex flex-col gap-y-3">
-							<UFieldGroup>
-								<UInput
-									v-model="newRun.title!"
-									placeholder="Run Title"
-									color="neutral"
-									class="w-full"
-								/>
-								<UTooltip text="Automatic Fill (requires Plan and Group)">
-									<UButton
-										color="neutral"
-										icon="i-lucide-pencil"
-										:disabled="!selectedRunGroup || !selectedTestPlan"
-										@click="autoFill"
-									/>
-								</UTooltip>
-							</UFieldGroup>
-							<div class="flex gap-x-3">
-								<div class="flex flex-col gap-y-2 w-full">
-									<div
-										class="flex items-center gap-x-1 text-neutral-400 text-sm"
-									>
-										<UIcon name="i-lucide-book-check" class="h-4 w-4" />
-										Test Plan
-									</div>
-									<USelectMenu
-										v-model="selectedTestPlan"
-										searchable
-										search-placeholder="Search for a plan"
-										placeholder="Select a plan"
-										:items="transformedTestPlans"
-										class="w-full relative"
-										option-attribute="label"
-										@change="selectedTestPlan && selectPlan(selectedTestPlan)"
-									>
-										<template #item="{ item }">
-											<div class="flex items-center gap-2">
-												<!-- <UIcon name="i-lucide-folder" class="h-4 w-4" /> -->
-												{{ item.label }}
-											</div>
-										</template>
-									</USelectMenu>
-								</div>
-								<USeparator orientation="vertical" />
-								<div class="flex flex-col gap-y-2 w-full">
-									<div
-										class="flex items-center gap-x-1 text-neutral-400 text-sm"
-									>
-										<UIcon name="i-lucide-library-big" class="h-4 w-4" />
-										Run Group
-									</div>
-									<USelectMenu
-										v-model="selectedRunGroup"
-										searchable
-										search-placeholder="Search for a group"
-										placeholder="Select a group"
-										:items="transformedRunGroups"
-										class="w-full relative"
-										option-attribute="label"
-										@change="selectedRunGroup && selectGroup(selectedRunGroup)"
-									>
-										<template #item="{ item }">
-											<div class="flex items-center gap-2">
-												<!-- <UIcon name="i-lucide-folder" class="h-4 w-4" /> -->
-												{{ item.label }}
-											</div>
-										</template>
-									</USelectMenu>
-								</div>
-							</div>
-						</div>
-					</template>
-					<template #default>
-						<!-- grid of all case titles -->
-						<div class="flex flex-col gap-y-3">
-							<div class="flex flex-col gap-y-3">
-								<div class="font-bold text-primary-500 flex items-center gap-2">
-									<!-- <UIcon name="i-lucide-folder" class="h-4 w-4" /> -->
-									<!-- {{ group.group }} -->
-								</div>
-								<div
-									class="grid 2xl:grid-cols-4 lg:grid-cols-3 sm:grid-cols-2 grid-cols-1 gap-3"
-								>
-									<!-- <UCard
-										v-for="item in group.cases"
-										:key="item.id"
-										:ui="{
-											header: { padding: 'px-4 py-3 sm:p-4' },
-											body: { padding: 'px-4 py-3 sm:p-4' },
-											footer: { padding: 'px-4 py-3 sm:p-4' },
-											base: 'h-full outline outline-2 outline-transparent duration-100'
-										}"
-										:class="{
-											'outline-primary-500/50': selectedCases.includes(item.id)
-										}"
-										@click="selectCase(item.id)"
-									>
-										{{ item.title }}
-									</UCard> -->
-								</div>
-							</div>
-						</div>
-					</template>
-					<template #footer>
-						<div class="flex items-center gap-2 h-fit w-full justify-end">
-							<UButton
-								color="primary"
-								size="sm"
-								variant="solid"
-								icon="i-lucide-plus"
-								@click="createRun"
-							>
-								Create Run
-							</UButton>
-						</div>
-					</template>
-				</BaseCard>
-			</template>
-		</UModal>
 	</div>
 </template>
