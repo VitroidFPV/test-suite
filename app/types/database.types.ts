@@ -167,19 +167,19 @@ export type Database = {
       test_run_case_links: {
         Row: {
           case: string
-          notes: string | null
+          comment: string | null
           result: Database["public"]["Enums"]["test_run_result"]
           run: string
         }
         Insert: {
           case: string
-          notes?: string | null
+          comment?: string | null
           result?: Database["public"]["Enums"]["test_run_result"]
           run: string
         }
         Update: {
           case?: string
-          notes?: string | null
+          comment?: string | null
           result?: Database["public"]["Enums"]["test_run_result"]
           run?: string
         }
@@ -236,21 +236,21 @@ export type Database = {
           description: string | null
           id: string
           name: string
-          title: string | null
+          title: string
         }
         Insert: {
           created_at?: string
           description?: string | null
           id?: string
           name?: string
-          title?: string | null
+          title?: string
         }
         Update: {
           created_at?: string
           description?: string | null
           id?: string
           name?: string
-          title?: string | null
+          title?: string
         }
         Relationships: []
       }

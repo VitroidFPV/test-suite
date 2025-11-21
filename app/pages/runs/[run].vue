@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { Database, Tables } from "~/types/database.types"
-import BaseCard from "~/components/cards/BaseCard.vue"
+import TestRunCaseCard from "~/components/cards/TestRunCaseCard.vue"
 
 const urlRun = useRoute().params.run as string
 
@@ -12,6 +12,7 @@ type RunGroup = Tables<"test_run_groups">
 
 interface RunCaseWithResult extends RunCase {
 	result: string | null
+	comment: string | null
 }
 
 const run = ref<Run>()
@@ -90,7 +91,7 @@ async function getRunCases() {
 
 	const { data: runCasesDb, error: runCasesError } = await supabase
 		.from("test_run_case_links")
-		.select("case, result")
+		.select("case, result, comment")
 		.eq("run", run.value.id)
 	if (runCasesError) {
 		console.error(runCasesError)
@@ -110,12 +111,13 @@ async function getRunCases() {
 		return
 	}
 
-	// Merge cases with their results
+	// Merge cases with their results and comments
 	runCases.value = cases.map((testCase) => {
 		const linkData = runCasesDb.find((link) => link.case === testCase.id)
 		return {
 			...testCase,
-			result: linkData?.result || null
+			result: linkData?.result || null,
+			comment: linkData?.comment || null
 		}
 	})
 	updateStatusStats()
@@ -137,10 +139,40 @@ async function updateCaseResult(caseId: string, resultValue: string) {
 		.eq("run", run.value.id)
 		.eq("case", caseId)
 
-	updateStatusStats()
-
 	if (error) {
 		console.error("Error updating result:", error)
+		return
+	}
+
+	// Update local state
+	const caseItem = runCases.value.find((c) => c.id === caseId)
+	if (caseItem) {
+		caseItem.result = resultValue
+	}
+
+	updateStatusStats()
+}
+
+async function updateCaseComment(caseId: string, comment: string) {
+	if (!run.value) return
+
+	const { error } = await supabase
+		.from("test_run_case_links")
+		.update({
+			comment: comment || null
+		})
+		.eq("run", run.value.id)
+		.eq("case", caseId)
+
+	if (error) {
+		console.error("Error updating comment:", error)
+		return
+	}
+
+	// Update local state
+	const caseItem = runCases.value.find((c) => c.id === caseId)
+	if (caseItem) {
+		caseItem.comment = comment || null
 	}
 }
 
@@ -159,8 +191,6 @@ const resultTypes = [
 		value: "not_run",
 		textColor: "text-neutral-400",
 		bgColor: "bg-neutral-500/20",
-		hoverBgColor: "hover:bg-neutral-500/30",
-		outlineColor: "outline-neutral-500/50",
 		icon: "i-lucide-circle-dot-dashed"
 	},
 	{
@@ -168,8 +198,6 @@ const resultTypes = [
 		value: "passed",
 		textColor: "text-lime-400",
 		bgColor: "bg-lime-500/20",
-		hoverBgColor: "hover:bg-lime-500/30",
-		outlineColor: "outline-lime-500/50",
 		icon: "i-lucide-circle-check"
 	},
 	{
@@ -177,8 +205,6 @@ const resultTypes = [
 		value: "failed",
 		textColor: "text-red-400",
 		bgColor: "bg-red-500/20",
-		hoverBgColor: "hover:bg-red-500/30",
-		outlineColor: "outline-red-500/50",
 		icon: "i-lucide-circle-x"
 	},
 	{
@@ -186,8 +212,6 @@ const resultTypes = [
 		value: "blocked",
 		textColor: "text-yellow-400",
 		bgColor: "bg-yellow-500/20",
-		hoverBgColor: "hover:bg-yellow-500/30",
-		outlineColor: "outline-yellow-500/50",
 		icon: "i-lucide-circle-alert"
 	},
 	{
@@ -195,8 +219,6 @@ const resultTypes = [
 		value: "skipped",
 		textColor: "text-neutral-200",
 		bgColor: "stripe-gradient",
-		hoverBgColor: "hover:bg-neutral-500/30",
-		outlineColor: "outline-neutral-500/50",
 		icon: "i-lucide-circle-arrow-right"
 	}
 ]
@@ -540,55 +562,13 @@ getRun().then(() => {
 		</div>
 		<USeparator />
 		<div class="flex flex-col gap-y-3">
-			<BaseCard v-for="item in runCases" :key="item.id">
-				<template #default>
-					<div class="grid grid-cols-6">
-						<div class="col-span-2 font-bold">
-							{{ item.title }}
-						</div>
-						<div class="w-full">
-							<USelectMenu
-								:model-value="getResultType(item.result)"
-								:items="resultTypes"
-								variant="none"
-								:ui="{
-									// it's impressive that I can get this low into it but damn
-									base: `relative *:flex *:items-center *:gap-2 w-36 px-2 py-1 rounded-full ${getResultType(item.result).textColor} ${getResultType(item.result).bgColor} ${getResultType(item.result).outlineColor} ${getResultType(item.result).hoverBgColor}`,
-									trailingIcon: `group-data-[state=open]:rotate-180 transition-transform duration-200 ${getResultType(item.result).textColor}`,
-									item: `data-highlighted:not-data-disabled:before:bg-transparent`
-								}"
-								@update:model-value="
-									(newResult) => {
-										item.result = newResult.value
-										updateCaseResult(item.id, newResult.value)
-									}
-								"
-							>
-								<template #default>
-									<div :class="`font-semibold text-sm`">
-										<UIcon :name="getResultType(item.result).icon" />
-										{{ getResultType(item.result).label }}
-									</div>
-								</template>
-								<template #item="{ item: resultItem }">
-									<div
-										:class="
-											`font-semibold text-sm ${resultItem.textColor} flex items-center w-full flex-nowrap
-										gap-2 ${resultItem.bgColor} ${resultItem.hoverBgColor} backdrop-opacity-10 px-2 py-1 rounded-full cursor-pointer` +
-											(resultItem.value === getResultType(item.result).value
-												? ` outline-2 ${resultItem.outlineColor}`
-												: '')
-										"
-									>
-										<UIcon :name="resultItem.icon" class="h-4 w-4 shrink" />
-										<div class="whitespace-nowrap">{{ resultItem.label }}</div>
-									</div>
-								</template>
-							</USelectMenu>
-						</div>
-					</div>
-				</template>
-			</BaseCard>
+			<TestRunCaseCard
+				v-for="item in runCases"
+				:key="item.id"
+				:run-case="item"
+				@update-result="updateCaseResult"
+				@update-comment="updateCaseComment"
+			/>
 		</div>
 	</div>
 </template>
