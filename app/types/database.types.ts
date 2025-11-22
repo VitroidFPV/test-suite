@@ -254,6 +254,41 @@ export type Database = {
         }
         Relationships: []
       }
+      test_run_reports: {
+        Row: {
+          comment: string | null
+          created_at: string
+          created_by: string
+          pass: boolean
+          report: string
+          run: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          created_by: string
+          pass: boolean
+          report?: string
+          run: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          created_by?: string
+          pass?: boolean
+          report?: string
+          run?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "test_run_reports_run_fkey"
+            columns: ["run"]
+            isOneToOne: false
+            referencedRelation: "test_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       test_runs: {
         Row: {
           created_at: string

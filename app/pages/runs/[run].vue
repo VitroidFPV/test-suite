@@ -2,6 +2,7 @@
 import type { Database, Tables } from "~/types/database.types"
 import TestRunCaseCard from "~/components/cards/TestRunCaseCard.vue"
 
+const currentUser = useSupabaseUser()
 const urlRun = useRoute().params.run as string
 
 const supabase = useSupabaseClient<Database>()
@@ -9,6 +10,7 @@ const supabase = useSupabaseClient<Database>()
 type Run = Tables<"test_runs">
 type RunCase = Tables<"test_cases">
 type RunGroup = Tables<"test_run_groups">
+type Report = Tables<"test_run_reports">
 
 interface RunCaseWithResult extends RunCase {
 	result: string | null
@@ -354,6 +356,41 @@ async function saveRun() {
 	}
 }
 
+const newReport = ref<Report>({
+	run: urlRun,
+	created_by: currentUser.value?.id || "",
+	created_at: new Date().toISOString(),
+	pass: false,
+	report: crypto.randomUUID(),
+	comment: ""
+})
+
+const reportModalOpen = ref(false)
+async function generateReport() {
+	const { error } = await supabase.from("test_run_reports").insert({
+		run: urlRun,
+		created_by: currentUser.value?.id || "",
+		created_at: new Date().toISOString(),
+		pass: newReport.value.pass,
+		comment: newReport.value.comment,
+		report: newReport.value.report
+	})
+	if (error) {
+		console.error(error)
+		return
+	}
+
+	reportModalOpen.value = false
+	newReport.value = {
+		run: urlRun,
+		created_by: currentUser.value?.id || "",
+		created_at: new Date().toISOString(),
+		pass: false,
+		report: crypto.randomUUID(),
+		comment: ""
+	}
+}
+
 getRun().then(() => {
 	getRunCases()
 	if (run.value) {
@@ -368,7 +405,45 @@ getRun().then(() => {
 <template>
 	<div class="flex flex-col gap-y-6">
 		<div class="flex justify-between items-center">
-			<h1 class="text-3xl font-bold text-primary">Test Run</h1>
+			<div class="flex gap-4 items-center">
+				<h1 class="text-3xl font-bold text-primary">Test Run</h1>
+				<!-- generate report -->
+				<UModal
+					v-model:open="reportModalOpen"
+					title="Generate Report"
+					description="Generate a report for this test run"
+					:ui="{ title: 'text-primary' }"
+				>
+					<UButton
+						color="primary"
+						size="sm"
+						variant="soft"
+						icon="i-lucide-file-text"
+					>
+						Generate Report
+					</UButton>
+					<template #body>
+						<div class="flex flex-col gap-3 w-full">
+							<USwitch v-model="newReport.pass" label="Overall Pass?" />
+							<UTextarea
+								v-model="newReport.comment"
+								placeholder="Report Comment"
+							/>
+						</div>
+					</template>
+					<template #footer>
+						<div class="flex gap-3 justify-end w-full">
+							<UButton
+								color="primary"
+								size="sm"
+								variant="solid"
+								@click="generateReport"
+								>Generate Report</UButton
+							>
+						</div>
+					</template>
+				</UModal>
+			</div>
 			<div class="flex gap-2 items-center">
 				<Transition
 					enter-active-class="transition-all duration-200"
