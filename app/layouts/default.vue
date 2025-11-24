@@ -7,6 +7,7 @@ const userIsLoggedIn = user.value !== null
 const { data, error } = await supabase
 	.from("user_metadata")
 	.select("role")
+	.eq("id", user.value?.id ?? "")
 	.single()
 if (error) {
 	console.error(error)
