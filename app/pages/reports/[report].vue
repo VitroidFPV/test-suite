@@ -34,63 +34,54 @@ const confirmDeleteModalOpen = ref(false)
 
 async function saveReport() {}
 async function deleteReport() {}
-async function getReport() {
-	const { data, error } = await supabase
-		.from("test_run_reports")
-		.select("*")
-		.eq("report", urlReport)
+const { data: reportData } = await useAsyncData("report", async () => {
+	const { data, error } = await supabase.rpc("get_test_reports", {
+		report_ids: [urlReport]
+	})
 	if (error) {
 		console.error(error)
-		return
+		return null
 	}
-	report.value = data[0]
-	if (!report.value) {
+	const reportResult = data[0]
+	if (!reportResult) {
 		console.error("Report not found")
-		return
-	}
-
-	const { data: runData, error: runError } = await supabase
-		.from("test_runs")
-		.select("*")
-		.eq("id", report.value?.run)
-	if (runError) {
-		console.error(runError)
-		return
-	}
-	run.value = runData[0]
-	if (!run.value) {
-		console.error("Run not found")
-		return
+		return null
 	}
 
 	const { data: creatorData, error: creatorError } = await supabase.rpc(
 		"get_user_metadata",
-		{ user_ids: [report.value?.created_by] }
+		{ user_ids: [reportResult?.created_by] }
 	)
 	if (creatorError) {
 		console.error(creatorError)
-		return
+		return { report: reportResult, creator: null }
 	}
-	reportCreator.value = creatorData[0]
-}
+	return { report: reportResult, creator: creatorData[0] }
+})
+
+report.value = reportData.value?.report as Report | undefined
+reportCreator.value = reportData.value?.creator ?? undefined
 
 const user = useSupabaseUser()
 
 const userIsLoggedIn = user.value !== null
 
-const { data: userMetadata } = await useAsyncData("userMetadata", async () => {
-	if (user.value?.id) {
-		const { data, error } = await supabase.rpc("get_user_metadata", {
-			user_ids: [user.value?.id]
-		})
-		if (error) {
-			console.error(error)
-			return []
+const { data: userMetadata } = await useAsyncData(
+	"reportPageUserMetadata",
+	async () => {
+		if (user.value?.id) {
+			const { data, error } = await supabase.rpc("get_user_metadata", {
+				user_ids: [user.value.id]
+			})
+			if (error) {
+				console.error(error)
+				return []
+			}
+			return data
 		}
-		return data
+		return []
 	}
-	return []
-})
+)
 
 const userIsDev = computed(() => {
 	return userMetadata.value?.[0]?.role === "dev"
@@ -100,10 +91,6 @@ const userIsDev = computed(() => {
 const userIsGuest = computed(() => {
 	return !userIsLoggedIn || !userIsDev.value
 })
-
-console.log(userIsGuest.value)
-
-getReport()
 </script>
 
 <template>
@@ -183,19 +170,19 @@ getReport()
 			</div>
 		</div>
 		<div class="flex flex-col gap-3 w-full">
-			<h1 v-if="run?.title" class="text-6xl font-bold text-primary mb-4">
-				{{ run?.title }}
+			<h1 v-if="report?.title" class="text-6xl font-bold text-primary mb-4">
+				{{ report.title }}
 			</h1>
 			<USkeleton v-else class="h-15 w-1/2 mb-4" />
 
 			<div class="flex gap-2 items-center">
-				<div>Reviewed by:</div>
-				<div>
-					<UAvatar
-						v-if="reportCreator"
-						:src="reportCreator.avatar ?? ''"
-						:alt="reportCreator.username"
-					/>
+				<UAvatar
+					v-if="reportCreator"
+					:src="reportCreator.avatar ?? ''"
+					:alt="reportCreator.username"
+				/>
+				<div v-if="reportCreator" class="text-neutral-500 font-semibold">
+					{{ reportCreator.username }}
 				</div>
 			</div>
 

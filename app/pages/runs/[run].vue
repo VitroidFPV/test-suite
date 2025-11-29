@@ -357,37 +357,72 @@ async function saveRun() {
 }
 
 const newReport = ref<Report>({
+	id: crypto.randomUUID(),
+	title: "",
 	run: urlRun,
 	created_by: currentUser.value?.id || "",
 	created_at: new Date().toISOString(),
 	pass: false,
-	report: crypto.randomUUID(),
 	comment: ""
 })
 
 const reportModalOpen = ref(false)
 async function generateReport() {
 	const { error } = await supabase.from("test_run_reports").insert({
+		id: newReport.value.id,
 		run: urlRun,
+		title: newReport.value.title || "New Report",
 		created_by: currentUser.value?.id || "",
 		created_at: new Date().toISOString(),
 		pass: newReport.value.pass,
-		comment: newReport.value.comment,
-		report: newReport.value.report
+		comment: newReport.value.comment
 	})
 	if (error) {
 		console.error(error)
 		return
 	}
 
+	// Create report links for all test cases with their current results
+	const reportLinks = runCases.value.map((testCase) => ({
+		report: newReport.value.id,
+		case: testCase.id,
+		result: testCase.result || "not_run",
+		comment: testCase.comment || null
+	}))
+
+	const { error: linksError } = await supabase
+		.from("test_run_report_case_links")
+		.insert(
+			reportLinks.map((link) => ({
+				...link,
+				result: link.result as
+					| "not_run"
+					| "passed"
+					| "failed"
+					| "blocked"
+					| "skipped"
+			}))
+		)
+	if (linksError) {
+		console.error("Error creating report case links:", linksError)
+		return
+	}
+
 	reportModalOpen.value = false
 	newReport.value = {
+		title: "",
 		run: urlRun,
 		created_by: currentUser.value?.id || "",
 		created_at: new Date().toISOString(),
 		pass: false,
-		report: crypto.randomUUID(),
+		id: crypto.randomUUID(),
 		comment: ""
+	}
+}
+
+function autoFillReportTitle() {
+	if (run.value) {
+		newReport.value.title = `${run.value.title} Report`
 	}
 }
 
@@ -424,6 +459,22 @@ getRun().then(() => {
 					</UButton>
 					<template #body>
 						<div class="flex flex-col gap-3 w-full">
+							<UFieldGroup class="w-full">
+								<UInput
+									v-model="newReport.title"
+									placeholder="Report Title"
+									:ui="{ root: 'w-full' }"
+								/>
+								<UTooltip text="Automatic Fill (requires Run Title)">
+									<UButton
+										color="primary"
+										icon="i-lucide-pencil"
+										:disabled="!run?.title"
+										@click="autoFillReportTitle()"
+									>
+									</UButton>
+								</UTooltip>
+							</UFieldGroup>
 							<USwitch v-model="newReport.pass" label="Overall Pass?" />
 							<UTextarea
 								v-model="newReport.comment"

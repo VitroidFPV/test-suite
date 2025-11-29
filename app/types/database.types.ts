@@ -254,30 +254,69 @@ export type Database = {
         }
         Relationships: []
       }
+      test_run_report_case_links: {
+        Row: {
+          case: string
+          comment: string | null
+          report: string
+          result: Database["public"]["Enums"]["test_run_result"]
+        }
+        Insert: {
+          case: string
+          comment?: string | null
+          report: string
+          result?: Database["public"]["Enums"]["test_run_result"]
+        }
+        Update: {
+          case?: string
+          comment?: string | null
+          report?: string
+          result?: Database["public"]["Enums"]["test_run_result"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "test_run_report_case_links_case_fkey"
+            columns: ["case"]
+            isOneToOne: false
+            referencedRelation: "test_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "test_run_report_case_links_report_fkey"
+            columns: ["report"]
+            isOneToOne: false
+            referencedRelation: "test_run_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       test_run_reports: {
         Row: {
           comment: string | null
           created_at: string
           created_by: string
+          id: string
           pass: boolean
-          report: string
           run: string
+          title: string
         }
         Insert: {
           comment?: string | null
           created_at?: string
           created_by: string
+          id: string
           pass: boolean
-          report?: string
           run: string
+          title?: string
         }
         Update: {
           comment?: string | null
           created_at?: string
           created_by?: string
+          id?: string
           pass?: boolean
-          report?: string
           run?: string
+          title?: string
         }
         Relationships: [
           {
@@ -350,6 +389,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_test_reports: {
+        Args: { report_ids: string[] }
+        Returns: {
+          cases: Json
+          comment: string
+          created_at: string
+          created_by: string
+          id: string
+          pass: boolean
+          run: string
+        }[]
+      }
       get_user_metadata: {
         Args: { user_ids: string[] }
         Returns: {

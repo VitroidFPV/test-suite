@@ -5,14 +5,17 @@ const user = useSupabaseUser()
 const userIsLoggedIn = user.value !== null
 
 const { data: userMetadata } = await useAsyncData("userMetadata", async () => {
-	const { data, error } = await client.rpc("get_user_metadata", {
-		user_ids: [user.value?.id]
-	})
-	if (error) {
-		console.error(error)
-		return []
+	if (user.value?.id) {
+		const { data, error } = await client.rpc("get_user_metadata", {
+			user_ids: [user.value.id]
+		})
+		if (error) {
+			console.error(error)
+			return []
+		}
+		return data
 	}
-	return data
+	return []
 })
 
 const userIsDev = computed(() => {
@@ -20,16 +23,25 @@ const userIsDev = computed(() => {
 })
 
 const route = useRoute()
+const router = useRouter()
+
+// Make the path explicitly reactive to handle browser back/forward
+const currentPath = ref(route.path)
+
+// Update currentPath on all route changes (including browser back/forward)
+router.afterEach((to) => {
+	currentPath.value = to.path
+})
 
 const shouldShowNav = userIsDev
 const shouldShowContent = computed(() => {
-	return (
-		userIsDev.value ||
-		route.path.startsWith("/reports") ||
-		route.path.startsWith("/confirm")
-	)
+	const isDev = userIsDev.value
+	const path = currentPath.value
+	const isReportsPath = path.startsWith("/reports")
+	const isConfirmPath = path.startsWith("/confirm")
+	return isDev || isReportsPath || isConfirmPath
 })
-console.log(userIsDev.value, route.path)
+
 let text = ""
 if (!userIsLoggedIn) {
 	text = "Not logged in."
@@ -43,7 +55,11 @@ if (!userIsLoggedIn) {
 		<NavHeader />
 		<div class="flex flex-col lg:flex-row">
 			<NavSidebar v-if="shouldShowNav" />
-			<div v-if="shouldShowContent" class="p-4 w-full h-full">
+			<div
+				v-if="shouldShowContent"
+				class="p-4 w-full h-full"
+				:class="{ 'p-6': !shouldShowNav }"
+			>
 				<slot />
 			</div>
 		</div>
