@@ -58,7 +58,7 @@ const { data: report, error: reportError } = await useAsyncData(
 
 const user = useSupabaseUser()
 
-const userIsLoggedIn = user.value !== null
+const userIsLoggedIn = computed(() => user.value !== null)
 
 const { data: userMetadata } = await useAsyncData(
 	"reportPageUserMetadata",
@@ -83,7 +83,7 @@ const userIsDev = computed(() => {
 
 // user is guest if they are not logged in or if they don't have dev role
 const userIsGuest = computed(() => {
-	return !userIsLoggedIn || !userIsDev.value
+	return !userIsLoggedIn.value || !userIsDev.value
 })
 
 if (report.value?.report.title) {
@@ -194,7 +194,7 @@ if (report.value?.report.title) {
 					<VueMarkdown
 						v-if="report?.report.comment"
 						:options="options"
-						:source="report.report.comment"
+						:source="report.report.comment ?? ''"
 					>
 					</VueMarkdown>
 				</div>
@@ -206,7 +206,7 @@ if (report.value?.report.title) {
 			>
 				<USwitch v-model="mdPreviewMode" label="Markdown Preview" />
 				<UTextarea
-					v-if="!mdPreviewMode && report?.report.comment"
+					v-if="!mdPreviewMode && report"
 					v-model="report.report.comment"
 					color="primary"
 					placeholder="Run Group Description"

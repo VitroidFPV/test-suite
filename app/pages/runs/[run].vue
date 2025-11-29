@@ -405,6 +405,11 @@ async function generateReport() {
 		)
 	if (linksError) {
 		console.error("Error creating report case links:", linksError)
+		// Clean up the orphaned report to maintain database consistency
+		await supabase
+			.from("test_run_reports")
+			.delete()
+			.eq("id", newReport.value.id)
 		return
 	}
 
