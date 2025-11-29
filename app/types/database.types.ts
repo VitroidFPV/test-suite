@@ -350,7 +350,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_metadata: {
+        Args: { user_ids: string[] }
+        Returns: {
+          avatar: string
+          created_at: string
+          id: string
+          role: string
+          username: string
+        }[]
+      }
     }
     Enums: {
       priority_string: "low" | "medium" | "high"

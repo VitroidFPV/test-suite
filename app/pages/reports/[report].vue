@@ -63,16 +63,45 @@ async function getReport() {
 		return
 	}
 
-	const { data: creatorData, error: creatorError } = await supabase
-		.from("user_metadata")
-		.select("*")
-		.eq("id", report.value?.created_by)
+	const { data: creatorData, error: creatorError } = await supabase.rpc(
+		"get_user_metadata",
+		{ user_ids: [report.value?.created_by] }
+	)
 	if (creatorError) {
 		console.error(creatorError)
 		return
 	}
 	reportCreator.value = creatorData[0]
 }
+
+const user = useSupabaseUser()
+
+const userIsLoggedIn = user.value !== null
+
+const { data: userMetadata } = await useAsyncData("userMetadata", async () => {
+	if (user.value?.id) {
+		const { data, error } = await supabase.rpc("get_user_metadata", {
+			user_ids: [user.value?.id]
+		})
+		if (error) {
+			console.error(error)
+			return []
+		}
+		return data
+	}
+	return []
+})
+
+const userIsDev = computed(() => {
+	return userMetadata.value?.[0]?.role === "dev"
+})
+
+// user is guest if they are not logged in or if they don't have dev role
+const userIsGuest = computed(() => {
+	return !userIsLoggedIn || !userIsDev.value
+})
+
+console.log(userIsGuest.value)
 
 getReport()
 </script>
@@ -83,7 +112,7 @@ getReport()
 			<div class="flex gap-4 items-center">
 				<h1 class="text-3xl font-bold text-primary">Test Report</h1>
 			</div>
-			<div class="flex gap-2 items-center">
+			<div v-if="!userIsGuest" class="flex gap-2 items-center">
 				<Transition
 					enter-active-class="transition-all duration-200"
 					enter-from-class="opacity-0 translate-x-2"
