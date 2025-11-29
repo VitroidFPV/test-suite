@@ -85,6 +85,12 @@ const userIsDev = computed(() => {
 const userIsGuest = computed(() => {
 	return !userIsLoggedIn || !userIsDev.value
 })
+
+if (report.value?.report.title) {
+	useHead({
+		title: `${report.value.report.title} | Test Suite`
+	})
+}
 </script>
 
 <template>
