@@ -399,6 +399,7 @@ export type Database = {
           id: string
           pass: boolean
           run: string
+          title: string
         }[]
       }
       get_user_metadata: {

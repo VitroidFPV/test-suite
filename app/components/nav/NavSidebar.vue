@@ -58,6 +58,17 @@
 					Test Runs
 				</ULink>
 			</li>
+			<li>
+				<ULink
+					to="/reports"
+					class="px-4 py-3 flex items-center justify-start rounded-lg font-semibold"
+					active-class="text-primary bg-primary-500/10 hover:bg-primary-500/20!"
+					inactive-class="text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-500/5"
+				>
+					<UIcon name="i-lucide-clipboard-list" class="mr-2 h-6 w-6" />
+					Test Reports
+				</ULink>
+			</li>
 		</ul>
 	</aside>
 </template>

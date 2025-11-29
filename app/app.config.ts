@@ -8,6 +8,7 @@ export default defineAppConfig({
 		colors: {
 			primary: "primary",
 			neutral: "neutral",
+			success: "lime",
 			strategy: "override",
 			button: {
 				color: {
