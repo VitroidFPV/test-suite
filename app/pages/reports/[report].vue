@@ -12,14 +12,6 @@ const urlReport = useRoute().params.report as string
 
 const supabase = useSupabaseClient<Database>()
 
-type Report = Tables<"test_run_reports">
-type Run = Tables<"test_runs">
-type User = Tables<"user_metadata">
-
-const report = ref<Report>()
-const run = ref<Run>()
-const reportCreator = ref<User>()
-
 const editMode = ref(false)
 const mdPreviewMode = ref(false)
 
@@ -34,33 +26,35 @@ const confirmDeleteModalOpen = ref(false)
 
 async function saveReport() {}
 async function deleteReport() {}
-const { data: reportData } = await useAsyncData("report", async () => {
-	const { data, error } = await supabase.rpc("get_test_reports", {
-		report_ids: [urlReport]
-	})
-	if (error) {
-		console.error(error)
-		return null
-	}
-	const reportResult = data[0]
-	if (!reportResult) {
-		console.error("Report not found")
-		return null
-	}
 
-	const { data: creatorData, error: creatorError } = await supabase.rpc(
-		"get_user_metadata",
-		{ user_ids: [reportResult?.created_by] }
-	)
-	if (creatorError) {
-		console.error(creatorError)
-		return { report: reportResult, creator: null }
-	}
-	return { report: reportResult, creator: creatorData[0] }
-})
+const { data: report, error: reportError } = await useAsyncData(
+	"report",
+	async () => {
+		const { data, error } = await supabase.rpc("get_test_reports", {
+			report_ids: [urlReport]
+		})
+		if (error) {
+			console.error(error)
+			return null
+		}
+		const reportResult = data[0]
+		if (!reportResult) {
+			console.error("Report not found")
+			return null
+		}
 
-report.value = reportData.value?.report as Report | undefined
-reportCreator.value = reportData.value?.creator ?? undefined
+		const { data: creatorData, error: creatorError } = await supabase.rpc(
+			"get_user_metadata",
+			{ user_ids: [reportResult?.created_by] }
+		)
+		if (creatorError) {
+			console.error(creatorError)
+			return { report: reportResult, creator: null }
+		}
+		return { report: reportResult, creator: creatorData[0] }
+	},
+	{ lazy: true }
+)
 
 const user = useSupabaseUser()
 
@@ -170,28 +164,31 @@ const userIsGuest = computed(() => {
 			</div>
 		</div>
 		<div class="flex flex-col gap-3 w-full">
-			<h1 v-if="report?.title" class="text-6xl font-bold text-primary mb-4">
-				{{ report.title }}
+			<h1
+				v-if="report?.report.title"
+				class="text-6xl font-bold text-primary mb-4"
+			>
+				{{ report.report.title }}
 			</h1>
 			<USkeleton v-else class="h-15 w-1/2 mb-4" />
 
 			<div class="flex gap-2 items-center">
 				<UAvatar
-					v-if="reportCreator"
-					:src="reportCreator.avatar ?? ''"
-					:alt="reportCreator.username"
+					v-if="report?.creator"
+					:src="report.creator.avatar ?? ''"
+					:alt="report.creator.username"
 				/>
-				<div v-if="reportCreator" class="text-neutral-500 font-semibold">
-					{{ reportCreator.username }}
+				<div v-if="report?.creator" class="text-neutral-500 font-semibold">
+					{{ report.creator.username }}
 				</div>
 			</div>
 
 			<template v-if="!editMode">
-				<div v-if="report" class="md">
+				<div v-if="report?.report.comment" class="md">
 					<VueMarkdown
-						v-if="report.comment"
+						v-if="report?.report.comment"
 						:options="options"
-						:source="report.comment"
+						:source="report.report.comment"
 					>
 					</VueMarkdown>
 				</div>
@@ -203,8 +200,8 @@ const userIsGuest = computed(() => {
 			>
 				<USwitch v-model="mdPreviewMode" label="Markdown Preview" />
 				<UTextarea
-					v-if="!mdPreviewMode && report"
-					v-model="report.comment"
+					v-if="!mdPreviewMode && report?.report.comment"
+					v-model="report.report.comment"
 					color="primary"
 					placeholder="Run Group Description"
 					variant="soft"
@@ -213,9 +210,9 @@ const userIsGuest = computed(() => {
 				/>
 				<div v-if="mdPreviewMode" class="md h-full">
 					<VueMarkdown
-						v-if="report"
+						v-if="report?.report.comment"
 						:options="options"
-						:source="report.comment"
+						:source="report.report.comment"
 					>
 					</VueMarkdown>
 				</div>
