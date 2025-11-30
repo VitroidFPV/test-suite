@@ -16,18 +16,25 @@ const editMode = ref(false)
 const mdPreviewMode = ref(false)
 
 function enterEditMode() {
+	if (report.value?.report) {
+		editedReport.value = { ...report.value.report }
+	}
 	editMode.value = true
 }
 function cancelEdit() {
+	if (report.value?.report) {
+		editedReport.value = { ...report.value.report }
+	}
 	editMode.value = false
 }
 
 const confirmDeleteModalOpen = ref(false)
 
-async function saveReport() {}
-async function deleteReport() {}
-
-const { data: report, error: reportError } = await useAsyncData(
+const {
+	data: report,
+	error: reportError,
+	refresh: refreshReport
+} = await useAsyncData(
 	"report",
 	async () => {
 		const { data, error } = await supabase.rpc("get_test_reports", {
@@ -76,6 +83,45 @@ const { data: userMetadata } = await useAsyncData(
 		return []
 	}
 )
+
+const editedReport = ref<Tables<"test_run_reports">>({
+	comment: "",
+	created_at: new Date().toISOString(),
+	created_by: "",
+	id: "",
+	pass: false,
+	run: "",
+	title: ""
+})
+
+async function saveReport() {
+	const { data, error } = await supabase
+		.from("test_run_reports")
+		.update({
+			title: editedReport.value.title,
+			comment: editedReport.value.comment,
+			pass: editedReport.value.pass
+		})
+		.eq("id", report.value!.report.id)
+	if (error) {
+		console.error(error)
+		return
+	}
+	editMode.value = false
+	refreshReport()
+}
+
+async function deleteReport() {
+	const { error } = await supabase
+		.from("test_run_reports")
+		.delete()
+		.eq("id", urlReport)
+	if (error) {
+		console.error(error)
+		return
+	}
+	navigateTo("/reports")
+}
 
 const userIsDev = computed(() => {
 	return userMetadata.value?.[0]?.role === "dev"
@@ -170,13 +216,28 @@ if (report.value?.report.title) {
 			</div>
 		</div>
 		<div class="flex flex-col gap-3 w-full">
-			<h1
-				v-if="report?.report.title"
-				class="text-6xl font-bold text-primary mb-4"
-			>
-				{{ report.report.title }}
-			</h1>
-			<USkeleton v-else class="h-15 w-1/2 mb-4" />
+			<template v-if="!editMode">
+				<h1
+					v-if="report?.report.title"
+					class="text-5xl font-bold text-primary mb-4"
+				>
+					{{ report.report.title }}
+				</h1>
+				<USkeleton v-else class="h-15 w-1/2 mb-4" />
+			</template>
+			<UTextarea
+				v-if="editMode"
+				v-model="editedReport.title"
+				:ui="{
+					base: 'text-5xl font-bold text-primary mb-4 bg-neutral-500/10 p-0 pb-2 gap-0 outline-8 outline-neutral-500/10'
+				}"
+				color="primary"
+				placeholder="Report Title"
+				variant="none"
+				autoresize
+				:rows="1"
+				:maxrows="3"
+			/>
 
 			<div class="flex gap-2 items-center">
 				<UAvatar
@@ -207,7 +268,7 @@ if (report.value?.report.title) {
 				<USwitch v-model="mdPreviewMode" label="Markdown Preview" />
 				<UTextarea
 					v-if="!mdPreviewMode && report"
-					v-model="report.report.comment"
+					v-model="editedReport.comment"
 					color="primary"
 					placeholder="Run Group Description"
 					variant="soft"
@@ -216,9 +277,9 @@ if (report.value?.report.title) {
 				/>
 				<div v-if="mdPreviewMode" class="md h-full">
 					<VueMarkdown
-						v-if="report?.report.comment"
+						v-if="editedReport.comment"
 						:options="options"
-						:source="report.report.comment"
+						:source="editedReport.comment"
 					>
 					</VueMarkdown>
 				</div>

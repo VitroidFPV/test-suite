@@ -2,7 +2,7 @@
 const client = useSupabaseClient()
 const user = useSupabaseUser()
 
-const userIsLoggedIn = user.value !== null
+const userIsLoggedIn = computed(() => user.value !== null)
 
 const { data: userMetadata } = await useAsyncData("userMetadata", async () => {
 	if (user.value?.id) {
@@ -42,12 +42,14 @@ const shouldShowContent = computed(() => {
 	return isDev || isReportsPath || isConfirmPath
 })
 
-let text = ""
-if (!userIsLoggedIn) {
-	text = "Not logged in."
-} else if (!userIsDev.value) {
-	text = "Insufficient permissions."
-}
+const text = computed(() => {
+	if (!userIsLoggedIn.value) {
+		return "Not logged in."
+	} else if (!userIsDev.value) {
+		return "Insufficient permissions."
+	}
+	return ""
+})
 </script>
 
 <template>
