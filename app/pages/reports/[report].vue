@@ -132,11 +132,17 @@ const userIsGuest = computed(() => {
 	return !userIsLoggedIn.value || !userIsDev.value
 })
 
-if (report.value?.report.title) {
-	useHead({
-		title: `${report.value.report.title} | Test Suite`
-	})
-}
+watch(
+	() => report.value?.report?.title,
+	(title) => {
+		if (title) {
+			useHead({
+				title: `${title} | Test Suite`
+			})
+		}
+	},
+	{ immediate: true }
+)
 </script>
 
 <template>
@@ -251,14 +257,12 @@ if (report.value?.report.title) {
 			</div>
 
 			<template v-if="!editMode">
-				<div v-if="report?.report.comment" class="md">
-					<VueMarkdown
-						v-if="report?.report.comment"
-						:options="options"
-						:source="report.report.comment ?? ''"
-					>
-					</VueMarkdown>
-				</div>
+				<template v-if="report">
+					<div v-if="report.report.comment" class="md">
+						<VueMarkdown :options="options" :source="report.report.comment">
+						</VueMarkdown>
+					</div>
+				</template>
 				<USkeleton v-else class="h-6 w-1/3" />
 			</template>
 			<div
