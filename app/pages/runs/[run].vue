@@ -366,7 +366,26 @@ const newReport = ref<Report>({
 	comment: ""
 })
 
+function resetReportForm() {
+	newReport.value = {
+		id: crypto.randomUUID(),
+		title: "",
+		run: urlRun,
+		created_by: currentUser.value?.id || "",
+		created_at: new Date().toISOString(),
+		pass: false,
+		comment: ""
+	}
+}
+
 const reportModalOpen = ref(false)
+
+// Reset form each time modal opens to ensure fresh UUID and clear form data
+watch(reportModalOpen, (isOpen) => {
+	if (isOpen) {
+		resetReportForm()
+	}
+})
 async function generateReport() {
 	const { error } = await supabase.from("test_run_reports").insert({
 		id: newReport.value.id,
@@ -414,15 +433,6 @@ async function generateReport() {
 	}
 
 	reportModalOpen.value = false
-	newReport.value = {
-		title: "",
-		run: urlRun,
-		created_by: currentUser.value?.id || "",
-		created_at: new Date().toISOString(),
-		pass: false,
-		id: crypto.randomUUID(),
-		comment: ""
-	}
 }
 
 function autoFillReportTitle() {
