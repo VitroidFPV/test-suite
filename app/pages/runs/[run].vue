@@ -387,11 +387,16 @@ watch(reportModalOpen, (isOpen) => {
 	}
 })
 async function generateReport() {
+	if (!currentUser.value?.id) {
+		console.error("Cannot generate report: User not authenticated")
+		return
+	}
+
 	const { error } = await supabase.from("test_run_reports").insert({
 		id: newReport.value.id,
 		run: urlRun,
 		title: newReport.value.title || "New Report",
-		created_by: currentUser.value?.id || "",
+		created_by: currentUser.value.id,
 		created_at: new Date().toISOString(),
 		pass: newReport.value.pass,
 		comment: newReport.value.comment
@@ -436,7 +441,7 @@ async function generateReport() {
 }
 
 function autoFillReportTitle() {
-	if (run.value) {
+	if (run.value?.title) {
 		newReport.value.title = `${run.value.title} Report`
 	}
 }

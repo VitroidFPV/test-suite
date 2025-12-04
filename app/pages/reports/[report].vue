@@ -18,8 +18,8 @@ const mdPreviewMode = ref(false)
 function enterEditMode() {
 	if (report.value?.report) {
 		editedReport.value = { ...report.value.report }
+		editMode.value = true
 	}
-	editMode.value = true
 }
 function cancelEdit() {
 	if (report.value?.report) {
