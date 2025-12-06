@@ -1,6 +1,7 @@
 <script setup lang="ts">
+import type { BreadcrumbItem } from "@nuxt/ui"
 const props = defineProps<{
-	breadcrumbs?: string
+	breadcrumbs?: BreadcrumbItem[]
 	title?: string
 }>()
 </script>
@@ -10,11 +11,7 @@ const props = defineProps<{
 		<div class="flex items-center justify-between gap-3 w-full">
 			<div class="flex items-center gap-2">
 				<slot name="breadcrumbs-leading" />
-				<div v-if="breadcrumbs" class="flex gap-4 items-center">
-					<div class="font-semibold text-primary-500">
-						{{ breadcrumbs }}
-					</div>
-				</div>
+				<UBreadcrumb v-if="breadcrumbs" :items="breadcrumbs" />
 				<slot name="breadcrumbs" />
 			</div>
 			<slot name="breadcrumbs-trailing" />
