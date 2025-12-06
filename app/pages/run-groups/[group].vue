@@ -282,205 +282,203 @@ useHead({
 </script>
 
 <template>
-	<div class="flex flex-col gap-y-6">
-		<PageWrapper
-			:breadcrumbs="[
-				{ label: 'Dashboard', to: '/' },
-				{ label: 'Run Groups', to: '/run-groups' }
-			]"
-			:title="runGroup?.title"
-			:loading="!runGroup"
-		>
-			<template #title-trailing>
-				<div class="flex gap-2">
-					<UModal
-						v-model:open="selectRunModalOpen"
-						title="Edit Run Group"
-						description="Edit the run group title, description and runs"
-						:ui="{
-							content: 'max-w-6xl',
-							title: 'text-primary'
-						}"
-					>
-						<UTooltip text="Edit Run Group">
-							<UButton
-								color="neutral"
-								size="sm"
-								variant="soft"
-								icon="i-lucide-pencil"
-								@click="selectRunModalOpen = true"
-							/>
-						</UTooltip>
-						<template #body>
-							<div class="flex flex-col gap-3">
-								<UFormField label="Title">
+	<PageWrapper
+		:breadcrumbs="[
+			{ label: 'Dashboard', to: '/' },
+			{ label: 'Run Groups', to: '/run-groups' }
+		]"
+		:title="runGroup?.title"
+		:loading="!runGroup"
+	>
+		<template #title-trailing>
+			<div class="flex gap-2">
+				<UModal
+					v-model:open="selectRunModalOpen"
+					title="Edit Run Group"
+					description="Edit the run group title, description and runs"
+					:ui="{
+						content: 'max-w-6xl',
+						title: 'text-primary'
+					}"
+				>
+					<UTooltip text="Edit Run Group">
+						<UButton
+							color="neutral"
+							size="sm"
+							variant="soft"
+							icon="i-lucide-pencil"
+							@click="selectRunModalOpen = true"
+						/>
+					</UTooltip>
+					<template #body>
+						<div class="flex flex-col gap-3">
+							<UFormField label="Title">
+								<UTextarea
+									v-if="runGroup"
+									v-model="editedRunGroup.title"
+									placeholder="Run Group Title"
+									color="primary"
+									variant="soft"
+									class="font-bold text-primary-500"
+									autoresize
+									:ui="{
+										root: 'w-full'
+									}"
+								/>
+							</UFormField>
+							<!-- Description with markdown preview -->
+							<div class="flex flex-col gap-2">
+								<UFormField>
+									<template #label>
+										<div class="flex items-center gap-2">
+											<span>Description</span>
+											<USwitch
+												v-model="mdPreviewMode"
+												size="xs"
+												label="Markdown Preview"
+											/>
+										</div>
+									</template>
 									<UTextarea
-										v-if="runGroup"
-										v-model="editedRunGroup.title"
-										placeholder="Run Group Title"
+										v-if="!mdPreviewMode && runGroup"
+										v-model="editedRunGroup.description"
 										color="primary"
+										placeholder="Run Group Description (supports Markdown)"
 										variant="soft"
-										class="font-bold text-primary-500"
+										:rows="4"
 										autoresize
 										:ui="{
 											root: 'w-full'
 										}"
 									/>
 								</UFormField>
-								<!-- Description with markdown preview -->
-								<div class="flex flex-col gap-2">
-									<UFormField>
-										<template #label>
-											<div class="flex items-center gap-2">
-												<span>Description</span>
-												<USwitch
-													v-model="mdPreviewMode"
-													size="xs"
-													label="Markdown Preview"
-												/>
-											</div>
-										</template>
-										<UTextarea
-											v-if="!mdPreviewMode && runGroup"
-											v-model="editedRunGroup.description"
-											color="primary"
-											placeholder="Run Group Description (supports Markdown)"
-											variant="soft"
-											:rows="4"
-											autoresize
-											:ui="{
-												root: 'w-full'
-											}"
-										/>
-									</UFormField>
-									<div
-										v-if="mdPreviewMode"
-										class="md min-h-24 p-2 rounded-lg bg-neutral-800"
-									>
-										<VueMarkdown
-											v-if="editedRunGroup.description"
-											:source="editedRunGroup.description"
-										/>
-										<span v-else class="text-neutral-500">No description</span>
-									</div>
-								</div>
 								<div
-									class="grid 2xl:grid-cols-4 lg:grid-cols-3 sm:grid-cols-2 grid-cols-1 gap-3"
+									v-if="mdPreviewMode"
+									class="md min-h-24 p-2 rounded-lg bg-neutral-800"
 								>
-									<TestRunCard
-										v-for="run in allRuns"
-										:key="run.id"
-										:run="run"
-										:ui="{
-											root:
-												'outline-2 outline-transparent duration-100 cursor-pointer' +
-												(selectedRuns.includes(run.id)
-													? ' outline-primary-500/50'
-													: '')
-										}"
-										@click="selectRun(run.id)"
+									<VueMarkdown
+										v-if="editedRunGroup.description"
+										:source="editedRunGroup.description"
 									/>
+									<span v-else class="text-neutral-500">No description</span>
 								</div>
 							</div>
-						</template>
-						<template #footer>
-							<div class="flex gap-3 justify-end w-full">
-								<UButton
-									color="primary"
-									size="sm"
-									variant="solid"
-									icon="i-lucide-save"
-									@click="saveRunGroup"
-								>
-									Save Changes
-								</UButton>
+							<div
+								class="grid 2xl:grid-cols-4 lg:grid-cols-3 sm:grid-cols-2 grid-cols-1 gap-3"
+							>
+								<TestRunCard
+									v-for="run in allRuns"
+									:key="run.id"
+									:run="run"
+									:ui="{
+										root:
+											'outline-2 outline-transparent duration-100 cursor-pointer' +
+											(selectedRuns.includes(run.id)
+												? ' outline-primary-500/50'
+												: '')
+									}"
+									@click="selectRun(run.id)"
+								/>
 							</div>
-						</template>
-					</UModal>
-					<UModal
-						v-model:open="confirmDeleteModalOpen"
-						title="Delete Run Group"
-						description="Are you sure you want to delete this run group? This action cannot be undone."
-						:ui="{
-							title: 'text-error'
-						}"
-					>
-						<UTooltip text="Delete Run Group">
+						</div>
+					</template>
+					<template #footer>
+						<div class="flex gap-3 justify-end w-full">
+							<UButton
+								color="primary"
+								size="sm"
+								variant="solid"
+								icon="i-lucide-save"
+								@click="saveRunGroup"
+							>
+								Save Changes
+							</UButton>
+						</div>
+					</template>
+				</UModal>
+				<UModal
+					v-model:open="confirmDeleteModalOpen"
+					title="Delete Run Group"
+					description="Are you sure you want to delete this run group? This action cannot be undone."
+					:ui="{
+						title: 'text-error'
+					}"
+				>
+					<UTooltip text="Delete Run Group">
+						<UButton
+							color="error"
+							size="sm"
+							variant="soft"
+							icon="i-lucide-trash"
+						>
+						</UButton>
+					</UTooltip>
+
+					<template #footer>
+						<div class="flex gap-3 justify-end w-full">
+							<UButton
+								color="neutral"
+								size="sm"
+								variant="soft"
+								@click="confirmDeleteModalOpen = false"
+								>Cancel</UButton
+							>
 							<UButton
 								color="error"
 								size="sm"
-								variant="soft"
+								variant="solid"
 								icon="i-lucide-trash"
+								@click="deleteRunGroup"
 							>
+								Delete Run Group
 							</UButton>
-						</UTooltip>
+						</div>
+					</template>
+				</UModal>
+			</div>
+		</template>
 
-						<template #footer>
-							<div class="flex gap-3 justify-end w-full">
-								<UButton
-									color="neutral"
-									size="sm"
-									variant="soft"
-									@click="confirmDeleteModalOpen = false"
-									>Cancel</UButton
-								>
-								<UButton
-									color="error"
-									size="sm"
-									variant="solid"
-									icon="i-lucide-trash"
-									@click="deleteRunGroup"
-								>
-									Delete Run Group
-								</UButton>
+		<template #description>
+			<div class="md mt-4 text-neutral-400">
+				<VueMarkdown
+					v-if="runGroup?.description"
+					:source="runGroup.description"
+				>
+				</VueMarkdown>
+				<span v-else class="text-neutral-500">No description</span>
+			</div>
+		</template>
+
+		<template #content>
+			<div
+				v-if="runs.length > 0"
+				class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 w-full"
+			>
+				<TestRunCard v-for="item in runs" :key="item.id" :run="item" />
+			</div>
+			<div
+				v-else
+				class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 w-full"
+			>
+				<div v-for="i in 3" :key="i">
+					<BaseCard
+						:style="{
+							opacity: 1 - i / 10
+						}"
+					>
+						<template #header>
+							<div class="font-bold text-primary-500">
+								<USkeleton class="w-1/2 h-6" />
 							</div>
 						</template>
-					</UModal>
+						<template #default>
+							<span class="line-clamp-1 text-ellipsis">
+								<USkeleton class="h-6 w-full" />
+							</span>
+						</template>
+					</BaseCard>
 				</div>
-			</template>
-
-			<template #description>
-				<div class="md mt-4 text-neutral-400">
-					<VueMarkdown
-						v-if="runGroup?.description"
-						:source="runGroup.description"
-					>
-					</VueMarkdown>
-					<span v-else class="text-neutral-500">No description</span>
-				</div>
-			</template>
-
-			<template #content>
-				<div
-					v-if="runs.length > 0"
-					class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 w-full"
-				>
-					<TestRunCard v-for="item in runs" :key="item.id" :run="item" />
-				</div>
-				<div
-					v-else
-					class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 w-full"
-				>
-					<div v-for="i in 3" :key="i">
-						<BaseCard
-							:style="{
-								opacity: 1 - i / 10
-							}"
-						>
-							<template #header>
-								<div class="font-bold text-primary-500">
-									<USkeleton class="w-1/2 h-6" />
-								</div>
-							</template>
-							<template #default>
-								<span class="line-clamp-1 text-ellipsis">
-									<USkeleton class="h-6 w-full" />
-								</span>
-							</template>
-						</BaseCard>
-					</div>
-				</div>
-			</template>
-		</PageWrapper>
-	</div>
+			</div>
+		</template>
+	</PageWrapper>
 </template>
