@@ -2,7 +2,8 @@
 import type { BreadcrumbItem } from "@nuxt/ui"
 const props = defineProps<{
 	breadcrumbs?: BreadcrumbItem[]
-	title?: string
+	title?: string | null
+	loading?: boolean
 }>()
 </script>
 
@@ -11,7 +12,8 @@ const props = defineProps<{
 		<div class="flex items-center justify-between gap-3 w-full">
 			<div class="flex items-center gap-2">
 				<slot name="breadcrumbs-leading" />
-				<UBreadcrumb v-if="breadcrumbs" :items="breadcrumbs" />
+				<UBreadcrumb v-if="breadcrumbs && !loading" :items="breadcrumbs" />
+				<USkeleton v-if="loading" class="w-64 h-5" />
 				<slot name="breadcrumbs" />
 			</div>
 			<slot name="breadcrumbs-trailing" />
@@ -19,13 +21,15 @@ const props = defineProps<{
 		<div class="flex items-center justify-between gap-3 w-full">
 			<div class="flex items-center gap-2">
 				<slot name="title-leading" />
-				<h1 v-if="title" class="text-5xl font-bold">
+				<h1 v-if="title && !loading" class="text-5xl font-bold">
 					{{ props.title }}
 				</h1>
+				<USkeleton v-if="loading" class="w-lg h-12" />
 				<slot name="title" />
 			</div>
 			<slot name="title-trailing" />
 		</div>
+		<slot name="description" />
 		<USeparator />
 		<slot name="content" />
 	</div>

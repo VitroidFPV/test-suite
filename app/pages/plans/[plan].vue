@@ -226,7 +226,8 @@ getAllCases()
 			{ label: 'Dashboard', to: '/' },
 			{ label: 'Test Plans', to: '/plans' }
 		]"
-		:title="plan?.title ?? 'Test Plan'"
+		:title="plan?.title ?? null"
+		:loading="!plan || !planCases || !cases || !allCases || !groupedCases"
 	>
 		<template #title-trailing>
 			<UModal
@@ -333,6 +334,18 @@ getAllCases()
 				</template>
 			</UModal>
 		</template>
+
+		<template #description>
+			<div v-if="plan" class="md mt-4 text-neutral-400">
+				<VueMarkdown
+					v-if="plan.description"
+					:options="options"
+					:source="plan.description"
+				>
+				</VueMarkdown>
+			</div>
+		</template>
+
 		<template #content>
 			<div class="w-full flex gap-x-3"></div>
 			<div
