@@ -220,6 +220,9 @@ function selectRunGroup(runGroupId: string) {
 }
 
 async function saveRun() {
+	if (!run.value) return
+	const currentRun = run.value
+
 	let hasErrors = false
 
 	const { error } = await supabase
@@ -227,7 +230,7 @@ async function saveRun() {
 		.update({
 			title: editedRun.value.title
 		})
-		.eq("id", run.value!.id)
+		.eq("id", currentRun.id)
 	if (error) {
 		console.error("Error updating run title:", error)
 		hasErrors = true
@@ -246,7 +249,7 @@ async function saveRun() {
 	// Add new group links
 	if (groupsToAdd.length > 0) {
 		const linksToInsert = groupsToAdd.map((groupId) => ({
-			run: run.value!.id,
+			run: currentRun.id,
 			group: groupId
 		}))
 		const { error: insertError } = await supabase
@@ -263,7 +266,7 @@ async function saveRun() {
 		const { error: deleteError } = await supabase
 			.from("test_run_group_links")
 			.delete()
-			.eq("run", run.value!.id)
+			.eq("run", currentRun.id)
 			.in("group", groupsToRemove)
 		if (deleteError) {
 			console.error("Error removing group links:", deleteError)
@@ -452,7 +455,7 @@ getRun().then(() => {
 				<UModal
 					v-model:open="editRunModalOpen"
 					title="Edit Run"
-					description="Edit the run title"
+					description="Edit the run title and run groups"
 					:ui="{
 						content: 'max-w-6xl',
 						title: 'text-primary'
