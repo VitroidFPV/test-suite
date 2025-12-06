@@ -326,7 +326,7 @@ async function deleteGroup(id: string) {
 
 	// Then delete the group
 	const { error } = await supabase
-		.from("test_case_group_links")
+		.from("test_case_groups")
 		.delete()
 		.eq("id", id)
 
