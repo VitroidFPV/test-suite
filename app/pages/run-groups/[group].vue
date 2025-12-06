@@ -179,13 +179,15 @@ const editedRunGroup = ref<RunGroup>({
 })
 
 async function saveRunGroup() {
+	if (!runGroup.value) return
+
 	const { error } = await supabase
 		.from("test_run_groups")
 		.update({
 			title: editedRunGroup.value.title,
 			description: editedRunGroup.value.description
 		})
-		.eq("id", runGroup.value!.id)
+		.eq("id", runGroup.value.id)
 	if (error) {
 		console.error(error)
 		return
@@ -194,8 +196,8 @@ async function saveRunGroup() {
 	await writeRunsToGroup()
 
 	editMode.value = false
-	getRunGroup()
-	getRuns()
+	await getRunGroup()
+	await getRuns()
 }
 
 const selectRunModalOpen = ref(false)
@@ -217,6 +219,7 @@ function selectRun(runId: string) {
 }
 
 async function writeRunsToGroup() {
+	if (!runGroup.value) return
 	// add or remove runs from the group based on the selectedRuns array
 	const currentRunIds = runs.value?.map((run) => run.id) || []
 	const runsToAdd = selectedRuns.value.filter(
