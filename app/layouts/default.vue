@@ -33,7 +33,7 @@ router.afterEach((to) => {
 	currentPath.value = to.path
 })
 
-const shouldShowNav = userIsDev
+const shouldShowNav = computed(() => userIsDev.value)
 const shouldShowContent = computed(() => {
 	const isDev = userIsDev.value
 	const path = currentPath.value
