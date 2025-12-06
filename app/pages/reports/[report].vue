@@ -143,6 +143,38 @@ watch(
 	},
 	{ immediate: true }
 )
+
+const statusStats = computed(() => {
+	const cases = (report.value?.report?.cases as { result: string }[]) || []
+	return [
+		{ title: "Total", value: "total", number: cases.length },
+		{
+			title: "Passed",
+			value: "passed",
+			number: cases.filter((c) => c.result === "passed").length
+		},
+		{
+			title: "Failed",
+			value: "failed",
+			number: cases.filter((c) => c.result === "failed").length
+		},
+		{
+			title: "Blocked",
+			value: "blocked",
+			number: cases.filter((c) => c.result === "blocked").length
+		},
+		{
+			title: "Skipped",
+			value: "skipped",
+			number: cases.filter((c) => c.result === "skipped").length
+		},
+		{
+			title: "Not Run",
+			value: "not_run",
+			number: cases.filter((c) => c.result === "not_run").length
+		}
+	]
+})
 </script>
 
 <template>
@@ -289,6 +321,15 @@ watch(
 				</div>
 			</div>
 		</div>
+		<TestStatusBar v-if="report" :status-stats="statusStats" />
 		<USeparator />
+		<div v-if="report" class="flex flex-col gap-y-3">
+			<TestRunCaseCard
+				v-for="(item, index) in report.report.cases"
+				:key="index"
+				:run-case="item"
+				readonly
+			/>
+		</div>
 	</div>
 </template>
