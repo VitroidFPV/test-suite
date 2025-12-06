@@ -74,16 +74,14 @@ const groups = computed(() => [
 	}))
 ])
 
-let selectedTabGroup: number = 0
+const selectedTabGroup = ref<string>("all")
 
 function filterGroup(value: string) {
+	selectedTabGroup.value = value
 	if (value === "all") {
 		selectedGroup.value = undefined
-		selectedTabGroup = 0
 	} else {
 		selectedGroup.value = caseGroups.value.find((group) => group.name === value)
-		selectedTabGroup =
-			caseGroups.value.findIndex((group) => group.name === value) + 1
 	}
 	editedGroup.value = selectedGroup.value
 }
@@ -154,9 +152,9 @@ async function writeCase(data: Case, update: boolean = false) {
 	await getAllCases()
 }
 
-function saveCase(close: boolean = false, update: boolean = false) {
+async function saveCase(close: boolean = false, update: boolean = false) {
 	if (editedCase.value) {
-		writeCase(editedCase.value, update)
+		await writeCase(editedCase.value, update)
 		if (close) {
 			caseModalOpen.value = false
 		}
@@ -285,9 +283,9 @@ async function writeGroup(data: CaseGroup, update: boolean = false) {
 	}
 }
 
-function saveGroup(close: boolean = false, update: boolean = false) {
+async function saveGroup(close: boolean = false, update: boolean = false) {
 	if (editedGroup.value) {
-		writeGroup(editedGroup.value, update)
+		await writeGroup(editedGroup.value, update)
 		if (close) {
 			linkModalOpen.value = false
 		}
@@ -392,10 +390,12 @@ useHead({
 						}"
 						@update:model-value="(val) => filterGroup(String(val))"
 					>
-						<template #default="{ item, index }">
+						<template #default="{ item }">
 							<li
 								class="flex items-center justify-start! whitespace-nowrap"
-								:class="[index === selectedTabGroup ? 'text-primary-500!' : '']"
+								:class="[
+									item.value === selectedTabGroup ? 'text-primary-500!' : ''
+								]"
 							>
 								<UIcon name="i-lucide-folder" class="mr-2 h-4 w-4" />
 								{{ item.label }}
@@ -415,12 +415,7 @@ useHead({
 									name="i-lucide-folder"
 									class="mr-2 h-4 w-4 animate-pulse dark:text-neutral-400"
 								/>
-								<USkeleton
-									class="h-4"
-									:style="{
-										width: `${Math.floor(Math.random() * 50) + 50}%`
-									}"
-								/>
+								<USkeleton class="h-4 w-full" />
 							</div>
 						</div>
 					</div>
@@ -520,7 +515,7 @@ useHead({
 											<USkeleton class="w-1/2 h-6" />
 										</div>
 										<div class="flex items-center gap-2">
-											<USkeleton width="w-1/2 h-6" />
+											<USkeleton class="w-1/2 h-6" />
 										</div>
 									</div>
 								</template>
