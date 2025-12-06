@@ -1,12 +1,7 @@
 <script setup lang="ts">
 import type { Database, Tables } from "~/types/database.types"
-import type Options from "vue-markdown-render"
 import VueMarkdown from "vue-markdown-render"
 import BaseCard from "~/components/cards/BaseCard.vue"
-
-const options: typeof Options = {
-	html: true
-}
 
 const supabase = useSupabaseClient<Database>()
 
@@ -271,7 +266,6 @@ getAllCases()
 								>
 									<VueMarkdown
 										v-if="planDescription"
-										:options="options"
 										:source="planDescription"
 									/>
 									<span v-else class="text-neutral-500">No description</span>
@@ -382,11 +376,7 @@ getAllCases()
 
 		<template #description>
 			<div v-if="plan" class="md mt-4 text-neutral-400">
-				<VueMarkdown
-					v-if="plan.description"
-					:options="options"
-					:source="plan.description"
-				>
+				<VueMarkdown v-if="plan.description" :source="plan.description">
 				</VueMarkdown>
 			</div>
 		</template>

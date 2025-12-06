@@ -1,12 +1,7 @@
 <script setup lang="ts">
 import type { Database, Tables } from "~/types/database.types"
-import type Options from "vue-markdown-render"
 import VueMarkdown from "vue-markdown-render"
 import BaseCard from "~/components/cards/BaseCard.vue"
-
-const options: typeof Options = {
-	html: true
-}
 
 const supabase = useSupabaseClient<Database>()
 
@@ -123,7 +118,6 @@ async function createPlan() {
 							>
 								<VueMarkdown
 									v-if="newPlanDescription"
-									:options="options"
 									:source="newPlanDescription"
 								/>
 								<span v-else class="text-neutral-500">No description</span>

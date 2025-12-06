@@ -1,13 +1,8 @@
 <script setup lang="ts">
 import type { Database, Tables } from "~/types/database.types"
 import VueMarkdown from "vue-markdown-render"
-import type Options from "vue-markdown-render"
 import BaseCard from "~/components/cards/BaseCard.vue"
 import TestRunCard from "~/components/cards/TestRunCard.vue"
-
-const options: typeof Options = {
-	html: true
-}
 
 const route = useRoute()
 
@@ -391,7 +386,6 @@ useHead({
 				<div v-if="runGroup" class="md">
 					<VueMarkdown
 						v-if="runGroup.description"
-						:options="options"
 						:source="runGroup.description"
 					>
 					</VueMarkdown>
@@ -413,8 +407,7 @@ useHead({
 					autoresize
 				/>
 				<div v-if="mdPreviewMode" class="md h-full">
-					<VueMarkdown :options="options" :source="editedRunGroup.description">
-					</VueMarkdown>
+					<VueMarkdown :source="editedRunGroup.description"> </VueMarkdown>
 				</div>
 			</div>
 		</div>

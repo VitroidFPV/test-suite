@@ -1,11 +1,6 @@
 <script setup lang="ts">
 import BaseCard from "~/components/cards/BaseCard.vue"
 import VueMarkdown from "vue-markdown-render"
-import type Options from "vue-markdown-render"
-
-const options: typeof Options = {
-	html: true
-}
 
 interface RunCaseWithResult {
 	id: string
@@ -191,7 +186,6 @@ function handleCommentUpdate() {
 								<div class="md h-full bg-neutral-800/50 p-2 rounded-md">
 									<VueMarkdown
 										v-if="props.runCase.text"
-										:options="options"
 										:source="props.runCase.text"
 									>
 									</VueMarkdown>
@@ -216,7 +210,6 @@ function handleCommentUpdate() {
 								<div class="md h-full bg-neutral-800/50 p-2 rounded-md">
 									<VueMarkdown
 										v-if="props.runCase.comment"
-										:options="options"
 										:source="props.runCase.comment"
 									>
 									</VueMarkdown>

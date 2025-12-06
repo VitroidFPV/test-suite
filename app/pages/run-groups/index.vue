@@ -1,13 +1,8 @@
 <script setup lang="ts">
 import type { Database, Tables } from "~/types/database.types"
 import VueMarkdown from "vue-markdown-render"
-import type Options from "vue-markdown-render"
 import BaseCard from "~/components/cards/BaseCard.vue"
 import TestRunCard from "~/components/cards/TestRunCard.vue"
-
-const options: typeof Options = {
-	html: true
-}
 
 const supabase = useSupabaseClient<Database>()
 
@@ -302,7 +297,6 @@ useHead({
 							<div class="md">
 								<VueMarkdown
 									v-if="run.description"
-									:options="options"
 									:source="run.description"
 									class="line-clamp-2 text-ellipsis"
 									style="

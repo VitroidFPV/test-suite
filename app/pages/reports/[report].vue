@@ -2,11 +2,6 @@
 import type { Database, Tables } from "~/types/database.types"
 import TestRunCaseCard from "~/components/cards/TestRunCaseCard.vue"
 import VueMarkdown from "vue-markdown-render"
-import type Options from "vue-markdown-render"
-
-const options: typeof Options = {
-	html: true
-}
 
 const urlReport = useRoute().params.report as string
 
@@ -291,8 +286,7 @@ const statusStats = computed(() => {
 			<template v-if="!editMode">
 				<template v-if="report">
 					<div v-if="report.report.comment" class="md">
-						<VueMarkdown :options="options" :source="report.report.comment">
-						</VueMarkdown>
+						<VueMarkdown :source="report.report.comment"> </VueMarkdown>
 					</div>
 				</template>
 				<USkeleton v-else class="h-6 w-1/3" />
@@ -314,7 +308,6 @@ const statusStats = computed(() => {
 				<div v-if="mdPreviewMode" class="md h-full">
 					<VueMarkdown
 						v-if="editedReport.comment"
-						:options="options"
 						:source="editedReport.comment"
 					>
 					</VueMarkdown>
