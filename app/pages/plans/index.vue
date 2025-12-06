@@ -37,9 +37,6 @@ useHead({
 				<div v-for="item in plans" :key="item.id">
 					<BaseCard>
 						<template #header>
-							<!-- <div class="font-bold text-primary-500">
-							{{ item.title }}
-						</div> -->
 							<NuxtLink
 								class="font-bold text-primary hover:underline"
 								:to="'/plans/' + item.id"
@@ -55,22 +52,6 @@ useHead({
 							>
 							<div v-else class="opacity-50">No description</div>
 						</template>
-						<!-- <template #footer>
-						<div class="flex items-center justify-between">
-							<div class="text-sm text-neutral-500">
-								{{ dayjs(item.created_at).format("D.MM.YYYY HH:mm") }}
-							</div>
-							<div class="flex items-center gap-2">
-								<UButton
-									color="primary"
-									size="2xs"
-									variant="link"
-									icon="i-lucide-pencil"
-									@click="caseModal(item.id)"
-								/>
-							</div>
-						</div>
-					</template> -->
 					</BaseCard>
 				</div>
 			</div>
@@ -94,16 +75,6 @@ useHead({
 								<USkeleton class="h-6 w-full" />
 							</span>
 						</template>
-						<!-- <template #footer>
-						<div class="flex items-center justify-between">
-							<div class="text-sm text-neutral-500">
-								<USkeleton class="w-1/2 h-6" />
-							</div>
-							<div class="flex items-center gap-2">
-								<	USkeleton width="w-1/2 h-6" />
-							</div>
-						</div>
-					</template> -->
 					</BaseCard>
 				</div>
 			</div>

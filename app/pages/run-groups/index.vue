@@ -299,16 +299,12 @@ useHead({
 							</NuxtLink>
 						</template>
 						<template #default>
-							<!-- <span v-if="plan.description" class="line-clamp-1 text-ellipsis">{{
-		
-							}}</span> -->
-							<!-- <div v-else class="opacity-50">No description</div> -->
 							<div class="md">
 								<VueMarkdown
 									v-if="run.description"
 									:options="options"
 									:source="run.description"
-									class="line-clamp-3"
+									class="line-clamp-2 text-ellipsis"
 									style="
 										mask-image: linear-gradient(
 											180deg,

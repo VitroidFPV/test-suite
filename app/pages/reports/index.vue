@@ -119,16 +119,6 @@ useHead({
 								<USkeleton class="h-6 w-full" />
 							</span>
 						</template>
-						<!-- <template #footer>
-						<div class="flex items-center justify-between">
-							<div class="text-sm text-neutral-500">
-								<USkeleton class="w-1/2 h-6" />
-							</div>
-							<div class="flex items-center gap-2">
-								<USkeleton width="w-1/2 h-6" />
-							</div>
-						</div>
-					</template> -->
 					</BaseCard>
 				</div>
 			</div>
