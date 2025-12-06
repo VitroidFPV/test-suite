@@ -1,6 +1,12 @@
 <script setup lang="ts">
 import type { Database, Tables } from "~/types/database.types"
+import type Options from "vue-markdown-render"
+import VueMarkdown from "vue-markdown-render"
 import BaseCard from "~/components/cards/BaseCard.vue"
+
+const options: typeof Options = {
+	html: true
+}
 
 const supabase = useSupabaseClient<Database>()
 
@@ -22,6 +28,45 @@ getPlans()
 useHead({
 	title: `Test Plans | Test Suite`
 })
+
+// Create plan modal
+const createPlanModalOpen = ref(false)
+const mdPreviewMode = ref(false)
+const newPlanTitle = ref("")
+const newPlanDescription = ref("")
+
+function openCreatePlanModal() {
+	newPlanTitle.value = ""
+	newPlanDescription.value = ""
+	mdPreviewMode.value = false
+	createPlanModalOpen.value = true
+}
+
+async function createPlan() {
+	if (!newPlanTitle.value.trim()) {
+		return
+	}
+
+	const { data, error } = await supabase
+		.from("test_plans")
+		.insert({
+			title: newPlanTitle.value,
+			description: newPlanDescription.value
+		})
+		.select()
+
+	if (error) {
+		console.error(error)
+		return
+	}
+
+	createPlanModalOpen.value = false
+
+	// Navigate to the new plan
+	if (data && data[0]) {
+		navigateTo(`/plans/${data[0].id}`)
+	}
+}
 </script>
 
 <template>
@@ -29,9 +74,82 @@ useHead({
 		:breadcrumbs="[{ label: 'Dashboard', to: '/' }]"
 		title="Test Plans"
 	>
+		<template #title-trailing>
+			<UModal
+				v-model:open="createPlanModalOpen"
+				title="Create Test Plan"
+				description="Create a new test plan with a title and description"
+				:ui="{
+					content: 'max-w-2xl',
+					title: 'text-primary'
+				}"
+			>
+				<UTooltip text="Create Test Plan">
+					<UButton
+						color="primary"
+						size="sm"
+						variant="soft"
+						icon="i-lucide-plus"
+						@click="openCreatePlanModal()"
+					>
+						New Plan
+					</UButton>
+				</UTooltip>
+				<template #body>
+					<div class="flex flex-col gap-3">
+						<textarea
+							v-model="newPlanTitle"
+							placeholder="Plan Title"
+							class="font-bold text-primary-500 w-full p-3 rounded-lg resize-none outline-none focus-visible:outline-primary-500/5 placeholder:font-normal bg-neutral-800"
+						/>
+						<!-- Description with markdown preview -->
+						<div class="flex flex-col gap-2">
+							<div class="flex items-center justify-between">
+								<span class="text-sm text-neutral-400">Description</span>
+								<USwitch v-model="mdPreviewMode" label="Markdown Preview" />
+							</div>
+							<UTextarea
+								v-if="!mdPreviewMode"
+								v-model="newPlanDescription"
+								color="primary"
+								placeholder="Plan Description (supports Markdown)"
+								variant="soft"
+								:rows="4"
+								autoresize
+							/>
+							<div
+								v-if="mdPreviewMode"
+								class="md min-h-24 p-3 rounded-lg bg-neutral-800"
+							>
+								<VueMarkdown
+									v-if="newPlanDescription"
+									:options="options"
+									:source="newPlanDescription"
+								/>
+								<span v-else class="text-neutral-500">No description</span>
+							</div>
+						</div>
+					</div>
+				</template>
+				<template #footer>
+					<div class="flex items-center justify-end w-full">
+						<UButton
+							color="primary"
+							size="sm"
+							variant="solid"
+							icon="i-lucide-plus"
+							:disabled="!newPlanTitle.trim()"
+							@click="createPlan"
+						>
+							Create Plan
+						</UButton>
+					</div>
+				</template>
+			</UModal>
+		</template>
 		<template #content>
 			<div
-				v-if="plans.length > 0"
+				v-if="plans"
 				class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 w-full"
 			>
 				<div v-for="item in plans" :key="item.id">
@@ -77,6 +195,9 @@ useHead({
 						</template>
 					</BaseCard>
 				</div>
+			</div>
+			<div v-if="plans && plans.length == 0">
+				No test plans yet. Click "Create Plan" to create a new plan.
 			</div>
 		</template>
 	</PageWrapper>

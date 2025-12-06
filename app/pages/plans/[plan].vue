@@ -198,6 +198,8 @@ async function deletePlan() {
 		return
 	}
 
+	deletePlanModalOpen.value = false
+
 	navigateTo("/plans")
 }
 
