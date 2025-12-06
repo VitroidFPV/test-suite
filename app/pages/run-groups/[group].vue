@@ -166,7 +166,6 @@ async function deleteRunGroup() {
 }
 
 const confirmDeleteModalOpen = ref(false)
-const editMode = ref(false)
 
 const mdPreviewMode = ref(false)
 
@@ -195,16 +194,15 @@ async function saveRunGroup() {
 
 	await writeRunsToGroup()
 
-	editMode.value = false
 	await getRunGroup()
 	await getRuns()
 }
 
-const selectRunModalOpen = ref(false)
+const editGroupModalOpen = ref(false)
 const selectedRuns = ref<string[]>([])
 
 // Initialize selected runs when modal opens
-watch(selectRunModalOpen, (isOpen) => {
+watch(editGroupModalOpen, (isOpen) => {
 	if (isOpen) {
 		selectedRuns.value = runs.value?.map((run) => run.id) || []
 	}
@@ -256,7 +254,7 @@ async function writeRunsToGroup() {
 
 	// Always refresh data and close modal, even if there were errors
 	await getRuns()
-	selectRunModalOpen.value = false
+	editGroupModalOpen.value = false
 
 	if (hasErrors) {
 		// TODO: Show user-friendly error notification
@@ -293,7 +291,7 @@ useHead({
 		<template #title-trailing>
 			<div class="flex gap-2">
 				<UModal
-					v-model:open="selectRunModalOpen"
+					v-model:open="editGroupModalOpen"
 					title="Edit Run Group"
 					description="Edit the run group title, description and runs"
 					:ui="{
@@ -307,7 +305,7 @@ useHead({
 							size="sm"
 							variant="soft"
 							icon="i-lucide-pencil"
-							@click="selectRunModalOpen = true"
+							@click="editGroupModalOpen = true"
 						/>
 					</UTooltip>
 					<template #body>

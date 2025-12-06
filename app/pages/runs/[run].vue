@@ -197,7 +197,6 @@ async function deleteRun() {
 	}
 	navigateTo("/runs")
 }
-const editMode = ref(false)
 const editedRun = ref<Run>({
 	created_at: new Date().toISOString(),
 	created_by: "",
@@ -273,7 +272,6 @@ async function saveRun() {
 	}
 
 	// Always exit edit mode and refresh data, even if there were errors
-	editMode.value = false
 	await getRun()
 	await getRunCases()
 
