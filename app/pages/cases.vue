@@ -156,7 +156,6 @@ async function writeCase(data: Case, update: boolean = false) {
 
 function saveCase(close: boolean = false, update: boolean = false) {
 	if (editedCase.value) {
-		console.log(editedCase.value)
 		writeCase(editedCase.value, update)
 		if (close) {
 			caseModalOpen.value = false

@@ -19,6 +19,7 @@ interface RunCaseWithResult {
 
 interface Props {
 	runCase: RunCaseWithResult
+	readonly?: boolean
 }
 
 const props = defineProps<Props>()
@@ -110,7 +111,7 @@ function handleCommentUpdate() {
 						variant="ghost"
 						color="neutral"
 						:ui="{
-							base: `p-1 text-base cursor-pointer`
+							base: `p-1 text-base cursor-pointer ${getResultType(props.runCase.result).textColor} `
 						}"
 						@click="collapsibleOpen = !collapsibleOpen"
 					>
@@ -118,6 +119,7 @@ function handleCommentUpdate() {
 					</UButton>
 					<div class="flex items-center gap-2">
 						<USelectMenu
+							v-if="!props.readonly"
 							:model-value="getResultType(props.runCase.result)"
 							:items="resultTypes"
 							variant="none"
@@ -156,6 +158,17 @@ function handleCommentUpdate() {
 								</div>
 							</template>
 						</USelectMenu>
+						<div
+							v-else
+							:class="`font-semibold text-sm px-2 py-1 rounded-full flex items-center gap-2 w-24
+							${getResultType(props.runCase.result).textColor} ${getResultType(props.runCase.result).bgColor} ${getResultType(props.runCase.result).outlineColor} ${getResultType(props.runCase.result).hoverBgColor}`"
+						>
+							<UIcon
+								:name="getResultType(props.runCase.result).icon"
+								class="h-4 w-4 shrink"
+							/>
+							{{ getResultType(props.runCase.result).label }}
+						</div>
 						<UButton
 							color="neutral"
 							size="sm"
@@ -186,8 +199,8 @@ function handleCommentUpdate() {
 								</div>
 							</div>
 							<!-- textarea for comment -->
-							<div class="flex flex-col gap-1 w-1/2">
-								<div class="text-sm text-neutral-400">Comment</div>
+							<div v-if="!props.readonly" class="flex flex-col gap-1 w-1/2">
+								<div class="text-sm text-neutral-400">Test Case Comment</div>
 								<UTextarea
 									v-model="localComment"
 									color="primary"
@@ -197,6 +210,17 @@ function handleCommentUpdate() {
 									autoresize
 									@blur="handleCommentUpdate"
 								/>
+							</div>
+							<div v-else class="flex flex-col gap-1 w-1/2">
+								<div class="text-sm text-neutral-400">Test Case Comment</div>
+								<div class="md h-full bg-neutral-800/50 p-2 rounded-md">
+									<VueMarkdown
+										v-if="props.runCase.comment"
+										:options="options"
+										:source="props.runCase.comment"
+									>
+									</VueMarkdown>
+								</div>
 							</div>
 						</div>
 					</template>

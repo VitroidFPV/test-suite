@@ -40,7 +40,10 @@ function signOut() {
 		<nav
 			class="flex bg-black/0 backdrop-blur-sm h-16 items-center px-6 w-full justify-between"
 		>
-			<div class="text-2xl font-bold text-primary-500 flex items-center gap-3">
+			<NuxtLink
+				to="/"
+				class="text-2xl font-bold text-primary-500 flex items-center gap-3"
+			>
 				<div class="h-8 w-8 mt-1">
 					<svg
 						viewBox="0 0 128 128"
@@ -72,7 +75,7 @@ function signOut() {
 				</div>
 
 				<div>Test Suite</div>
-			</div>
+			</NuxtLink>
 			<div class="flex items-center gap-3">
 				<!-- <div v-if="name != ''" class="">{{ name }}</div> -->
 				<UPopover v-if="user">

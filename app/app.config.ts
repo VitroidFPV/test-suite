@@ -1,8 +1,14 @@
 export default defineAppConfig({
 	ui: {
+		button: {
+			slots: {
+				base: "font-semibold cursor-pointer"
+			}
+		},
 		colors: {
 			primary: "primary",
 			neutral: "neutral",
+			success: "lime",
 			strategy: "override",
 			button: {
 				color: {

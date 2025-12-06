@@ -125,7 +125,6 @@ function sortTestRuns(sortBy: string, sortOrder: string) {
 
 watch([testRunsSortBy, testRunsSortOrder], () => {
 	sortTestRuns(testRunsSortBy.value.value, testRunsSortOrder.value.value)
-	console.log(sortedTestRuns.value)
 })
 
 const selectedTestRuns = ref<string[]>([])
@@ -136,7 +135,6 @@ function selectTestRun(runId: string) {
 	} else {
 		selectedTestRuns.value = [...selectedTestRuns.value, runId]
 	}
-	console.log("selectedTestRuns", selectedTestRuns.value)
 }
 
 const newRunGroup = ref<RunGroup>({
@@ -150,10 +148,6 @@ const newRunGroup = ref<RunGroup>({
 const createRunGroupModalOpen = ref(false)
 
 async function createRunGroup() {
-	console.log("createRunGroup")
-	console.log("selectedTestRuns", selectedTestRuns.value)
-	console.log("newRunGroup", newRunGroup.value)
-
 	// create run group, name is kebab-case of title
 	const { error } = await supabase.from("test_run_groups").insert([
 		{

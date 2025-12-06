@@ -2,6 +2,7 @@
 import type { Database, Tables } from "~/types/database.types"
 import TestRunCaseCard from "~/components/cards/TestRunCaseCard.vue"
 
+const currentUser = useSupabaseUser()
 const urlRun = useRoute().params.run as string
 
 const supabase = useSupabaseClient<Database>()
@@ -9,6 +10,7 @@ const supabase = useSupabaseClient<Database>()
 type Run = Tables<"test_runs">
 type RunCase = Tables<"test_cases">
 type RunGroup = Tables<"test_run_groups">
+type Report = Tables<"test_run_reports">
 
 interface RunCaseWithResult extends RunCase {
 	result: string | null
@@ -185,60 +187,6 @@ function updateStatusStats() {
 		runCases.value.length
 }
 
-const resultTypes = [
-	{
-		label: "Not Run",
-		value: "not_run",
-		textColor: "text-neutral-400",
-		bgColor: "bg-neutral-500/20",
-		icon: "i-lucide-circle-dot-dashed"
-	},
-	{
-		label: "Passed",
-		value: "passed",
-		textColor: "text-lime-400",
-		bgColor: "bg-lime-500/20",
-		icon: "i-lucide-circle-check"
-	},
-	{
-		label: "Failed",
-		value: "failed",
-		textColor: "text-red-400",
-		bgColor: "bg-red-500/20",
-		icon: "i-lucide-circle-x"
-	},
-	{
-		label: "Blocked",
-		value: "blocked",
-		textColor: "text-yellow-400",
-		bgColor: "bg-yellow-500/20",
-		icon: "i-lucide-circle-alert"
-	},
-	{
-		label: "Skipped",
-		value: "skipped",
-		textColor: "text-neutral-200",
-		bgColor: "stripe-gradient",
-		icon: "i-lucide-circle-arrow-right"
-	}
-]
-
-function getResultType(resultValue: string | null) {
-	const result = resultTypes.find((r) => r.value === resultValue)
-	return result || resultTypes[0]!
-}
-
-function getStatusStatsPercentage(value: string) {
-	const valueStats = statusStats.value.find((s) => s.value === value)
-	const totalStats = statusStats.value.find((s) => s.value === "total")
-
-	if (!valueStats || !totalStats || totalStats.number === 0) {
-		return 0
-	}
-
-	return (valueStats.number / totalStats.number) * 100
-}
-
 const confirmDeleteModalOpen = ref(false)
 
 async function deleteRun() {
@@ -354,6 +302,96 @@ async function saveRun() {
 	}
 }
 
+const newReport = ref<Report>({
+	id: crypto.randomUUID(),
+	title: "",
+	run: urlRun,
+	created_by: currentUser.value?.id || "",
+	created_at: new Date().toISOString(),
+	pass: false,
+	comment: ""
+})
+
+function resetReportForm() {
+	newReport.value = {
+		id: crypto.randomUUID(),
+		title: "",
+		run: urlRun,
+		created_by: currentUser.value?.id || "",
+		created_at: new Date().toISOString(),
+		pass: false,
+		comment: ""
+	}
+}
+
+const reportModalOpen = ref(false)
+
+// Reset form each time modal opens to ensure fresh UUID and clear form data
+watch(reportModalOpen, (isOpen) => {
+	if (isOpen) {
+		resetReportForm()
+	}
+})
+async function generateReport() {
+	if (!currentUser.value?.id) {
+		console.error("Cannot generate report: User not authenticated")
+		return
+	}
+
+	const { error } = await supabase.from("test_run_reports").insert({
+		id: newReport.value.id,
+		run: urlRun,
+		title: newReport.value.title || "New Report",
+		created_by: currentUser.value.id,
+		created_at: new Date().toISOString(),
+		pass: newReport.value.pass,
+		comment: newReport.value.comment
+	})
+	if (error) {
+		console.error(error)
+		return
+	}
+
+	// Create report links for all test cases with their current results
+	const reportLinks = runCases.value.map((testCase) => ({
+		report: newReport.value.id,
+		case: testCase.id,
+		result: testCase.result || "not_run",
+		comment: testCase.comment || null
+	}))
+
+	const { error: linksError } = await supabase
+		.from("test_run_report_case_links")
+		.insert(
+			reportLinks.map((link) => ({
+				...link,
+				result: link.result as
+					| "not_run"
+					| "passed"
+					| "failed"
+					| "blocked"
+					| "skipped"
+			}))
+		)
+	if (linksError) {
+		console.error("Error creating report case links:", linksError)
+		// Clean up the orphaned report to maintain database consistency
+		await supabase
+			.from("test_run_reports")
+			.delete()
+			.eq("id", newReport.value.id)
+		return
+	}
+
+	reportModalOpen.value = false
+}
+
+function autoFillReportTitle() {
+	if (run.value?.title) {
+		newReport.value.title = `${run.value.title} Report`
+	}
+}
+
 getRun().then(() => {
 	getRunCases()
 	if (run.value) {
@@ -368,7 +406,61 @@ getRun().then(() => {
 <template>
 	<div class="flex flex-col gap-y-6">
 		<div class="flex justify-between items-center">
-			<h1 class="text-3xl font-bold text-primary">Test Run</h1>
+			<div class="flex gap-4 items-center">
+				<h1 class="text-3xl font-bold text-primary">Test Run</h1>
+				<!-- generate report -->
+				<UModal
+					v-model:open="reportModalOpen"
+					title="Generate Report"
+					description="Generate a report for this test run"
+					:ui="{ title: 'text-primary' }"
+				>
+					<UButton
+						color="primary"
+						size="sm"
+						variant="soft"
+						icon="i-lucide-file-text"
+					>
+						Generate Report
+					</UButton>
+					<template #body>
+						<div class="flex flex-col gap-3 w-full">
+							<UFieldGroup class="w-full">
+								<UInput
+									v-model="newReport.title"
+									placeholder="Report Title"
+									:ui="{ root: 'w-full' }"
+								/>
+								<UTooltip text="Automatic Fill (requires Run Title)">
+									<UButton
+										color="primary"
+										icon="i-lucide-pencil"
+										:disabled="!run?.title"
+										@click="autoFillReportTitle()"
+									>
+									</UButton>
+								</UTooltip>
+							</UFieldGroup>
+							<USwitch v-model="newReport.pass" label="Overall Pass?" />
+							<UTextarea
+								v-model="newReport.comment"
+								placeholder="Report Comment"
+							/>
+						</div>
+					</template>
+					<template #footer>
+						<div class="flex gap-3 justify-end w-full">
+							<UButton
+								color="primary"
+								size="sm"
+								variant="solid"
+								@click="generateReport"
+								>Generate Report</UButton
+							>
+						</div>
+					</template>
+				</UModal>
+			</div>
 			<div class="flex gap-2 items-center">
 				<Transition
 					enter-active-class="transition-all duration-200"
@@ -516,50 +608,7 @@ getRun().then(() => {
 					</VueMarkdown>
 				</div> -->
 		</div>
-		<div class="h-2 w-full rounded-full bg-neutral-500/20 flex overflow-hidden">
-			<div
-				class="h-full bg-lime-500 transition-all duration-200"
-				:style="{ width: `${getStatusStatsPercentage('passed')}%` }"
-			></div>
-			<div
-				class="h-full bg-yellow-500 transition-all duration-200"
-				:style="{
-					width: `${getStatusStatsPercentage('blocked')}%`
-				}"
-			></div>
-			<div
-				class="h-full bg-red-500 transition-all duration-200"
-				:style="{ width: `${getStatusStatsPercentage('failed')}%` }"
-			></div>
-			<div
-				class="h-full transition-all duration-200 stripe-gradient"
-				:style="{
-					width: `${getStatusStatsPercentage('skipped')}%`
-				}"
-			></div>
-			<div
-				class="h-full bg-transparent transition-all duration-200"
-				:style="{ width: `${getStatusStatsPercentage('not_run')}%` }"
-			></div>
-		</div>
-		<div class="text-sm text-neutral-400 flex gap-4">
-			<div
-				v-for="item in statusStats.filter((s) => s.value !== 'total')"
-				:key="item.value"
-				class="flex gap-1"
-			>
-				<UBadge
-					:ui="{
-						base: `${getResultType(item.value).bgColor} ${getResultType(item.value).textColor} rounded-full`
-					}"
-					>{{ item.title }}</UBadge
-				>
-				<span class="text-neutral-400">{{ item.number }}</span>
-				<span class="text-neutral-400"
-					>({{ getStatusStatsPercentage(item.value) }}%)</span
-				>
-			</div>
-		</div>
+		<TestStatusBar :status-stats="statusStats" />
 		<USeparator />
 		<div class="flex flex-col gap-y-3">
 			<TestRunCaseCard

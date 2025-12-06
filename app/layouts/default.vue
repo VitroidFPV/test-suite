@@ -1,37 +1,71 @@
 <script setup lang="ts">
-const supabase = useSupabaseClient()
+const client = useSupabaseClient()
 const user = useSupabaseUser()
 
-const userIsLoggedIn = user.value !== null
+const userIsLoggedIn = computed(() => user.value !== null)
 
-const { data, error } = await supabase
-	.from("user_metadata")
-	.select("role")
-	.single()
-if (error) {
-	console.error(error)
-}
+const { data: userMetadata } = await useAsyncData("userMetadata", async () => {
+	if (user.value?.id) {
+		const { data, error } = await client.rpc("get_user_metadata", {
+			user_ids: [user.value.id]
+		})
+		if (error) {
+			console.error(error)
+			return []
+		}
+		return data
+	}
+	return []
+})
 
-const userIsDev = data?.role === "dev"
+const userIsDev = computed(() => {
+	return userMetadata.value?.[0]?.role === "dev"
+})
 
-let text = ""
-if (!userIsLoggedIn) {
-	text = "Not logged in."
-} else if (!userIsDev) {
-	text = "Insufficient permissions."
-}
+const route = useRoute()
+const router = useRouter()
+
+// Make the path explicitly reactive to handle browser back/forward
+const currentPath = ref(route.path)
+
+// Update currentPath on all route changes (including browser back/forward)
+router.afterEach((to) => {
+	currentPath.value = to.path
+})
+
+const shouldShowNav = computed(() => userIsDev.value)
+const shouldShowContent = computed(() => {
+	const isDev = userIsDev.value
+	const path = currentPath.value
+	const isReportsPath = path.startsWith("/reports")
+	const isConfirmPath = path.startsWith("/confirm")
+	return isDev || isReportsPath || isConfirmPath
+})
+
+const text = computed(() => {
+	if (!userIsLoggedIn.value) {
+		return "Not logged in."
+	} else if (!userIsDev.value) {
+		return "Insufficient permissions."
+	}
+	return ""
+})
 </script>
 
 <template>
 	<main class="h-screen">
 		<NavHeader />
-		<div v-if="userIsDev" class="flex flex-col lg:flex-row">
-			<NavSidebar />
-			<div class="p-4 w-full h-full">
+		<div class="flex flex-col lg:flex-row">
+			<NavSidebar v-if="shouldShowNav" />
+			<div
+				v-if="shouldShowContent"
+				class="p-4 w-full h-full"
+				:class="{ 'p-6': !shouldShowNav }"
+			>
 				<slot />
 			</div>
 		</div>
-		<div v-else>
+		<div v-if="!shouldShowContent">
 			<div
 				class="h-full-nav w-full flex flex-col gap-4 items-center justify-center"
 			>

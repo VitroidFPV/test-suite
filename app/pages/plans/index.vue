@@ -15,7 +15,6 @@ async function getPlans() {
 		return
 	}
 	plans.value = data
-	console.log(plans.value)
 }
 
 getPlans()
