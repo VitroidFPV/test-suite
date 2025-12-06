@@ -1,7 +1,8 @@
 <template>
 	<UCard
 		:ui="{
-			header: 'px-4 py-3 sm:p-4',
+			root: 'h-full flex flex-col',
+			header: 'px-4 py-3 sm:p-4 flex-1',
 			body: 'px-4 py-3 sm:p-4',
 			footer: 'px-4 py-3 sm:p-4'
 		}"

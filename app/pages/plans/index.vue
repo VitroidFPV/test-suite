@@ -1,24 +1,22 @@
 <script setup lang="ts">
-import type { Database, Tables } from "~/types/database.types"
+import type { Database } from "~/types/database.types"
 import VueMarkdown from "vue-markdown-render"
 import BaseCard from "~/components/cards/BaseCard.vue"
 
 const supabase = useSupabaseClient<Database>()
 
-type TestPlan = Tables<"test_plans">
-
-const plans = ref<TestPlan[]>([])
-
-async function getPlans() {
-	const { data, error } = await supabase.from("test_plans").select("*")
-	if (error) {
-		console.error(error)
-		return
-	}
-	plans.value = data
-}
-
-getPlans()
+const { data: plans, error } = await useAsyncData(
+	"plans",
+	async () => {
+		const { data, error } = await supabase.from("test_plans").select("*")
+		if (error) {
+			console.error(error)
+			return []
+		}
+		return data
+	},
+	{ lazy: true }
+)
 
 useHead({
 	title: `Test Plans | Test Suite`
@@ -143,7 +141,7 @@ async function createPlan() {
 		</template>
 		<template #content>
 			<div
-				v-if="plans"
+				v-if="plans !== undefined"
 				class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 w-full"
 			>
 				<div v-for="item in plans" :key="item.id">

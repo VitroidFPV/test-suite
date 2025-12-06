@@ -387,15 +387,15 @@ getAllCases()
 				v-if="plan"
 				class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 w-full"
 			>
-				<div v-for="item in cases" :key="item.id">
-					<BaseCard>
+				<div v-for="item in cases" :key="item.id" class="h-full">
+					<BaseCard class="h-full">
 						<template #header>
 							<div class="font-bold text-primary-500">
 								{{ item.title }}
 							</div>
 						</template>
 						<template #default>
-							<span v-if="item.text" class="line-clamp-1 text-ellipsis">{{
+							<span v-if="item.text" class="line-clamp-2 text-ellipsis">{{
 								item.text
 							}}</span>
 							<div v-else class="opacity-50">No description</div>
