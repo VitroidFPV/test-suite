@@ -218,145 +218,134 @@ useHead({
 </script>
 
 <template>
-	<div class="flex flex-col gap-y-6">
-		<div class="flex w-full justify-between">
-			<h1 class="text-3xl font-bold text-primary">Test Runs</h1>
-			<div class="flex flex-col">
-				<UModal
-					v-model:open="createRunModalOpen"
-					title="Create Run"
-					description="Create a new test run with a title, group and plan"
-					:ui="{
-						title: 'text-primary'
-					}"
-				>
-					<UButton
-						color="primary"
-						size="sm"
-						variant="solid"
-						icon="i-lucide-plus"
-					>
-						New Test Run
-					</UButton>
+	<PageWrapper
+		:breadcrumbs="[{ label: 'Dashboard', to: '/' }]"
+		title="Test Runs"
+	>
+		<template #title-trailing>
+			<UModal
+				v-model:open="createRunModalOpen"
+				title="Create Run"
+				description="Create a new test run with a title, group and plan"
+				:ui="{
+					title: 'text-primary'
+				}"
+			>
+				<UButton color="primary" size="sm" variant="solid" icon="i-lucide-plus">
+					New Test Run
+				</UButton>
 
-					<template #body>
-						<div class="flex flex-col gap-3">
-							<UFieldGroup class="w-full">
-								<UInput
-									v-model="newRun.title!"
-									placeholder="Run Title"
-									color="neutral"
-									class="w-full"
+				<template #body>
+					<div class="flex flex-col gap-3">
+						<UFieldGroup class="w-full">
+							<UInput
+								v-model="newRun.title!"
+								placeholder="Run Title"
+								color="neutral"
+								class="w-full"
+							/>
+							<UTooltip text="Automatic Fill (requires Plan and Group)">
+								<UButton
+									color="primary"
+									icon="i-lucide-pencil"
+									:disabled="!selectedRunGroup || !selectedTestPlan"
+									@click="autoFill"
 								/>
-								<UTooltip text="Automatic Fill (requires Plan and Group)">
-									<UButton
-										color="primary"
-										icon="i-lucide-pencil"
-										:disabled="!selectedRunGroup || !selectedTestPlan"
-										@click="autoFill"
-									/>
-								</UTooltip>
-							</UFieldGroup>
-							<div class="flex gap-x-3">
-								<div class="flex flex-col gap-y-2 w-full">
-									<div
-										class="flex items-center gap-x-1 text-neutral-400 text-sm"
-									>
-										<UIcon name="i-lucide-book-check" class="h-4 w-4" />
-										Test Plan
-									</div>
-									<USelectMenu
-										v-model="selectedTestPlan"
-										searchable
-										search-placeholder="Search for a plan"
-										placeholder="Select a plan"
-										:items="transformedTestPlans"
-										class="w-full relative"
-										option-attribute="label"
-										@change="selectedTestPlan && selectPlan(selectedTestPlan)"
-									>
-										<template #item="{ item }">
-											<div class="flex items-center gap-2">
-												{{ item.label }}
-											</div>
-										</template>
-									</USelectMenu>
+							</UTooltip>
+						</UFieldGroup>
+						<div class="flex gap-x-3">
+							<div class="flex flex-col gap-y-2 w-full">
+								<div class="flex items-center gap-x-1 text-neutral-400 text-sm">
+									<UIcon name="i-lucide-book-check" class="h-4 w-4" />
+									Test Plan
 								</div>
-								<USeparator orientation="vertical" />
-								<div class="flex flex-col gap-y-2 w-full">
-									<div
-										class="flex items-center gap-x-1 text-neutral-400 text-sm"
-									>
-										<UIcon name="i-lucide-library-big" class="h-4 w-4" />
-										Run Group
-									</div>
-									<USelectMenu
-										v-model="selectedRunGroup"
-										searchable
-										search-placeholder="Search for a group"
-										placeholder="Select a group"
-										:items="transformedRunGroups"
-										class="w-full relative"
-										option-attribute="label"
-										@change="selectedRunGroup && selectGroup(selectedRunGroup)"
-									>
-										<template #item="{ item }">
-											<div class="flex items-center gap-2">
-												{{ item.label }}
-											</div>
-										</template>
-									</USelectMenu>
+								<USelectMenu
+									v-model="selectedTestPlan"
+									searchable
+									search-placeholder="Search for a plan"
+									placeholder="Select a plan"
+									:items="transformedTestPlans"
+									class="w-full relative"
+									option-attribute="label"
+									@change="selectedTestPlan && selectPlan(selectedTestPlan)"
+								>
+									<template #item="{ item }">
+										<div class="flex items-center gap-2">
+											{{ item.label }}
+										</div>
+									</template>
+								</USelectMenu>
+							</div>
+							<USeparator orientation="vertical" />
+							<div class="flex flex-col gap-y-2 w-full">
+								<div class="flex items-center gap-x-1 text-neutral-400 text-sm">
+									<UIcon name="i-lucide-library-big" class="h-4 w-4" />
+									Run Group
 								</div>
+								<USelectMenu
+									v-model="selectedRunGroup"
+									searchable
+									search-placeholder="Search for a group"
+									placeholder="Select a group"
+									:items="transformedRunGroups"
+									class="w-full relative"
+									option-attribute="label"
+									@change="selectedRunGroup && selectGroup(selectedRunGroup)"
+								>
+									<template #item="{ item }">
+										<div class="flex items-center gap-2">
+											{{ item.label }}
+										</div>
+									</template>
+								</USelectMenu>
 							</div>
 						</div>
-					</template>
-					<template #footer>
-						<div class="flex gap-3 justify-end w-full">
-							<UButton
-								color="primary"
-								size="sm"
-								variant="solid"
-								icon="i-lucide-plus"
-								:disabled="!newRun.title"
-								@click="createRun"
-							>
-								Create Run
-							</UButton>
-						</div>
-					</template>
-				</UModal>
+					</div>
+				</template>
+				<template #footer>
+					<div class="flex gap-3 justify-end w-full">
+						<UButton
+							color="primary"
+							size="sm"
+							variant="solid"
+							icon="i-lucide-plus"
+							:disabled="!newRun.title"
+							@click="createRun"
+						>
+							Create Run
+						</UButton>
+					</div>
+				</template>
+			</UModal>
+		</template>
+		<template #content>
+			<div
+				v-if="runs.length > 0"
+				class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 w-full"
+			>
+				<TestRunCard v-for="item in runs" :key="item.id" :run="item" />
 			</div>
-		</div>
-
-		<!-- <USeparator /> -->
-
-		<div
-			v-if="runs.length > 0"
-			class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 w-full"
-		>
-			<TestRunCard v-for="item in runs" :key="item.id" :run="item" />
-		</div>
-		<div
-			v-else
-			class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 w-full"
-		>
-			<div v-for="i in 3" :key="i">
-				<BaseCard
-					:style="{
-						opacity: 1 - i / 10
-					}"
-				>
-					<template #header>
-						<div class="font-bold text-primary-500">
-							<USkeleton class="w-1/2 h-6" />
-						</div>
-					</template>
-					<template #default>
-						<span class="line-clamp-1 text-ellipsis">
-							<USkeleton class="h-6 w-full" />
-						</span>
-					</template>
-					<!-- <template #footer>
+			<div
+				v-else
+				class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 w-full"
+			>
+				<div v-for="i in 3" :key="i">
+					<BaseCard
+						:style="{
+							opacity: 1 - i / 10
+						}"
+					>
+						<template #header>
+							<div class="font-bold text-primary-500">
+								<USkeleton class="w-1/2 h-6" />
+							</div>
+						</template>
+						<template #default>
+							<span class="line-clamp-1 text-ellipsis">
+								<USkeleton class="h-6 w-full" />
+							</span>
+						</template>
+						<!-- <template #footer>
 						<div class="flex items-center justify-between">
 							<div class="text-sm text-neutral-500">
 								<USkeleton class="w-1/2 h-6" />
@@ -366,8 +355,9 @@ useHead({
 							</div>
 						</div>
 					</template> -->
-				</BaseCard>
+					</BaseCard>
+				</div>
 			</div>
-		</div>
-	</div>
+		</template>
+	</PageWrapper>
 </template>

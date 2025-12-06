@@ -203,97 +203,90 @@ useHead({
 </script>
 
 <template>
-	<div class="flex flex-col gap-y-6">
-		<div class="flex w-full justify-between">
-			<h1 class="text-3xl font-bold text-primary">Run Groups</h1>
-			<div class="flex flex-col">
-				<UModal
-					v-model:open="createRunGroupModalOpen"
-					title="Create Run Group"
-					description="Create a new run group, optionally add a description and include test runs"
-					:ui="{
-						title: 'text-primary',
-						content: 'max-w-6xl'
-					}"
-				>
-					<UButton
-						color="primary"
-						size="sm"
-						variant="solid"
-						icon="i-lucide-plus"
-					>
-						Create Run Group
-					</UButton>
-					<template #body>
-						<div class="flex flex-col gap-3">
-							<UInput
-								v-model="newRunGroup.title"
-								placeholder="Run Group Title"
-								class="w-full"
+	<PageWrapper
+		:breadcrumbs="[{ label: 'Dashboard', to: '/' }]"
+		title="Run Groups"
+	>
+		<template #title-trailing>
+			<UModal
+				v-model:open="createRunGroupModalOpen"
+				title="Create Run Group"
+				description="Create a new run group, optionally add a description and include test runs"
+				:ui="{
+					title: 'text-primary',
+					content: 'max-w-6xl'
+				}"
+			>
+				<UButton color="primary" size="sm" variant="solid" icon="i-lucide-plus">
+					Create Run Group
+				</UButton>
+				<template #body>
+					<div class="flex flex-col gap-3">
+						<UInput
+							v-model="newRunGroup.title"
+							placeholder="Run Group Title"
+							class="w-full"
+						/>
+						<UTextarea
+							v-model="newRunGroup.description"
+							placeholder="Run Group Description"
+							class="w-full"
+							:rows="5"
+						/>
+						<USeparator />
+						<div class="flex gap-3 items-center">
+							<div class="text-sm text-neutral-500">Sort by:</div>
+							<USelectMenu
+								v-model="testRunsSortBy"
+								:items="testRunsSortOptions"
+								:ui="{
+									content: 'min-w-fit'
+								}"
+								class="w-32"
 							/>
-							<UTextarea
-								v-model="newRunGroup.description"
-								placeholder="Run Group Description"
-								class="w-full"
-								:rows="5"
+							<div class="text-sm text-neutral-500">Sort order:</div>
+							<USelectMenu
+								v-model="testRunsSortOrder"
+								:items="testRunsSortOrders"
+								:ui="{
+									content: 'min-w-fit'
+								}"
+								class="w-32"
 							/>
-							<USeparator />
-							<div class="flex gap-3 items-center">
-								<div class="text-sm text-neutral-500">Sort by:</div>
-								<USelectMenu
-									v-model="testRunsSortBy"
-									:items="testRunsSortOptions"
-									:ui="{
-										content: 'min-w-fit'
-									}"
-									class="w-32"
-								/>
-								<div class="text-sm text-neutral-500">Sort order:</div>
-								<USelectMenu
-									v-model="testRunsSortOrder"
-									:items="testRunsSortOrders"
-									:ui="{
-										content: 'min-w-fit'
-									}"
-									class="w-32"
-								/>
-							</div>
-							<div
-								class="grid gap-3 2xl:grid-cols-4 lg:grid-cols-3 grid-cols-2"
-							>
-								<TestRunCard
-									v-for="run in sortedTestRuns"
-									:key="run.id"
-									:run="run"
-									:ui="{
-										root:
-											'outline-2 outline-transparent duration-100 cursor-pointer' +
-											(selectedTestRuns.includes(run.id)
-												? ' outline-primary-500/50'
-												: '')
-									}"
-									@click="selectTestRun(run.id)"
-								/>
-							</div>
 						</div>
-					</template>
-					<template #footer>
-						<div class="flex gap-3 justify-end w-full">
-							<UButton
-								color="primary"
-								size="sm"
-								variant="solid"
-								icon="i-lucide-plus"
-								@click="createRunGroup"
-							>
-								Create Run Group
-							</UButton>
+						<div class="grid gap-3 2xl:grid-cols-4 lg:grid-cols-3 grid-cols-2">
+							<TestRunCard
+								v-for="run in sortedTestRuns"
+								:key="run.id"
+								:run="run"
+								:ui="{
+									root:
+										'outline-2 outline-transparent duration-100 cursor-pointer' +
+										(selectedTestRuns.includes(run.id)
+											? ' outline-primary-500/50'
+											: '')
+								}"
+								@click="selectTestRun(run.id)"
+							/>
 						</div>
-					</template>
-				</UModal>
-			</div>
-		</div>
-		<div class="flex flex-col lg:flex-row gap-3 w-full">
+					</div>
+				</template>
+				<template #footer>
+					<div class="flex gap-3 justify-end w-full">
+						<UButton
+							color="primary"
+							size="sm"
+							variant="solid"
+							icon="i-lucide-plus"
+							@click="createRunGroup"
+						>
+							Create Run Group
+						</UButton>
+					</div>
+				</template>
+			</UModal>
+		</template>
+		<template #content>
 			<div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 w-full">
 				<div v-for="run in runGroups" :key="run.id">
 					<BaseCard>
@@ -330,6 +323,6 @@ useHead({
 					</BaseCard>
 				</div>
 			</div>
-		</div>
-	</div>
+		</template>
+	</PageWrapper>
 </template>
