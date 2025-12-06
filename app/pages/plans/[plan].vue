@@ -213,7 +213,7 @@ getAllCases()
 			{ label: 'Test Plans', to: '/plans' }
 		]"
 		:title="plan?.title ?? null"
-		:loading="!plan || !planCases || !cases || !allCases || !groupedCases"
+		:loading="!plan"
 	>
 		<template #title-trailing>
 			<div class="flex gap-2">
@@ -392,7 +392,7 @@ getAllCases()
 		<template #content>
 			<div class="w-full flex gap-x-3"></div>
 			<div
-				v-if="planCases.length > 0"
+				v-if="plan"
 				class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 w-full"
 			>
 				<div v-for="item in cases" :key="item.id">
@@ -433,6 +433,9 @@ getAllCases()
 						</template>
 					</BaseCard>
 				</div>
+			</div>
+			<div v-if="plan && cases.length == 0">
+				No test cases in this plan. Click "Edit Plan" to add cases.
 			</div>
 		</template>
 	</PageWrapper>
