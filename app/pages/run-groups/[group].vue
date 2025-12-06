@@ -14,7 +14,7 @@ type UserMetadata = Tables<"user_metadata">
 type RunWithUser = Run & { creator?: UserMetadata }
 
 const runGroup = ref<RunGroup>()
-const runs = ref<RunWithUser[]>([])
+const runs = ref<RunWithUser[] | undefined>(undefined)
 const allRuns = ref<RunWithUser[]>([])
 
 // slug group is id
@@ -206,7 +206,7 @@ const selectedRuns = ref<string[]>([])
 // Initialize selected runs when modal opens
 watch(selectRunModalOpen, (isOpen) => {
 	if (isOpen) {
-		selectedRuns.value = runs.value.map((run) => run.id)
+		selectedRuns.value = runs.value?.map((run) => run.id) || []
 	}
 })
 
@@ -451,7 +451,7 @@ useHead({
 
 		<template #content>
 			<div
-				v-if="runs.length > 0"
+				v-if="runs !== undefined"
 				class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 w-full"
 			>
 				<TestRunCard v-for="item in runs" :key="item.id" :run="item" />
