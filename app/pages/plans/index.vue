@@ -141,7 +141,7 @@ async function createPlan() {
 		</template>
 		<template #content>
 			<div
-				v-if="plans !== undefined"
+				v-if="plans !== null"
 				class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 w-full"
 			>
 				<div v-for="item in plans" :key="item.id">
