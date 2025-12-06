@@ -92,8 +92,6 @@ watch(
 	}
 )
 
-console.log(props.runCase)
-
 function handleResultChange(caseId: string, newResult: string) {
 	emit("updateResult", caseId, newResult)
 }

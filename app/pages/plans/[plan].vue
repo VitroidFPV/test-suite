@@ -33,7 +33,6 @@ async function getPlan() {
 		return
 	}
 	plan.value = data[0]
-	// console.log(plan.value)
 
 	useHead({
 		title: `${plan.value?.title} | Test Plans | Test Suite`
@@ -54,7 +53,6 @@ async function getPlanCases() {
 		return
 	}
 	planCases.value = data
-	// console.log(planCases.value)
 
 	const caseIds = planCases.value.map((link) => link.case)
 
@@ -67,7 +65,6 @@ async function getPlanCases() {
 		return
 	}
 	cases.value = casesData
-	console.log(cases.value)
 
 	selectedCases.value = caseIds
 }
@@ -127,9 +124,6 @@ async function getAllCases() {
 			cases: ungrouped
 		})
 	}
-
-	console.log(allCases.value)
-	console.log(groupedCases.value)
 }
 
 const planCaseModalOpen = ref(false)

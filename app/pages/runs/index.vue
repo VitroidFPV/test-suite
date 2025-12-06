@@ -107,12 +107,10 @@ const newRun = ref<NewRun>({
 
 function selectGroup(group: RunGroupWithLabel) {
 	selectedRunGroup.value = group
-	console.log(newRun.value)
 }
 
 async function selectPlan(plan: TestPlanWithLabel) {
 	newRun.value.plan = plan.id
-	console.log(newRun.value)
 }
 
 function autoFill() {
@@ -126,8 +124,6 @@ async function getRunGroups() {
 		return
 	}
 	runGroups.value = data || []
-
-	console.log(runGroups.value)
 }
 
 async function getTestPlans() {
