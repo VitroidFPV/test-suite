@@ -17,9 +17,9 @@ interface RunCaseWithResult extends RunCase {
 	comment: string | null
 }
 
-const run = ref<Run>()
+const run = ref<Run | undefined>()
 const runCases = ref<RunCaseWithResult[]>([])
-const runGroupsContainingTestRun = ref<RunGroup[]>([])
+const runGroupsContainingTestRun = ref<RunGroup[] | undefined>(undefined)
 const allRunGroups = ref<RunGroup[]>([])
 
 const statusStats = ref<{ title: string; value: string; number: number }[]>([
@@ -207,26 +207,6 @@ const editedRun = ref<Run>({
 })
 const selectedRunGroups = ref<string[]>([])
 
-function enterEditMode() {
-	if (run.value) {
-		editedRun.value = { ...run.value }
-		selectedRunGroups.value = runGroupsContainingTestRun.value.map(
-			(group) => group.id
-		)
-	}
-	editMode.value = true
-}
-
-function cancelEdit() {
-	if (run.value) {
-		editedRun.value = { ...run.value }
-		selectedRunGroups.value = runGroupsContainingTestRun.value.map(
-			(group) => group.id
-		)
-	}
-	editMode.value = false
-}
-
 function selectRunGroup(runGroupId: string) {
 	// called when user clicks on a run group in the edit mode
 	// add it to the editedRun.run_groups array if it's not already in it
@@ -255,7 +235,8 @@ async function saveRun() {
 	}
 
 	// Handle run group links
-	const currentGroupIds = runGroupsContainingTestRun.value.map((g) => g.id)
+	const currentGroupIds =
+		runGroupsContainingTestRun.value?.map((g) => g.id) || []
 	const groupsToAdd = selectedRunGroups.value.filter(
 		(id) => !currentGroupIds.includes(id)
 	)
@@ -293,8 +274,10 @@ async function saveRun() {
 
 	// Always exit edit mode and refresh data, even if there were errors
 	editMode.value = false
-	getRun()
-	getRunCases()
+	await getRun()
+	await getRunCases()
+
+	editRunModalOpen.value = false
 
 	if (hasErrors) {
 		// TODO: Show user-friendly error notification
@@ -324,6 +307,7 @@ function resetReportForm() {
 	}
 }
 
+const editRunModalOpen = ref(false)
 const reportModalOpen = ref(false)
 
 // Reset form each time modal opens to ensure fresh UUID and clear form data
@@ -396,19 +380,23 @@ getRun().then(() => {
 	getRunCases()
 	if (run.value) {
 		editedRun.value = { ...run.value }
-		selectedRunGroups.value = runGroupsContainingTestRun.value.map(
-			(group) => group.id
-		)
+		selectedRunGroups.value =
+			runGroupsContainingTestRun.value?.map((group) => group.id) || []
 	}
 })
 </script>
 
 <template>
-	<div class="flex flex-col gap-y-6">
-		<div class="flex justify-between items-center">
-			<div class="flex gap-4 items-center">
-				<h1 class="text-3xl font-bold text-primary">Test Run</h1>
-				<!-- generate report -->
+	<PageWrapper
+		:breadcrumbs="[
+			{ label: 'Dashboard', to: '/' },
+			{ label: 'Runs', to: '/runs' }
+		]"
+		:title="run?.title"
+		:loading="!run"
+	>
+		<template #title-trailing>
+			<div class="flex gap-2 items-center">
 				<UModal
 					v-model:open="reportModalOpen"
 					title="Generate Report"
@@ -460,53 +448,99 @@ getRun().then(() => {
 						</div>
 					</template>
 				</UModal>
-			</div>
-			<div class="flex gap-2 items-center">
-				<Transition
-					enter-active-class="transition-all duration-200"
-					enter-from-class="opacity-0 translate-x-2"
-					enter-to-class="opacity-100 translate-x-0"
-					leave-active-class="transition-all duration-200"
-					leave-from-class="opacity-100 translate-x-0"
-					leave-to-class="opacity-0 translate-x-2"
+
+				<USeparator orientation="vertical" class="h-6" />
+
+				<UModal
+					v-model:open="editRunModalOpen"
+					title="Edit Run"
+					description="Edit the run title"
+					:ui="{
+						content: 'max-w-6xl',
+						title: 'text-primary'
+					}"
 				>
-					<div v-if="editMode">
+					<UTooltip text="Edit Run">
 						<UButton
 							color="neutral"
 							size="sm"
 							variant="soft"
-							icon="i-lucide-save"
-							@click="saveRun"
-						>
-							Save Changes
-						</UButton>
-					</div>
-				</Transition>
-				<UButton
-					color="neutral"
-					size="sm"
-					variant="soft"
-					icon="i-lucide-pencil"
-					@click="editMode ? cancelEdit() : enterEditMode()"
-				>
-					{{ editMode ? "Cancel" : "Edit" }}
-				</UButton>
+							icon="i-lucide-pencil"
+							@click="editRunModalOpen = true"
+						/>
+					</UTooltip>
+					<template #body>
+						<div class="flex flex-col gap-3">
+							<UFormField label="Title">
+								<UTextarea
+									v-if="run"
+									v-model="editedRun.title"
+									placeholder="Run Title"
+									color="primary"
+									variant="soft"
+									class="font-bold text-primary-500"
+									autoresize
+									:ui="{
+										root: 'w-full'
+									}"
+								/>
+							</UFormField>
+							<UFormField label="Run Groups">
+								<div class="flex gap-1 items-center">
+									<UBadge
+										v-for="runGroup in allRunGroups"
+										:key="runGroup.id"
+										:ui="{
+											base: 'cursor-pointer rounded-full'
+										}"
+										:color="
+											selectedRunGroups.includes(runGroup.id)
+												? 'primary'
+												: 'neutral'
+										"
+										:variant="
+											selectedRunGroups.includes(runGroup.id) ? 'solid' : 'soft'
+										"
+										@click="selectRunGroup(runGroup.id)"
+									>
+										{{ runGroup.title }}
+									</UBadge>
+								</div>
+							</UFormField>
+						</div>
+					</template>
+					<template #footer>
+						<div class="flex gap-3 justify-end w-full">
+							<UButton
+								color="primary"
+								size="sm"
+								variant="solid"
+								icon="i-lucide-save"
+								@click="saveRun"
+							>
+								Save Changes
+							</UButton>
+						</div>
+					</template>
+				</UModal>
+
 				<UModal
 					v-model:open="confirmDeleteModalOpen"
-					title="Delete Test Run"
-					description="Are you sure you want to delete this test run? This action cannot be undone."
+					title="Delete Run"
+					description="Are you sure you want to delete this run? This action cannot be undone."
 					:ui="{
 						title: 'text-error'
 					}"
 				>
-					<UButton
-						color="error"
-						size="sm"
-						variant="solid"
-						icon="i-lucide-trash"
-					>
-						Delete Test Run
-					</UButton>
+					<UTooltip text="Delete Run">
+						<UButton
+							color="error"
+							size="sm"
+							variant="soft"
+							icon="i-lucide-trash"
+						>
+						</UButton>
+					</UTooltip>
 
 					<template #footer>
 						<div class="flex gap-3 justify-end w-full">
@@ -524,100 +558,62 @@ getRun().then(() => {
 								icon="i-lucide-trash"
 								@click="deleteRun"
 							>
-								Delete Test Run
+								Delete Run
 							</UButton>
 						</div>
 					</template>
 				</UModal>
 			</div>
-		</div>
-		<div class="flex flex-col gap-2 w-full">
-			<template v-if="!editMode">
-				<h1 v-if="run" class="text-3xl font-bold text-primary">
-					{{ run?.title }}
-				</h1>
-				<USkeleton v-else class="h-9 w-1/2" />
-			</template>
-			<UInput
-				v-if="editMode"
-				v-model="editedRun.title"
-				:ui="{
-					base: 'text-base font-bold text-primary'
-				}"
-				color="primary"
-				placeholder="Run Title"
-			/>
+		</template>
 
-			<template v-if="!editMode">
+		<template #description>
+			<div
+				v-if="runGroupsContainingTestRun"
+				class="flex gap-1 items-center text-neutral-500 font-semibold"
+			>
+				<UIcon name="i-lucide-library-big" class="h-4 w-4" />
 				<div
-					v-if="runGroupsContainingTestRun.length > 0 || run"
-					class="flex gap-1 items-center text-neutral-500 font-semibold"
+					v-for="runGroup in runGroupsContainingTestRun"
+					:key="runGroup.id"
+					class="flex"
 				>
-					<UIcon name="i-lucide-library-big" class="h-4 w-4" />
-					<div
-						v-for="runGroup in runGroupsContainingTestRun"
-						:key="runGroup.id"
-						class="flex"
-					>
-						<NuxtLink
-							class="hover:underline"
-							:to="`/run-groups/${runGroup.id}`"
-						>
-							<span>{{ runGroup.title }}</span>
-						</NuxtLink>
-						<span
-							v-if="
-								runGroup !==
+					<NuxtLink class="hover:underline" :to="`/run-groups/${runGroup.id}`">
+						<span>{{ runGroup.title }}</span>
+					</NuxtLink>
+					<span
+						v-if="
+							runGroupsContainingTestRun &&
+							runGroup !==
 								runGroupsContainingTestRun[
 									runGroupsContainingTestRun.length - 1
 								]
-							"
-							>,</span
-						>
-					</div>
-					<div v-if="runGroupsContainingTestRun.length === 0 && run">
-						<span>This test run is not associated with any run groups</span>
-					</div>
-				</div>
-				<USkeleton v-else class="h-6 w-1/4" />
-			</template>
-			<div v-if="editMode" class="flex gap-1 items-center">
-				<UIcon name="i-lucide-library-big" class="h-4 w-4 text-neutral-500" />
-
-				<UBadge
-					v-for="runGroup in allRunGroups"
-					:key="runGroup.id"
-					:ui="{
-						base: 'cursor-pointer rounded-full'
-					}"
-					:color="
-						selectedRunGroups.includes(runGroup.id) ? 'primary' : 'neutral'
-					"
-					:variant="selectedRunGroups.includes(runGroup.id) ? 'solid' : 'soft'"
-					@click="selectRunGroup(runGroup.id)"
-				>
-					{{ runGroup.title }}
-				</UBadge>
-			</div>
-			<!-- <div class="md">
-					<VueMarkdown
-						v-if="run.description"
-						:options="options"
-						:source="runGroup.description"
+						"
+						>,</span
 					>
-					</VueMarkdown>
-				</div> -->
-		</div>
-		<TestStatusBar :status-stats="statusStats" />
-		<USeparator />
-		<div class="flex flex-col gap-y-3">
-			<TestRunCaseCard
-				v-for="item in runCases"
-				:key="item.id"
-				:run-case="item"
-				@update-result="updateCaseResult"
-				@update-comment="updateCaseComment"
-			/>
-		</div>
-	</div>
+				</div>
+				<div
+					v-if="
+						runGroupsContainingTestRun &&
+						runGroupsContainingTestRun.length === 0
+					"
+				>
+					<span>This test run is not associated with any run groups</span>
+				</div>
+			</div>
+			<USkeleton v-else class="h-6 w-1/4" />
+			<TestStatusBar :status-stats="statusStats" />
+		</template>
+
+		<template #content>
+			<div class="flex flex-col gap-y-3">
+				<TestRunCaseCard
+					v-for="item in runCases"
+					:key="item.id"
+					:run-case="item"
+					@update-result="updateCaseResult"
+					@update-comment="updateCaseComment"
+				/>
+			</div>
+		</template>
+	</PageWrapper>
 </template>

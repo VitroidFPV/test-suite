@@ -8,12 +8,11 @@ const props = defineProps<{
 </script>
 
 <template>
-	<div class="flex flex-col gap-y-3">
+	<div class="flex flex-col gap-y-6">
 		<div class="flex items-center justify-between gap-3 w-full">
 			<div class="flex items-center gap-2">
 				<slot name="breadcrumbs-leading" />
-				<UBreadcrumb v-if="breadcrumbs && !loading" :items="breadcrumbs" />
-				<USkeleton v-if="loading" class="w-64 h-5" />
+				<UBreadcrumb :items="breadcrumbs" />
 				<slot name="breadcrumbs" />
 			</div>
 			<slot name="breadcrumbs-trailing" />
