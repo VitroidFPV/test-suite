@@ -232,7 +232,15 @@ async function writeGroup(data: CaseGroup, update: boolean = false) {
 		// Update group-case relationships
 		if (selectedCases.value && data.id) {
 			// Delete existing relationships
-			await supabase.from("test_case_group_links").delete().eq("group", data.id)
+			const { error: deleteError } = await supabase
+				.from("test_case_group_links")
+				.delete()
+				.eq("group", data.id)
+
+			if (deleteError) {
+				console.error(deleteError)
+				return
+			}
 
 			// Insert new relationships
 			const { error: groupError } = await supabase
@@ -497,7 +505,7 @@ useHead({
 						</div>
 					</div>
 					<div
-						v-else
+						v-else-if="!filteredCases"
 						class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 w-full"
 					>
 						<div v-for="i in 12" :key="i">
@@ -529,9 +537,7 @@ useHead({
 							</BaseCard>
 						</div>
 					</div>
-					<div v-if="filteredCases && filteredCases.length === 0">
-						No cases found
-					</div>
+					<div v-else>No cases found</div>
 				</div>
 				<UModal
 					v-if="editedCase"
