@@ -65,7 +65,7 @@ const filteredCases = computed(() => {
 			?.filter((link) => link.group === selectedGroup.value?.id)
 			.map((link) => link.case) ?? []
 
-	return cases.value?.filter((c) => caseIdsInGroup.includes(c.id)) ?? []
+	return cases.value?.filter((c) => caseIdsInGroup.includes(c.id))
 })
 
 const groups = computed(() => [
@@ -93,16 +93,22 @@ const caseModalOpen = ref(false)
 const editedCase = ref<TestCase>()
 
 function caseModal(id: string) {
+	if (id) {
+		const foundCase = cases.value?.find((item) => item.id === id)
+		if (!foundCase) return
+
+		editedCase.value = JSON.parse(JSON.stringify(foundCase))
+	} else {
+		editedCase.value = {
+			case_id: 1,
+			title: "",
+			text: "",
+			created_at: new Date().toISOString(),
+			priority: null,
+			id: ""
+		}
+	}
 	caseModalOpen.value = true
-	editedCase.value = id
-		? JSON.parse(JSON.stringify(cases.value?.find((item) => item.id === id)))
-		: {
-				case_id: 1,
-				title: "",
-				text: "",
-				created_at: new Date().toISOString(),
-				id: ""
-			}
 }
 
 async function writeCase(data: TestCase, update: boolean = false) {
@@ -289,9 +295,11 @@ async function writeGroup(data: CaseGroup, update: boolean = false) {
 		}
 	}
 
-	await refreshCases()
-	await refreshCaseGroups()
-	await refreshCaseGroupLinks()
+	await Promise.all([
+		refreshCases(),
+		refreshCaseGroups(),
+		refreshCaseGroupLinks()
+	])
 	if (selectedGroup.value?.id === data.id) {
 		selectedGroup.value = data
 	}
@@ -320,7 +328,6 @@ async function removeFromGroup(caseId: string) {
 		return
 	}
 
-	await refreshCases()
 	await refreshCaseGroupLinks()
 	caseModalOpen.value = false
 }
@@ -349,8 +356,7 @@ async function deleteGroup(id: string) {
 	}
 
 	linkModalOpen.value = false
-	await refreshCaseGroups()
-	await refreshCaseGroupLinks()
+	await Promise.all([refreshCaseGroups(), refreshCaseGroupLinks()])
 	filterGroup("all")
 }
 
