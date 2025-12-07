@@ -59,13 +59,17 @@ const filteredCases = computed(() => {
 		return cases.value
 	}
 
-	// Get case IDs that belong to the selected group
-	const caseIdsInGroup =
-		caseGroupLinks.value
-			?.filter((link) => link.group === selectedGroup.value?.id)
-			.map((link) => link.case) ?? []
+	// Show loading state if either data source hasn't loaded yet
+	if (!cases.value || !caseGroupLinks.value) {
+		return undefined
+	}
 
-	return cases.value?.filter((c) => caseIdsInGroup.includes(c.id))
+	// Get case IDs that belong to the selected group
+	const caseIdsInGroup = caseGroupLinks.value
+		.filter((link) => link.group === selectedGroup.value?.id)
+		.map((link) => link.case)
+
+	return cases.value.filter((c) => caseIdsInGroup.includes(c.id))
 })
 
 const groups = computed(() => [
