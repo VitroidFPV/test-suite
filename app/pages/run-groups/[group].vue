@@ -195,7 +195,6 @@ async function saveRunGroup() {
 	await writeRunsToGroup()
 
 	await getRunGroup()
-	await getRuns()
 }
 
 const editGroupModalOpen = ref(false)
