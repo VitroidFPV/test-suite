@@ -19,6 +19,10 @@
 	--full-nav: calc(100vh - 4rem);
 }
 
+@theme {
+	--font-sans: "Geist", sans-serif;
+}
+
 body {
 	@apply  bg-[#111111]
 }

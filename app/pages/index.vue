@@ -5,5 +5,9 @@ useHead({
 </script>
 
 <template>
-	<div>home</div>
+	<PageWrapper :breadcrumbs="[{ label: 'Dashboard', to: '/' }]" title="Home">
+		<template #content>
+			<div>Home Content</div>
+		</template>
+	</PageWrapper>
 </template>

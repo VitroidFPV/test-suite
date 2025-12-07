@@ -1,13 +1,8 @@
 <script setup lang="ts">
 import type { Database, Tables } from "~/types/database.types"
 import VueMarkdown from "vue-markdown-render"
-import type Options from "vue-markdown-render"
 import BaseCard from "~/components/cards/BaseCard.vue"
 import TestRunCard from "~/components/cards/TestRunCard.vue"
-
-const options: typeof Options = {
-	html: true
-}
 
 const supabase = useSupabaseClient<Database>()
 
@@ -68,15 +63,22 @@ async function getTestRuns() {
 	sortTestRuns("title", "asc")
 }
 
-const runGroups = ref<RunGroup[]>([])
-async function getRunGroups() {
-	const { data, error } = await supabase.from("test_run_groups").select("*")
-	if (error) {
-		console.error(error)
-		return
-	}
-	runGroups.value = data
-}
+const {
+	data: runGroups,
+	error: runGroupsError,
+	refresh: refreshRunGroups
+} = await useAsyncData(
+	"runGroups",
+	async () => {
+		const { data, error } = await supabase.from("test_run_groups").select("*")
+		if (error) {
+			console.error(error)
+			return []
+		}
+		return data
+	},
+	{ lazy: true }
+)
 
 const testRunsSortOptions = ref<{ label: string; value: string }[]>([
 	{ label: "Title", value: "title" },
@@ -179,7 +181,7 @@ async function createRunGroup() {
 		}
 	}
 
-	getRunGroups()
+	refreshRunGroups()
 	getTestRuns()
 	createRunGroupModalOpen.value = false
 
@@ -194,7 +196,6 @@ async function createRunGroup() {
 	selectedTestRuns.value = []
 }
 
-getRunGroups()
 getTestRuns()
 
 useHead({
@@ -203,98 +204,95 @@ useHead({
 </script>
 
 <template>
-	<div class="flex flex-col gap-y-6">
-		<div class="flex w-full justify-between">
-			<h1 class="text-3xl font-bold text-primary">Run Groups</h1>
-			<div class="flex flex-col">
-				<UModal
-					v-model:open="createRunGroupModalOpen"
-					title="Create Run Group"
-					description="Create a new run group, optionally add a description and include test runs"
-					:ui="{
-						title: 'text-primary',
-						content: 'max-w-6xl'
-					}"
-				>
-					<UButton
-						color="primary"
-						size="sm"
-						variant="solid"
-						icon="i-lucide-plus"
-					>
-						Create Run Group
-					</UButton>
-					<template #body>
-						<div class="flex flex-col gap-3">
-							<UInput
-								v-model="newRunGroup.title"
-								placeholder="Run Group Title"
-								class="w-full"
+	<PageWrapper
+		:breadcrumbs="[{ label: 'Dashboard', to: '/' }]"
+		title="Run Groups"
+	>
+		<template #title-trailing>
+			<UModal
+				v-model:open="createRunGroupModalOpen"
+				title="Create Run Group"
+				description="Create a new run group, optionally add a description and include test runs"
+				:ui="{
+					title: 'text-primary',
+					content: 'max-w-6xl'
+				}"
+			>
+				<UButton color="primary" size="sm" variant="soft" icon="i-lucide-plus">
+					New Run Group
+				</UButton>
+				<template #body>
+					<div class="flex flex-col gap-3">
+						<UInput
+							v-model="newRunGroup.title"
+							placeholder="Run Group Title"
+							class="w-full"
+						/>
+						<UTextarea
+							v-model="newRunGroup.description"
+							placeholder="Run Group Description"
+							class="w-full"
+							:rows="5"
+						/>
+						<USeparator />
+						<div class="flex gap-3 items-center">
+							<div class="text-sm text-neutral-500">Sort by:</div>
+							<USelectMenu
+								v-model="testRunsSortBy"
+								:items="testRunsSortOptions"
+								:ui="{
+									content: 'min-w-fit'
+								}"
+								class="w-32"
 							/>
-							<UTextarea
-								v-model="newRunGroup.description"
-								placeholder="Run Group Description"
-								class="w-full"
-								:rows="5"
+							<div class="text-sm text-neutral-500">Sort order:</div>
+							<USelectMenu
+								v-model="testRunsSortOrder"
+								:items="testRunsSortOrders"
+								:ui="{
+									content: 'min-w-fit'
+								}"
+								class="w-32"
 							/>
-							<USeparator />
-							<div class="flex gap-3 items-center">
-								<div class="text-sm text-neutral-500">Sort by:</div>
-								<USelectMenu
-									v-model="testRunsSortBy"
-									:items="testRunsSortOptions"
-									:ui="{
-										content: 'min-w-fit'
-									}"
-									class="w-32"
-								/>
-								<div class="text-sm text-neutral-500">Sort order:</div>
-								<USelectMenu
-									v-model="testRunsSortOrder"
-									:items="testRunsSortOrders"
-									:ui="{
-										content: 'min-w-fit'
-									}"
-									class="w-32"
-								/>
-							</div>
-							<div
-								class="grid gap-3 2xl:grid-cols-4 lg:grid-cols-3 grid-cols-2"
-							>
-								<TestRunCard
-									v-for="run in sortedTestRuns"
-									:key="run.id"
-									:run="run"
-									:ui="{
-										root:
-											'outline-2 outline-transparent duration-100 cursor-pointer' +
-											(selectedTestRuns.includes(run.id)
-												? ' outline-primary-500/50'
-												: '')
-									}"
-									@click="selectTestRun(run.id)"
-								/>
-							</div>
 						</div>
-					</template>
-					<template #footer>
-						<div class="flex gap-3 justify-end w-full">
-							<UButton
-								color="primary"
-								size="sm"
-								variant="solid"
-								icon="i-lucide-plus"
-								@click="createRunGroup"
-							>
-								Create Run Group
-							</UButton>
+						<div class="grid gap-3 2xl:grid-cols-4 lg:grid-cols-3 grid-cols-2">
+							<TestRunCard
+								v-for="run in sortedTestRuns"
+								:key="run.id"
+								:run="run"
+								:ui="{
+									root:
+										'outline-2 outline-transparent duration-100 cursor-pointer' +
+										(selectedTestRuns.includes(run.id)
+											? ' outline-primary-500/50'
+											: '')
+								}"
+								@click="selectTestRun(run.id)"
+							/>
 						</div>
-					</template>
-				</UModal>
-			</div>
-		</div>
-		<div class="flex flex-col lg:flex-row gap-3 w-full">
-			<div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 w-full">
+					</div>
+				</template>
+				<template #footer>
+					<div class="flex gap-3 justify-end w-full">
+						<UButton
+							color="primary"
+							size="sm"
+							variant="soft"
+							icon="i-lucide-plus"
+							:disabled="!newRunGroup.title"
+							@click="createRunGroup"
+						>
+							Create Run Group
+						</UButton>
+					</div>
+				</template>
+			</UModal>
+		</template>
+		<template #content>
+			<div
+				v-if="runGroups"
+				class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 w-full"
+			>
 				<div v-for="run in runGroups" :key="run.id">
 					<BaseCard>
 						<template #header>
@@ -306,16 +304,11 @@ useHead({
 							</NuxtLink>
 						</template>
 						<template #default>
-							<!-- <span v-if="plan.description" class="line-clamp-1 text-ellipsis">{{
-		
-							}}</span> -->
-							<!-- <div v-else class="opacity-50">No description</div> -->
 							<div class="md">
 								<VueMarkdown
 									v-if="run.description"
-									:options="options"
 									:source="run.description"
-									class="line-clamp-3"
+									class="line-clamp-2 text-ellipsis"
 									style="
 										mask-image: linear-gradient(
 											180deg,
@@ -330,6 +323,32 @@ useHead({
 					</BaseCard>
 				</div>
 			</div>
-		</div>
-	</div>
+			<div
+				v-else
+				class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 w-full"
+			>
+				<div v-for="i in 5" :key="i">
+					<BaseCard
+						:style="{
+							opacity: 1 - i / 10
+						}"
+					>
+						<template #header>
+							<div class="font-bold text-primary-500">
+								<USkeleton class="w-1/2 h-6" />
+							</div>
+						</template>
+						<template #default>
+							<span class="line-clamp-1 text-ellipsis">
+								<USkeleton class="h-6 w-full" />
+							</span>
+						</template>
+					</BaseCard>
+				</div>
+			</div>
+			<div v-if="runGroups && runGroups.length === 0">
+				No run groups yet. Click "Create Run Group" to create a new group.
+			</div>
+		</template>
+	</PageWrapper>
 </template>

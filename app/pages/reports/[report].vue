@@ -2,32 +2,14 @@
 import type { Database, Tables } from "~/types/database.types"
 import TestRunCaseCard from "~/components/cards/TestRunCaseCard.vue"
 import VueMarkdown from "vue-markdown-render"
-import type Options from "vue-markdown-render"
-
-const options: typeof Options = {
-	html: true
-}
 
 const urlReport = useRoute().params.report as string
 
 const supabase = useSupabaseClient<Database>()
 
-const editMode = ref(false)
 const mdPreviewMode = ref(false)
 
-function enterEditMode() {
-	if (report.value?.report) {
-		editedReport.value = { ...report.value.report }
-		editMode.value = true
-	}
-}
-function cancelEdit() {
-	if (report.value?.report) {
-		editedReport.value = { ...report.value.report }
-	}
-	editMode.value = false
-}
-
+const editReportModalOpen = ref(false)
 const confirmDeleteModalOpen = ref(false)
 
 const {
@@ -86,7 +68,7 @@ const { data: userMetadata } = await useAsyncData(
 
 const editedReport = ref<Tables<"test_run_reports">>({
 	comment: "",
-	created_at: new Date().toISOString(),
+	created_at: "",
 	created_by: "",
 	id: "",
 	pass: false,
@@ -94,7 +76,26 @@ const editedReport = ref<Tables<"test_run_reports">>({
 	title: ""
 })
 
+// Populate editedReport when the edit modal opens
+watch(editReportModalOpen, (isOpen) => {
+	if (isOpen && report.value) {
+		editedReport.value = {
+			comment: report.value.report.comment || "",
+			created_at: report.value.report.created_at,
+			created_by: report.value.report.created_by,
+			id: report.value.report.id,
+			pass: report.value.report.pass,
+			run: report.value.report.run,
+			title: report.value.report.title || ""
+		}
+	}
+})
+
 async function saveReport() {
+	if (!report.value) {
+		console.error("Cannot save: report not loaded")
+		return
+	}
 	const { data, error } = await supabase
 		.from("test_run_reports")
 		.update({
@@ -102,16 +103,20 @@ async function saveReport() {
 			comment: editedReport.value.comment,
 			pass: editedReport.value.pass
 		})
-		.eq("id", report.value!.report.id)
+		.eq("id", report.value.report.id)
 	if (error) {
 		console.error(error)
 		return
 	}
-	editMode.value = false
-	refreshReport()
+	editReportModalOpen.value = false
+	await refreshReport()
 }
 
 async function deleteReport() {
+	if (!urlReport) {
+		console.error("Cannot delete: report ID missing from route")
+		return
+	}
 	const { error } = await supabase
 		.from("test_run_reports")
 		.delete()
@@ -120,6 +125,7 @@ async function deleteReport() {
 		console.error(error)
 		return
 	}
+	confirmDeleteModalOpen.value = false
 	navigateTo("/reports")
 }
 
@@ -178,57 +184,104 @@ const statusStats = computed(() => {
 </script>
 
 <template>
-	<div class="flex flex-col gap-y-6">
-		<div class="flex justify-between items-center">
-			<div class="flex gap-4 items-center">
-				<h1 class="text-3xl font-bold text-primary">Test Report</h1>
-			</div>
-			<div v-if="!userIsGuest" class="flex gap-2 items-center">
-				<Transition
-					enter-active-class="transition-all duration-200"
-					enter-from-class="opacity-0 translate-x-2"
-					enter-to-class="opacity-100 translate-x-0"
-					leave-active-class="transition-all duration-200"
-					leave-from-class="opacity-100 translate-x-0"
-					leave-to-class="opacity-0 translate-x-2"
+	<PageWrapper
+		:breadcrumbs="
+			userIsGuest
+				? []
+				: [
+						{ label: 'Dashboard', to: '/' },
+						{ label: 'Test Reports', to: '/reports' }
+					]
+		"
+		:title="report?.report.title"
+		:loading="!report"
+	>
+		<template #title-trailing>
+			<div v-if="userIsLoggedIn" class="flex gap-2 items-center">
+				<UModal
+					v-model:open="editReportModalOpen"
+					title="Edit Report"
+					description="Edit the report title and comment, and overall pass status"
+					:ui="{
+						content: 'max-w-6xl',
+						title: 'text-primary'
+					}"
 				>
-					<div v-if="editMode">
+					<UTooltip text="Edit Report">
 						<UButton
 							color="neutral"
 							size="sm"
 							variant="soft"
-							icon="i-lucide-save"
-							@click="saveReport"
-						>
-							Save Changes
-						</UButton>
-					</div>
-				</Transition>
-				<UButton
-					color="neutral"
-					size="sm"
-					variant="soft"
-					icon="i-lucide-pencil"
-					@click="editMode ? cancelEdit() : enterEditMode()"
-				>
-					{{ editMode ? "Cancel" : "Edit" }}
-				</UButton>
+							icon="i-lucide-pencil"
+							:disabled="!report"
+						/>
+					</UTooltip>
+					<template #body>
+						<div class="flex flex-col gap-3">
+							<UFormField label="Title">
+								<UTextarea
+									v-if="report"
+									v-model="editedReport.title"
+									placeholder="Report Title"
+									color="primary"
+									variant="soft"
+									class="font-bold text-primary-500"
+									autoresize
+									:ui="{
+										root: 'w-full'
+									}"
+								/>
+							</UFormField>
+							<UFormField label="Overall Pass Status">
+								<USwitch v-model="editedReport.pass" label="Passed" />
+							</UFormField>
+							<UFormField label="Comment">
+								<UTextarea
+									v-model="editedReport.comment"
+									placeholder="Report Comment"
+									color="primary"
+									variant="soft"
+									autoresize
+									:ui="{
+										root: 'w-full'
+									}"
+								/>
+							</UFormField>
+						</div>
+					</template>
+					<template #footer>
+						<div class="flex gap-3 justify-end w-full">
+							<UButton
+								color="primary"
+								size="sm"
+								variant="solid"
+								icon="i-lucide-save"
+								@click="saveReport"
+							>
+								Save Changes
+							</UButton>
+						</div>
+					</template>
+				</UModal>
+
 				<UModal
 					v-model:open="confirmDeleteModalOpen"
-					title="Delete Test Report"
-					description="Are you sure you want to delete this test report? This action cannot be undone."
+					title="Delete Report"
+					description="Are you sure you want to delete this report? This action cannot be undone."
 					:ui="{
 						title: 'text-error'
 					}"
 				>
-					<UButton
-						color="error"
-						size="sm"
-						variant="solid"
-						icon="i-lucide-trash"
-					>
-						Delete Test Report
-					</UButton>
+					<UTooltip text="Delete Report">
+						<UButton
+							color="error"
+							size="sm"
+							variant="soft"
+							icon="i-lucide-trash"
+							:disabled="!report"
+						>
+						</UButton>
+					</UTooltip>
 
 					<template #footer>
 						<div class="flex gap-3 justify-end w-full">
@@ -246,37 +299,15 @@ const statusStats = computed(() => {
 								icon="i-lucide-trash"
 								@click="deleteReport"
 							>
-								Delete Test Report
+								Delete Report
 							</UButton>
 						</div>
 					</template>
 				</UModal>
 			</div>
-		</div>
-		<div class="flex flex-col gap-3 w-full">
-			<template v-if="!editMode">
-				<h1
-					v-if="report?.report.title"
-					class="text-5xl font-bold text-primary mb-4"
-				>
-					{{ report.report.title }}
-				</h1>
-				<USkeleton v-else class="h-15 w-1/2 mb-4" />
-			</template>
-			<UTextarea
-				v-if="editMode"
-				v-model="editedReport.title"
-				:ui="{
-					base: 'text-5xl font-bold text-primary mb-4 bg-neutral-500/10 p-0 pb-2 gap-0 outline-8 outline-neutral-500/10'
-				}"
-				color="primary"
-				placeholder="Report Title"
-				variant="none"
-				autoresize
-				:rows="1"
-				:maxrows="3"
-			/>
+		</template>
 
+		<template #description>
 			<div class="flex gap-2 items-center">
 				<UAvatar
 					v-if="report?.creator"
@@ -287,49 +318,21 @@ const statusStats = computed(() => {
 					{{ report.creator.username }}
 				</div>
 			</div>
-
-			<template v-if="!editMode">
-				<template v-if="report">
-					<div v-if="report.report.comment" class="md">
-						<VueMarkdown :options="options" :source="report.report.comment">
-						</VueMarkdown>
-					</div>
-				</template>
-				<USkeleton v-else class="h-6 w-1/3" />
-			</template>
-			<div
-				v-if="editMode"
-				class="flex flex-col gap-2 min-h-48 transition-all duration-200"
-			>
-				<USwitch v-model="mdPreviewMode" label="Markdown Preview" />
-				<UTextarea
-					v-if="!mdPreviewMode && report"
-					v-model="editedReport.comment"
-					color="primary"
-					placeholder="Run Group Description"
-					variant="soft"
-					:rows="8"
-					autoresize
-				/>
-				<div v-if="mdPreviewMode" class="md h-full">
-					<VueMarkdown
-						v-if="editedReport.comment"
-						:options="options"
-						:source="editedReport.comment"
-					>
-					</VueMarkdown>
-				</div>
+			<div v-if="report?.report.comment" class="md text-neutral-400">
+				<VueMarkdown :source="report.report.comment"> </VueMarkdown>
 			</div>
-		</div>
-		<TestStatusBar v-if="report" :status-stats="statusStats" />
-		<USeparator />
-		<div v-if="report" class="flex flex-col gap-y-3">
-			<TestRunCaseCard
-				v-for="(item, index) in report.report.cases"
-				:key="index"
-				:run-case="item"
-				readonly
-			/>
-		</div>
-	</div>
+			<TestStatusBar v-if="report" :status-stats="statusStats" />
+		</template>
+
+		<template #content>
+			<div v-if="report" class="flex flex-col gap-y-3">
+				<TestRunCaseCard
+					v-for="(item, index) in report.report.cases"
+					:key="index"
+					:run-case="item"
+					readonly
+				/>
+			</div>
+		</template>
+	</PageWrapper>
 </template>
