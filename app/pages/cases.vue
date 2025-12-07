@@ -409,6 +409,7 @@ useHead({
 							color="primary"
 							variant="link"
 							icon="i-lucide-plus"
+							:disabled="!caseGroupLinks"
 							@click="groupModal('')"
 						/>
 					</div>
@@ -465,6 +466,7 @@ useHead({
 									size="xs"
 									variant="soft"
 									icon="i-lucide-plus"
+									:disabled="!cases"
 									@click="caseModal('')"
 								>
 									New Case
@@ -479,7 +481,7 @@ useHead({
 									size="xs"
 									variant="soft"
 									icon="i-lucide-pen"
-									:disabled="selectedGroup === undefined"
+									:disabled="selectedGroup === undefined || !caseGroupLinks"
 									@click="groupModal(selectedGroup?.id ? selectedGroup.id : '')"
 								>
 									Edit Group
