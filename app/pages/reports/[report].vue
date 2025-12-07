@@ -67,13 +67,28 @@ const { data: userMetadata } = await useAsyncData(
 )
 
 const editedReport = ref<Tables<"test_run_reports">>({
-	comment: report.value?.report.comment || "",
-	created_at: new Date().toISOString(),
-	created_by: report.value?.report.created_by || "",
-	id: report.value?.report.id || "",
-	pass: report.value?.report.pass || false,
-	run: report.value?.report.run || "",
-	title: report.value?.report.title || ""
+	comment: "",
+	created_at: "",
+	created_by: "",
+	id: "",
+	pass: false,
+	run: "",
+	title: ""
+})
+
+// Populate editedReport when the edit modal opens
+watch(editReportModalOpen, (isOpen) => {
+	if (isOpen && report.value) {
+		editedReport.value = {
+			comment: report.value.report.comment || "",
+			created_at: report.value.report.created_at,
+			created_by: report.value.report.created_by,
+			id: report.value.report.id,
+			pass: report.value.report.pass,
+			run: report.value.report.run,
+			title: report.value.report.title || ""
+		}
+	}
 })
 
 async function saveReport() {
