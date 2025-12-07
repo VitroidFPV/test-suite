@@ -457,7 +457,6 @@ getRun().then(() => {
 					title="Edit Run"
 					description="Edit the run title and run groups"
 					:ui="{
-						content: 'max-w-6xl',
 						title: 'text-primary'
 					}"
 				>
@@ -514,11 +513,11 @@ getRun().then(() => {
 							<UButton
 								color="primary"
 								size="sm"
-								variant="solid"
+								variant="soft"
 								icon="i-lucide-save"
 								@click="saveRun"
 							>
-								Save Changes
+								Apply
 							</UButton>
 						</div>
 					</template>

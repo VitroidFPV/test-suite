@@ -218,8 +218,8 @@ useHead({
 					content: 'max-w-6xl'
 				}"
 			>
-				<UButton color="primary" size="sm" variant="solid" icon="i-lucide-plus">
-					Create Run Group
+				<UButton color="primary" size="sm" variant="soft" icon="i-lucide-plus">
+					New Run Group
 				</UButton>
 				<template #body>
 					<div class="flex flex-col gap-3">
@@ -277,8 +277,9 @@ useHead({
 						<UButton
 							color="primary"
 							size="sm"
-							variant="solid"
+							variant="soft"
 							icon="i-lucide-plus"
+							:disabled="!newRunGroup.title"
 							@click="createRunGroup"
 						>
 							Create Run Group

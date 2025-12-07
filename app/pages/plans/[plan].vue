@@ -315,18 +315,14 @@ getAllCases()
 					<template #footer>
 						<div class="flex items-center justify-end w-full">
 							<div class="flex items-center gap-2 h-fit">
-								<UTooltip
-									text="Save & Close"
-									:shortcuts="['meta', 'Shift', 'S']"
+								<UButton
+									color="primary"
+									size="sm"
+									variant="soft"
+									icon="i-lucide-save-all"
+									@click="savePlan"
+									>Apply</UButton
 								>
-									<UButton
-										color="primary"
-										size="sm"
-										variant="link"
-										icon="i-lucide-save-all"
-										@click="savePlan"
-									/>
-								</UTooltip>
 							</div>
 						</div>
 					</template>

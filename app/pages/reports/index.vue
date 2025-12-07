@@ -181,11 +181,11 @@ useHead({
 			<UModal
 				v-model:open="createReportModalOpen"
 				title="Create Report"
-				description="Create a new test report"
+				description="Create a new test report, select a run and set the overall pass status and comment"
 				:ui="{ title: 'text-primary' }"
 			>
-				<UButton color="primary" size="sm" variant="solid" icon="i-lucide-plus">
-					New Report
+				<UButton color="primary" size="sm" variant="soft" icon="i-lucide-plus">
+					Create Report
 				</UButton>
 				<template #body>
 					<div class="flex flex-col gap-3 w-full">
@@ -196,7 +196,7 @@ useHead({
 									placeholder="Report Title"
 									:ui="{ root: 'w-full' }"
 								/>
-								<UTooltip text="Automatic Fill (requires Run Title)">
+								<UTooltip text="Automatic Fill (requires a selected run)">
 									<UButton
 										color="primary"
 										icon="i-lucide-pencil"
@@ -216,7 +216,10 @@ useHead({
 							/>
 						</UFormField>
 						<UFormField label="Overall Pass Status">
-							<USwitch v-model="newReport.pass" label="Passed" />
+							<USwitch
+								v-model="newReport.pass"
+								:label="newReport.pass ? 'Passed' : 'Failed'"
+							/>
 						</UFormField>
 						<UFormField label="Comment">
 							<UTextarea
@@ -232,9 +235,10 @@ useHead({
 						<UButton
 							color="primary"
 							size="sm"
-							variant="solid"
+							variant="soft"
+							:disabled="!newReport.title || !selectedRun?.value"
 							@click="saveReport"
-							>Save Report</UButton
+							>Create Report</UButton
 						>
 					</div>
 				</template>
@@ -261,7 +265,8 @@ useHead({
 							<UBadge
 								:color="item.pass ? 'success' : 'error'"
 								:label="item.pass ? 'Passed' : 'Failed'"
-								class="font-semibold"
+								variant="soft"
+								class="font-semibold rounded-full"
 							/>
 						</div>
 					</template>

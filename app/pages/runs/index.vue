@@ -231,7 +231,7 @@ useHead({
 					title: 'text-primary'
 				}"
 			>
-				<UButton color="primary" size="sm" variant="solid" icon="i-lucide-plus">
+				<UButton color="primary" size="sm" variant="soft" icon="i-lucide-plus">
 					New Test Run
 				</UButton>
 
@@ -307,7 +307,7 @@ useHead({
 						<UButton
 							color="primary"
 							size="sm"
-							variant="solid"
+							variant="soft"
 							icon="i-lucide-plus"
 							:disabled="!newRun.title"
 							@click="createRun"

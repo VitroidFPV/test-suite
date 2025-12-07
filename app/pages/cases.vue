@@ -423,27 +423,26 @@ useHead({
 				<div class="flex flex-col gap-3 w-full">
 					<div class="flex justify-between px-1">
 						<div class="text-primary font-bold">Cases</div>
-						<div class="flex">
+						<div class="flex items-center gap-2">
 							<UTooltip text="Create new Case" :shortcuts="['meta', 'N']">
 								<UButton
 									color="primary"
 									size="xs"
-									variant="link"
+									variant="soft"
 									icon="i-lucide-plus"
 									@click="caseModal('')"
 								>
-									Create Case
+									New Case
 								</UButton>
 							</UTooltip>
-							<USeparator orientation="vertical" />
 							<UTooltip
 								text="Add existing case to group"
 								:shortcuts="['meta', 'L']"
 							>
 								<UButton
-									color="primary"
+									color="neutral"
 									size="xs"
-									variant="link"
+									variant="soft"
 									icon="i-lucide-pen"
 									:disabled="selectedGroup === undefined"
 									@click="groupModal(selectedGroup?.id ? selectedGroup.id : '')"
@@ -587,17 +586,6 @@ useHead({
 								</UTooltip>
 							</div>
 							<div class="flex items-center gap-2 h-fit">
-								<UTooltip text="Save" :shortcuts="['meta', 'S']">
-									<UButton
-										color="primary"
-										size="xs"
-										variant="link"
-										icon="i-lucide-save"
-										@click="
-											saveCase(false, editedCase.id !== '' ? true : false)
-										"
-									/>
-								</UTooltip>
 								<UTooltip
 									text="Save & Close"
 									:shortcuts="['meta', 'Shift', 'S']"
@@ -605,10 +593,11 @@ useHead({
 									<UButton
 										color="primary"
 										size="xs"
-										variant="link"
+										variant="soft"
 										icon="i-lucide-save-all"
 										@click="saveCase(true, editedCase.id !== '' ? true : false)"
-									/>
+										>Apply</UButton
+									>
 								</UTooltip>
 							</div>
 						</div>

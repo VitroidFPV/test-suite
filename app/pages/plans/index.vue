@@ -128,7 +128,7 @@ async function createPlan() {
 						<UButton
 							color="primary"
 							size="sm"
-							variant="solid"
+							variant="soft"
 							icon="i-lucide-plus"
 							:disabled="!newPlanTitle.trim()"
 							@click="createPlan"

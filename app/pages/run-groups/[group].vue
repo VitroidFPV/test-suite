@@ -383,11 +383,11 @@ useHead({
 							<UButton
 								color="primary"
 								size="sm"
-								variant="solid"
+								variant="soft"
 								icon="i-lucide-save"
 								@click="saveRunGroup"
 							>
-								Save Changes
+								Apply
 							</UButton>
 						</div>
 					</template>
