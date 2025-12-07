@@ -5,47 +5,38 @@ import BaseCard from "~/components/cards/BaseCard.vue"
 
 const supabase = useSupabaseClient<Database>()
 
-type Case = Tables<"test_cases">
 type CaseGroup = Tables<"test_case_groups">
-type GroupedCase = Tables<"test_case_group_links">
+type TestCase = Tables<"test_cases">
 
-const cases = ref<Case[]>([])
-const caseGroups = ref<CaseGroup[]>([])
-const selectedGroup = ref<CaseGroup>()
-const groupedCases = ref<GroupedCase[]>([])
+const { data: caseGroups, refresh: refreshCaseGroups } = await useAsyncData(
+	"caseGroups",
+	async () => {
+		const { data, error } = await supabase.from("test_case_groups").select("*")
+		if (error) {
+			console.error(error)
+		} else {
+			data.sort((a, b) => a.name.localeCompare(b.name))
+			return data
+		}
+	},
+	{ lazy: true }
+)
 
-async function getAllCases() {
-	const { data: casesData, error: casesError } = await supabase
-		.from("test_cases")
-		.select("*")
+const { data: cases, refresh: refreshCases } = await useAsyncData(
+	"cases",
+	async () => {
+		const { data, error } = await supabase.from("test_cases").select("*")
+		if (error) {
+			console.error(error)
+		} else {
+			return data
+		}
+	},
+	{ lazy: true }
+)
 
-	if (casesError) {
-		console.error(casesError)
-		return
-	}
-
-	const { data: groupingsData, error: groupingsError } = await supabase
-		.from("test_case_group_links")
-		.select("*")
-
-	if (groupingsError) {
-		console.error(groupingsError)
-		return
-	}
-
-	cases.value = casesData
-	groupedCases.value = groupingsData
-}
-
-async function getCaseGroups() {
-	const { data, error } = await supabase.from("test_case_groups").select("*")
-	if (error) {
-		console.error(error)
-	} else {
-		data.sort((a, b) => a.name.localeCompare(b.name))
-		caseGroups.value = data
-	}
-}
+const selectedGroup = ref<CaseGroup | undefined>()
+const groupedCases = ref<{ group: string; cases: TestCase[] }[]>([])
 
 // Filter cases by selected group
 const filteredCases = computed(() => {
@@ -55,23 +46,17 @@ const filteredCases = computed(() => {
 
 	const groupedCaseIds = groupedCases.value
 		.filter((gc) => gc.group === selectedGroup.value?.id)
-		.map((gc) => gc.case)
+		.flatMap((gc) => gc.cases.map((c) => c.case_id))
 
-	return cases.value.filter((c) => groupedCaseIds.includes(c.id))
+	return cases.value?.filter((c) => groupedCaseIds.includes(c.case_id)) ?? []
 })
-
-// await getAllCases()
-// await getCaseGroups()
-
-getAllCases()
-getCaseGroups()
 
 const groups = computed(() => [
 	{ label: "All", value: "all" },
-	...caseGroups.value.map((item) => ({
+	...(caseGroups.value?.map((item) => ({
 		label: item.title,
 		value: item.name
-	}))
+	})) ?? [])
 ])
 
 const selectedTabGroup = ref<string>("all")
@@ -81,18 +66,19 @@ function filterGroup(value: string) {
 	if (value === "all") {
 		selectedGroup.value = undefined
 	} else {
-		selectedGroup.value = caseGroups.value.find((group) => group.name === value)
+		selectedGroup.value = caseGroups.value?.find(
+			(group) => group.name === value
+		)
 	}
 	editedGroup.value = selectedGroup.value
 }
-
 const caseModalOpen = ref(false)
-const editedCase = ref<Case>()
+const editedCase = ref<TestCase>()
 
 function caseModal(id: string) {
 	caseModalOpen.value = true
 	editedCase.value = id
-		? JSON.parse(JSON.stringify(cases.value.find((item) => item.id === id)))
+		? JSON.parse(JSON.stringify(cases.value?.find((item) => item.id === id)))
 		: {
 				case_id: 1,
 				title: "",
@@ -102,7 +88,7 @@ function caseModal(id: string) {
 			}
 }
 
-async function writeCase(data: Case, update: boolean = false) {
+async function writeCase(data: TestCase, update: boolean = false) {
 	if (update) {
 		const { error } = await supabase
 			.from("test_cases")
@@ -149,7 +135,7 @@ async function writeCase(data: Case, update: boolean = false) {
 			}
 		}
 	}
-	await getAllCases()
+	await refreshCases()
 }
 
 async function saveCase(close: boolean = false, update: boolean = false) {
@@ -167,7 +153,7 @@ async function deleteCase(id: string) {
 		console.error(error)
 	}
 	caseModalOpen.value = false
-	getAllCases()
+	await refreshCases()
 }
 
 const linkModalOpen = ref(false)
@@ -176,7 +162,7 @@ async function groupModal(id: string) {
 
 	if (id) {
 		// Load existing group
-		const group = caseGroups.value.find((item) => item.id === id)
+		const group = caseGroups.value?.find((item) => item.id === id)
 		if (!group) return
 
 		editedGroup.value = JSON.parse(JSON.stringify(group))
@@ -184,9 +170,9 @@ async function groupModal(id: string) {
 		// Load associated cases
 		const groupCases = groupedCases.value
 			.filter((gc) => gc.group === id)
-			.map((gc) => gc.case)
+			.flatMap((gc) => gc.cases.map((c) => c.case_id))
 
-		selectedCases.value = groupCases
+		selectedCases.value = groupCases.map((c) => c.toString())
 	} else {
 		// New group
 		editedGroup.value = {
@@ -276,8 +262,8 @@ async function writeGroup(data: CaseGroup, update: boolean = false) {
 		}
 	}
 
-	getAllCases()
-	getCaseGroups()
+	await refreshCases()
+	await refreshCaseGroups()
 	if (selectedGroup.value?.id === data.id) {
 		selectedGroup.value = data
 	}
@@ -306,7 +292,7 @@ async function removeFromGroup(caseId: string) {
 		return
 	}
 
-	await getAllCases()
+	await refreshCases()
 	caseModalOpen.value = false
 }
 
@@ -334,7 +320,7 @@ async function deleteGroup(id: string) {
 	}
 
 	linkModalOpen.value = false
-	await getCaseGroups()
+	await refreshCaseGroups()
 	filterGroup("all")
 }
 
@@ -453,7 +439,7 @@ useHead({
 						</div>
 					</div>
 					<div
-						v-if="filteredCases.length > 0"
+						v-if="filteredCases && filteredCases.length > 0"
 						class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 w-full"
 					>
 						<div v-for="item in filteredCases" :key="item.id">
@@ -520,6 +506,9 @@ useHead({
 								</template>
 							</BaseCard>
 						</div>
+					</div>
+					<div v-if="filteredCases && filteredCases.length === 0">
+						No cases found
 					</div>
 				</div>
 				<UModal
