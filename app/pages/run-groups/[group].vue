@@ -437,7 +437,7 @@ useHead({
 		</template>
 
 		<template #description>
-			<div class="md mt-4 text-neutral-400">
+			<div class="md text-neutral-400">
 				<VueMarkdown
 					v-if="runGroup?.description"
 					:source="runGroup.description"

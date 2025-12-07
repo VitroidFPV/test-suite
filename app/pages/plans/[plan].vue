@@ -375,14 +375,13 @@ getAllCases()
 		</template>
 
 		<template #description>
-			<div v-if="plan" class="md mt-4 text-neutral-400">
+			<div v-if="plan" class="md text-neutral-400">
 				<VueMarkdown v-if="plan.description" :source="plan.description">
 				</VueMarkdown>
 			</div>
 		</template>
 
 		<template #content>
-			<div class="w-full flex gap-x-3"></div>
 			<div
 				v-if="plan"
 				class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 w-full"

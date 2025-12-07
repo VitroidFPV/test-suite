@@ -63,15 +63,22 @@ async function getTestRuns() {
 	sortTestRuns("title", "asc")
 }
 
-const runGroups = ref<RunGroup[]>([])
-async function getRunGroups() {
-	const { data, error } = await supabase.from("test_run_groups").select("*")
-	if (error) {
-		console.error(error)
-		return
-	}
-	runGroups.value = data
-}
+const {
+	data: runGroups,
+	error: runGroupsError,
+	refresh: refreshRunGroups
+} = await useAsyncData(
+	"runGroups",
+	async () => {
+		const { data, error } = await supabase.from("test_run_groups").select("*")
+		if (error) {
+			console.error(error)
+			return []
+		}
+		return data
+	},
+	{ lazy: true }
+)
 
 const testRunsSortOptions = ref<{ label: string; value: string }[]>([
 	{ label: "Title", value: "title" },
@@ -174,7 +181,7 @@ async function createRunGroup() {
 		}
 	}
 
-	getRunGroups()
+	refreshRunGroups()
 	getTestRuns()
 	createRunGroupModalOpen.value = false
 
@@ -189,7 +196,6 @@ async function createRunGroup() {
 	selectedTestRuns.value = []
 }
 
-getRunGroups()
 getTestRuns()
 
 useHead({
@@ -282,7 +288,10 @@ useHead({
 			</UModal>
 		</template>
 		<template #content>
-			<div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 w-full">
+			<div
+				v-if="runGroups"
+				class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 w-full"
+			>
 				<div v-for="run in runGroups" :key="run.id">
 					<BaseCard>
 						<template #header>
@@ -312,6 +321,32 @@ useHead({
 						</template>
 					</BaseCard>
 				</div>
+			</div>
+			<div
+				v-else
+				class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 w-full"
+			>
+				<div v-for="i in 5" :key="i">
+					<BaseCard
+						:style="{
+							opacity: 1 - i / 10
+						}"
+					>
+						<template #header>
+							<div class="font-bold text-primary-500">
+								<USkeleton class="w-1/2 h-6" />
+							</div>
+						</template>
+						<template #default>
+							<span class="line-clamp-1 text-ellipsis">
+								<USkeleton class="h-6 w-full" />
+							</span>
+						</template>
+					</BaseCard>
+				</div>
+			</div>
+			<div v-if="runGroups && runGroups.length === 0">
+				No run groups yet. Click "Create Run Group" to create a new group.
 			</div>
 		</template>
 	</PageWrapper>
