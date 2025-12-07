@@ -212,7 +212,6 @@ useHead({
 								v-model="selectedRun"
 								placeholder="Select a run"
 								:items="formattedRuns"
-								option-attribute="title"
 								:ui="{ base: 'w-full' }"
 							/>
 						</UFormField>
