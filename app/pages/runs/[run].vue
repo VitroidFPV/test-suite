@@ -467,7 +467,6 @@ getRun().then(() => {
 							size="sm"
 							variant="soft"
 							icon="i-lucide-pencil"
-							@click="editRunModalOpen = true"
 						/>
 					</UTooltip>
 					<template #body>

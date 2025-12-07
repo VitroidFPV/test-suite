@@ -28,12 +28,13 @@ const mdPreviewMode = ref(false)
 const newPlanTitle = ref("")
 const newPlanDescription = ref("")
 
-function openCreatePlanModal() {
-	newPlanTitle.value = ""
-	newPlanDescription.value = ""
-	mdPreviewMode.value = false
-	createPlanModalOpen.value = true
-}
+watch(createPlanModalOpen, (isOpen) => {
+	if (!isOpen) {
+		newPlanTitle.value = ""
+		newPlanDescription.value = ""
+		mdPreviewMode.value = false
+	}
+})
 
 async function createPlan() {
 	if (!newPlanTitle.value.trim()) {
@@ -83,7 +84,6 @@ async function createPlan() {
 						size="sm"
 						variant="soft"
 						icon="i-lucide-plus"
-						@click="openCreatePlanModal()"
 					>
 						New Plan
 					</UButton>

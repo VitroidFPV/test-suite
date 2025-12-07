@@ -230,7 +230,6 @@ getAllCases()
 							variant="soft"
 							icon="i-lucide-pencil"
 							:disabled="!plan"
-							@click="planCaseModal()"
 						>
 							<!-- Edit Plan -->
 						</UButton>

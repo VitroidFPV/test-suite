@@ -305,7 +305,6 @@ useHead({
 							size="sm"
 							variant="soft"
 							icon="i-lucide-pencil"
-							@click="editGroupModalOpen = true"
 						/>
 					</UTooltip>
 					<template #body>
