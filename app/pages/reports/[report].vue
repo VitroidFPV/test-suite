@@ -77,6 +77,10 @@ const editedReport = ref<Tables<"test_run_reports">>({
 })
 
 async function saveReport() {
+	if (!report.value) {
+		console.error("Cannot save: report not loaded")
+		return
+	}
 	const { data, error } = await supabase
 		.from("test_run_reports")
 		.update({
@@ -84,16 +88,20 @@ async function saveReport() {
 			comment: editedReport.value.comment,
 			pass: editedReport.value.pass
 		})
-		.eq("id", report.value!.report.id)
+		.eq("id", report.value.report.id)
 	if (error) {
 		console.error(error)
 		return
 	}
 	editReportModalOpen.value = false
-	refreshReport()
+	await refreshReport()
 }
 
 async function deleteReport() {
+	if (!urlReport) {
+		console.error("Cannot delete: report ID missing from route")
+		return
+	}
 	const { error } = await supabase
 		.from("test_run_reports")
 		.delete()
@@ -190,6 +198,7 @@ const statusStats = computed(() => {
 							size="sm"
 							variant="soft"
 							icon="i-lucide-pencil"
+							:disabled="!report"
 						/>
 					</UTooltip>
 					<template #body>
@@ -254,6 +263,7 @@ const statusStats = computed(() => {
 							size="sm"
 							variant="soft"
 							icon="i-lucide-trash"
+							:disabled="!report"
 						>
 						</UButton>
 					</UTooltip>
