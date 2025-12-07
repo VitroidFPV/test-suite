@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { Database, Tables } from "~/types/database.types"
-import TestRunCard from "~/components/cards/TestRunCard.vue"
 import BaseCard from "~/components/cards/BaseCard.vue"
 import dayjs from "dayjs"
 
@@ -12,11 +11,7 @@ type User = Tables<"user_metadata">
 
 type ReportWithUser = Report & { creator?: User }
 
-const {
-	data: reportsData,
-	error: reportsError,
-	refresh: refreshReports
-} = await useAsyncData(
+const { data: reportsData, refresh: refreshReports } = await useAsyncData(
 	"reports",
 	async () => {
 		const { data, error } = await supabase.from("test_run_reports").select("*")
@@ -55,7 +50,7 @@ const {
 	{ lazy: true }
 )
 
-const { data: runsData, error: runsError } = await useAsyncData(
+const { data: runsData } = await useAsyncData(
 	"runs",
 	async () => {
 		const { data, error } = await supabase.from("test_runs").select("*")

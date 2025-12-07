@@ -63,11 +63,7 @@ async function getTestRuns() {
 	sortTestRuns("title", "asc")
 }
 
-const {
-	data: runGroups,
-	error: runGroupsError,
-	refresh: refreshRunGroups
-} = await useAsyncData(
+const { data: runGroups, refresh: refreshRunGroups } = await useAsyncData(
 	"runGroups",
 	async () => {
 		const { data, error } = await supabase.from("test_run_groups").select("*")

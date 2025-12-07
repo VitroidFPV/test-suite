@@ -5,7 +5,7 @@ import BaseCard from "~/components/cards/BaseCard.vue"
 
 const supabase = useSupabaseClient<Database>()
 
-const { data: plans, error } = await useAsyncData(
+const { data: plans } = await useAsyncData(
 	"plans",
 	async () => {
 		const { data, error } = await supabase.from("test_plans").select("*")

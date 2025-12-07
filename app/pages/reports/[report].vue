@@ -12,11 +12,7 @@ const mdPreviewMode = ref(false)
 const editReportModalOpen = ref(false)
 const confirmDeleteModalOpen = ref(false)
 
-const {
-	data: report,
-	error: reportError,
-	refresh: refreshReport
-} = await useAsyncData(
+const { data: report, refresh: refreshReport } = await useAsyncData(
 	"report",
 	async () => {
 		const { data, error } = await supabase.rpc("get_test_reports", {
@@ -79,6 +75,7 @@ const editedReport = ref<Tables<"test_run_reports">>({
 // Populate editedReport when the edit modal opens
 watch(editReportModalOpen, (isOpen) => {
 	if (isOpen && report.value) {
+		mdPreviewMode.value = false
 		editedReport.value = {
 			comment: report.value.report.comment || "",
 			created_at: report.value.report.created_at,
@@ -96,7 +93,7 @@ async function saveReport() {
 		console.error("Cannot save: report not loaded")
 		return
 	}
-	const { data, error } = await supabase
+	const { error } = await supabase
 		.from("test_run_reports")
 		.update({
 			title: editedReport.value.title,
@@ -235,18 +232,43 @@ const statusStats = computed(() => {
 							<UFormField label="Overall Pass Status">
 								<USwitch v-model="editedReport.pass" label="Passed" />
 							</UFormField>
-							<UFormField label="Comment">
-								<UTextarea
-									v-model="editedReport.comment"
-									placeholder="Report Comment"
-									color="primary"
-									variant="soft"
-									autoresize
-									:ui="{
-										root: 'w-full'
-									}"
-								/>
-							</UFormField>
+							<!-- Comment with markdown preview -->
+							<div class="flex flex-col gap-2">
+								<UFormField>
+									<template #label>
+										<div class="flex items-center gap-2">
+											<span>Comment</span>
+											<USwitch
+												v-model="mdPreviewMode"
+												size="xs"
+												label="Markdown Preview"
+											/>
+										</div>
+									</template>
+									<UTextarea
+										v-if="!mdPreviewMode"
+										v-model="editedReport.comment"
+										color="primary"
+										placeholder="Report Comment (supports Markdown)"
+										variant="soft"
+										:rows="4"
+										autoresize
+										:ui="{
+											root: 'w-full'
+										}"
+									/>
+									<div
+										v-if="mdPreviewMode"
+										class="md min-h-23 p-2 rounded-lg bg-neutral-800"
+									>
+										<VueMarkdown
+											v-if="editedReport.comment"
+											:source="editedReport.comment"
+										/>
+										<span v-else class="text-neutral-500">No comment</span>
+									</div>
+								</UFormField>
+							</div>
 						</div>
 					</template>
 					<template #footer>

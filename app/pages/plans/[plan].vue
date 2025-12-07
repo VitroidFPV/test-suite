@@ -124,10 +124,6 @@ async function getAllCases() {
 const planCaseModalOpen = ref(false)
 const mdPreviewMode = ref(false)
 
-function planCaseModal() {
-	planCaseModalOpen.value = true
-}
-
 // selected cases as an array of uids
 const selectedCases = ref<string[]>([])
 const planTitle = ref("")
