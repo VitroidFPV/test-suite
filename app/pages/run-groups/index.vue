@@ -33,7 +33,7 @@ const { data: testRuns, refresh: refreshTestRuns } = await useAsyncData(
 		]
 
 		if (creatorIds.length === 0) {
-			return runsArray as TestRunWithUser[]
+			return runsArray.map((run) => ({ ...run, creator: undefined }))
 		}
 
 		// Fetch user metadata for all creators
@@ -47,17 +47,14 @@ const { data: testRuns, refresh: refreshTestRuns } = await useAsyncData(
 
 		if (usersError) {
 			console.error(usersError)
-			return runsArray as TestRunWithUser[]
+			return runsArray.map((run) => ({ ...run, creator: undefined }))
 		}
 
 		// Map users to their respective runs
-		return runsArray.map((run) => {
-			const creator = usersData?.find((user) => user.id === run.created_by)
-			return {
-				...run,
-				creator
-			}
-		}) as TestRunWithUser[]
+		return runsArray.map((run) => ({
+			...run,
+			creator: usersData?.find((user) => user.id === run.created_by)
+		}))
 	},
 	{ lazy: true }
 )
