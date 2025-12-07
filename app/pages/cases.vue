@@ -119,7 +119,8 @@ async function writeCase(data: TestCase, update: boolean = false) {
 				title: data.title,
 				text: data.text,
 				case_id: data.case_id,
-				created_at: data.created_at
+				created_at: data.created_at,
+				priority: data.priority
 			})
 			.eq("id", data.id)
 		if (error) {
@@ -133,7 +134,8 @@ async function writeCase(data: TestCase, update: boolean = false) {
 				{
 					title: data.title,
 					text: data.text,
-					created_at: data.created_at
+					created_at: data.created_at,
+					priority: data.priority
 				}
 			])
 			.select()
@@ -235,30 +237,41 @@ async function writeGroup(data: CaseGroup, update: boolean = false) {
 			return
 		}
 
-		// Update group-case relationships
-		if (selectedCases.value && data.id) {
-			// Delete existing relationships
-			const { error: deleteError } = await supabase
-				.from("test_case_group_links")
-				.delete()
-				.eq("group", data.id)
+		// Update group-case relationships using diff approach (safer than delete-all + insert)
+		if (data.id) {
+			const currentLinks =
+				caseGroupLinks.value
+					?.filter((link) => link.group === data.id)
+					.map((link) => link.case) ?? []
 
-			if (deleteError) {
-				console.error(deleteError)
-				return
+			const toAdd = selectedCases.value.filter(
+				(caseId) => !currentLinks.includes(caseId)
+			)
+			const toRemove = currentLinks.filter(
+				(caseId) => !selectedCases.value.includes(caseId)
+			)
+
+			// Insert new relationships first (if this fails, no data is lost)
+			if (toAdd.length > 0) {
+				const { error: insertError } = await supabase
+					.from("test_case_group_links")
+					.insert(toAdd.map((caseId) => ({ case: caseId, group: data.id })))
+				if (insertError) {
+					console.error(insertError)
+					return
+				}
 			}
 
-			// Insert new relationships
-			const { error: groupError } = await supabase
-				.from("test_case_group_links")
-				.insert(
-					selectedCases.value.map((caseId) => ({
-						case: caseId,
-						group: data.id
-					}))
-				)
-			if (groupError) {
-				console.error(groupError)
+			// Remove old relationships after (if this fails, we just have extra links)
+			if (toRemove.length > 0) {
+				const { error: deleteError } = await supabase
+					.from("test_case_group_links")
+					.delete()
+					.eq("group", data.id)
+					.in("case", toRemove)
+				if (deleteError) {
+					console.error(deleteError)
+				}
 			}
 		}
 	} else {
@@ -295,11 +308,7 @@ async function writeGroup(data: CaseGroup, update: boolean = false) {
 		}
 	}
 
-	await Promise.all([
-		refreshCases(),
-		refreshCaseGroups(),
-		refreshCaseGroupLinks()
-	])
+	await Promise.all([refreshCaseGroups(), refreshCaseGroupLinks()])
 	if (selectedGroup.value?.id === data.id) {
 		selectedGroup.value = data
 	}
@@ -591,11 +600,7 @@ useHead({
 									/>
 								</UTooltip>
 								<UTooltip
-									v-if="
-										editedCase.id &&
-										selectedGroup &&
-										selectedGroup.name !== 'All'
-									"
+									v-if="editedCase.id && selectedGroup"
 									text="Remove from group"
 									:shortcuts="['meta', 'Delete']"
 								>
@@ -647,7 +652,7 @@ useHead({
 							<div
 								class="grid 2xl:grid-cols-4 lg:grid-cols-3 sm:grid-cols-2 grid-cols-1 gap-3"
 							>
-								<div v-for="item in cases" :key="item.id">
+								<div v-for="item in cases ?? []" :key="item.id">
 									<UCard
 										:ui="{
 											header: 'px-4 py-3 sm:p-4',
