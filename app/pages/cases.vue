@@ -35,8 +35,23 @@ const { data: cases, refresh: refreshCases } = await useAsyncData(
 	{ lazy: true }
 )
 
+const { data: caseGroupLinks, refresh: refreshCaseGroupLinks } =
+	await useAsyncData(
+		"caseGroupLinks",
+		async () => {
+			const { data, error } = await supabase
+				.from("test_case_group_links")
+				.select("*")
+			if (error) {
+				console.error(error)
+			} else {
+				return data
+			}
+		},
+		{ lazy: true }
+	)
+
 const selectedGroup = ref<CaseGroup | undefined>()
-const groupedCases = ref<{ group: string; cases: TestCase[] }[]>([])
 
 // Filter cases by selected group
 const filteredCases = computed(() => {
@@ -44,11 +59,13 @@ const filteredCases = computed(() => {
 		return cases.value
 	}
 
-	const groupedCaseIds = groupedCases.value
-		.filter((gc) => gc.group === selectedGroup.value?.id)
-		.flatMap((gc) => gc.cases.map((c) => c.case_id))
+	// Get case IDs that belong to the selected group
+	const caseIdsInGroup =
+		caseGroupLinks.value
+			?.filter((link) => link.group === selectedGroup.value?.id)
+			.map((link) => link.case) ?? []
 
-	return cases.value?.filter((c) => groupedCaseIds.includes(c.case_id)) ?? []
+	return cases.value?.filter((c) => caseIdsInGroup.includes(c.id)) ?? []
 })
 
 const groups = computed(() => [
@@ -133,6 +150,7 @@ async function writeCase(data: TestCase, update: boolean = false) {
 			if (groupError) {
 				console.error(groupError)
 			}
+			await refreshCaseGroupLinks()
 		}
 	}
 	await refreshCases()
@@ -168,11 +186,12 @@ async function groupModal(id: string) {
 		editedGroup.value = JSON.parse(JSON.stringify(group))
 
 		// Load associated cases
-		const groupCases = groupedCases.value
-			.filter((gc) => gc.group === id)
-			.flatMap((gc) => gc.cases.map((c) => c.case_id))
+		const groupCaseIds =
+			caseGroupLinks.value
+				?.filter((link) => link.group === id)
+				.map((link) => link.case) ?? []
 
-		selectedCases.value = groupCases.map((c) => c.toString())
+		selectedCases.value = groupCaseIds
 	} else {
 		// New group
 		editedGroup.value = {
@@ -264,6 +283,7 @@ async function writeGroup(data: CaseGroup, update: boolean = false) {
 
 	await refreshCases()
 	await refreshCaseGroups()
+	await refreshCaseGroupLinks()
 	if (selectedGroup.value?.id === data.id) {
 		selectedGroup.value = data
 	}
@@ -293,6 +313,7 @@ async function removeFromGroup(caseId: string) {
 	}
 
 	await refreshCases()
+	await refreshCaseGroupLinks()
 	caseModalOpen.value = false
 }
 
@@ -321,6 +342,7 @@ async function deleteGroup(id: string) {
 
 	linkModalOpen.value = false
 	await refreshCaseGroups()
+	await refreshCaseGroupLinks()
 	filterGroup("all")
 }
 
