@@ -17,113 +17,157 @@ interface RunCaseWithResult extends RunCase {
 	comment: string | null
 }
 
-const run = ref<Run | undefined>()
-const runCases = ref<RunCaseWithResult[]>([])
-const runGroupsContainingTestRun = ref<RunGroup[] | undefined>(undefined)
-const allRunGroups = ref<RunGroup[]>([])
+// Fetch run details and associated run groups
+const { data: runData, refresh: refreshRun } = await useAsyncData(
+	`run-${urlRun}`,
+	async () => {
+		const { data, error } = await supabase
+			.from("test_runs")
+			.select("*")
+			.eq("id", urlRun)
+			.single()
+		if (error) {
+			console.error(error)
+			return null
+		}
 
-const statusStats = ref<{ title: string; value: string; number: number }[]>([
-	{ title: "Total", value: "total", number: 0 },
-	{ title: "Passed", value: "passed", number: 0 },
-	{ title: "Failed", value: "failed", number: 0 },
-	{ title: "Blocked", value: "blocked", number: 0 },
-	{ title: "Skipped", value: "skipped", number: 0 },
-	{ title: "Not Run", value: "not_run", number: 0 }
-])
+		// Get run groups from link table
+		const { data: runGroupsData, error: runGroupsError } = await supabase
+			.from("test_run_group_links")
+			.select("group")
+			.eq("run", data.id)
+		if (runGroupsError) {
+			console.error(runGroupsError)
+			return { run: data, runGroups: [], allRunGroups: [] }
+		}
 
-async function getRun() {
-	const { data, error } = await supabase
-		.from("test_runs")
-		.select("*")
-		.eq("id", urlRun)
-	if (error) {
-		console.error(error)
-		return
-	}
-	run.value = data[0]
-	if (!run.value) {
-		console.error("Run not found")
-		return
-	}
+		// Fetch full group details for each group ID
+		const groupIds = runGroupsData.map((link) => link.group)
+		let runGroups: RunGroup[] = []
 
-	// get run groups from link table
-	const { data: runGroupsData, error: runGroupsError } = await supabase
-		.from("test_run_group_links")
-		.select("group")
-		.eq("run", run.value.id)
-	if (runGroupsError) {
-		console.error(runGroupsError)
-		return
-	}
+		if (groupIds.length > 0) {
+			const { data: groupsData, error: groupsError } = await supabase
+				.from("test_run_groups")
+				.select("*")
+				.in("id", groupIds)
+			if (groupsError) {
+				console.error(groupsError)
+			} else {
+				runGroups = groupsData
+			}
+		}
 
-	// Fetch full group details for each group ID
-	const groupIds = runGroupsData.map((link) => link.group)
-
-	if (groupIds.length === 0) {
-		runGroupsContainingTestRun.value = []
-	} else {
-		const { data: groupsData, error: groupsError } = await supabase
+		// Fetch all run groups for the edit modal
+		const { data: allRunGroupsData, error: allRunGroupsError } = await supabase
 			.from("test_run_groups")
 			.select("*")
-			.in("id", groupIds)
-		if (groupsError) {
-			console.error(groupsError)
-			return
+		if (allRunGroupsError) {
+			console.error(allRunGroupsError)
 		}
-		runGroupsContainingTestRun.value = groupsData
-	}
 
-	const { data: allRunGroupsData, error: allRunGroupsError } = await supabase
-		.from("test_run_groups")
-		.select("*")
-	if (allRunGroupsError) {
-		console.error(allRunGroupsError)
-		return
-	}
-	allRunGroups.value = allRunGroupsData
-}
-
-async function getRunCases() {
-	if (!run.value) {
-		console.error("Run not selected")
-		return
-	}
-	// table test_runs contains run id
-	// table test_run_case_links contains test run id and test case ids
-
-	const { data: runCasesDb, error: runCasesError } = await supabase
-		.from("test_run_case_links")
-		.select("case, result, comment")
-		.eq("run", run.value.id)
-	if (runCasesError) {
-		console.error(runCasesError)
-		return
-	}
-
-	// get test cases
-	const { data: cases, error: casesError } = await supabase
-		.from("test_cases")
-		.select("*")
-		.in(
-			"id",
-			runCasesDb.map((c) => c.case)
-		)
-	if (casesError) {
-		console.error(casesError)
-		return
-	}
-
-	// Merge cases with their results and comments
-	runCases.value = cases.map((testCase) => {
-		const linkData = runCasesDb.find((link) => link.case === testCase.id)
 		return {
-			...testCase,
-			result: linkData?.result || null,
-			comment: linkData?.comment || null
+			run: data,
+			runGroups,
+			allRunGroups: allRunGroupsData || []
 		}
-	})
-	updateStatusStats()
-}
+	},
+	{ lazy: true }
+)
+
+// Computed properties for run data
+const run = computed(() => runData.value?.run)
+const runGroupsContainingTestRun = computed(() => runData.value?.runGroups)
+const allRunGroups = computed(() => runData.value?.allRunGroups ?? [])
+
+// Fetch run cases with their results
+const { data: runCasesData, refresh: refreshRunCases } = await useAsyncData(
+	`runCases-${urlRun}`,
+	async () => {
+		const { data: runCasesDb, error: runCasesError } = await supabase
+			.from("test_run_case_links")
+			.select("case, result, comment")
+			.eq("run", urlRun)
+		if (runCasesError) {
+			console.error(runCasesError)
+			return []
+		}
+
+		if (runCasesDb.length === 0) {
+			return []
+		}
+
+		// Get test cases
+		const { data: cases, error: casesError } = await supabase
+			.from("test_cases")
+			.select("*")
+			.in(
+				"id",
+				runCasesDb.map((c) => c.case)
+			)
+		if (casesError) {
+			console.error(casesError)
+			return []
+		}
+
+		// Merge cases with their results and comments
+		return cases.map((testCase) => {
+			const linkData = runCasesDb.find((link) => link.case === testCase.id)
+			return {
+				...testCase,
+				result: linkData?.result || null,
+				comment: linkData?.comment || null
+			}
+		})
+	},
+	{ lazy: true }
+)
+
+// Local reactive copy of run cases for optimistic updates
+const runCases = ref<RunCaseWithResult[]>([])
+
+// Sync local runCases with fetched data
+watch(
+	runCasesData,
+	(newData) => {
+		if (newData) {
+			runCases.value = [...newData]
+		}
+	},
+	{ immediate: true }
+)
+
+// Computed status stats
+const statusStats = computed(() => {
+	const stats = [
+		{ title: "Total", value: "total", number: runCases.value.length },
+		{
+			title: "Passed",
+			value: "passed",
+			number: runCases.value.filter((c) => c.result === "passed").length
+		},
+		{
+			title: "Failed",
+			value: "failed",
+			number: runCases.value.filter((c) => c.result === "failed").length
+		},
+		{
+			title: "Blocked",
+			value: "blocked",
+			number: runCases.value.filter((c) => c.result === "blocked").length
+		},
+		{
+			title: "Skipped",
+			value: "skipped",
+			number: runCases.value.filter((c) => c.result === "skipped").length
+		},
+		{
+			title: "Not Run",
+			value: "not_run",
+			number: runCases.value.filter((c) => c.result === "not_run").length
+		}
+	]
+	return stats
+})
 
 async function updateCaseResult(caseId: string, resultValue: string) {
 	if (!run.value) return
@@ -146,13 +190,11 @@ async function updateCaseResult(caseId: string, resultValue: string) {
 		return
 	}
 
-	// Update local state
+	// Update local state (optimistic update)
 	const caseItem = runCases.value.find((c) => c.id === caseId)
 	if (caseItem) {
 		caseItem.result = resultValue
 	}
-
-	updateStatusStats()
 }
 
 async function updateCaseComment(caseId: string, comment: string) {
@@ -176,15 +218,6 @@ async function updateCaseComment(caseId: string, comment: string) {
 	if (caseItem) {
 		caseItem.comment = comment || null
 	}
-}
-
-function updateStatusStats() {
-	// Calculate status stats
-	statusStats.value.forEach((s) => {
-		s.number = runCases.value.filter((c) => c.result === s.value).length
-	})
-	statusStats.value.find((s) => s.value === "total")!.number =
-		runCases.value.length
 }
 
 const confirmDeleteModalOpen = ref(false)
@@ -275,8 +308,8 @@ async function saveRun() {
 	}
 
 	// Always exit edit mode and refresh data, even if there were errors
-	await getRun()
-	await getRunCases()
+	await refreshRun()
+	await refreshRunCases()
 
 	editRunModalOpen.value = false
 
@@ -377,14 +410,18 @@ function autoFillReportTitle() {
 	}
 }
 
-getRun().then(() => {
-	getRunCases()
-	if (run.value) {
-		editedRun.value = { ...run.value }
-		selectedRunGroups.value =
-			runGroupsContainingTestRun.value?.map((group) => group.id) || []
-	}
-})
+// Initialize editedRun and selectedRunGroups when data is loaded
+watch(
+	run,
+	(newRun) => {
+		if (newRun) {
+			editedRun.value = { ...newRun }
+			selectedRunGroups.value =
+				runGroupsContainingTestRun.value?.map((group) => group.id) || []
+		}
+	},
+	{ immediate: true }
+)
 </script>
 
 <template>
