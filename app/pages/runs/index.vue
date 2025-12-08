@@ -10,7 +10,6 @@ type RunGroup = Tables<"test_run_groups">
 type Run = Tables<"test_runs">
 type NewRun = Run
 type TestPlan = Tables<"test_plans">
-type UserMetadata = Tables<"user_metadata">
 
 type TestPlanWithLabel = Omit<TestPlan, "description"> & {
 	label: string
@@ -20,32 +19,32 @@ type RunGroupWithLabel = Omit<RunGroup, "description"> & {
 	label: string
 	description: string | undefined
 }
-type RunWithUser = Run & { creator?: UserMetadata }
 
-const runs = ref<RunWithUser[]>([])
-const testPlans = ref<TestPlan[]>([])
-const runGroups = ref<RunGroup[]>([])
+const { data: runs, refresh: refreshRuns } = await useAsyncData(
+	"runs",
+	async () => {
+		const { data: runsData, error: runsError } = await supabase
+			.from("test_runs")
+			.select("*")
 
-async function getRuns() {
-	const { data: runsData, error: runsError } = await supabase
-		.from("test_runs")
-		.select("*")
+		if (runsError) {
+			console.error(runsError)
+			return
+		}
 
-	if (runsError) {
-		console.error(runsError)
-		return
-	}
+		const runsArray = runsData || []
 
-	const runsArray = runsData || []
+		// Get unique creator IDs
+		const creatorIds = [
+			...new Set(
+				runsArray.filter((run) => run.created_by).map((run) => run.created_by)
+			)
+		]
 
-	// Get unique creator IDs
-	const creatorIds = [
-		...new Set(
-			runsArray.filter((run) => run.created_by).map((run) => run.created_by)
-		)
-	]
+		if (creatorIds.length === 0) {
+			return runsArray.map((run) => ({ ...run, creator: undefined }))
+		}
 
-	if (creatorIds.length > 0) {
 		// Fetch user metadata for all creators
 		const { data: usersData, error: usersError } = await supabase
 			.from("user_metadata")
@@ -57,30 +56,49 @@ async function getRuns() {
 
 		if (usersError) {
 			console.error(usersError)
-			runs.value = runsArray
-			return
+			return runsArray.map((run) => ({ ...run, creator: undefined }))
 		}
 
 		// Map users to their respective runs
-		const runsWithUsers = runsArray.map((run) => {
-			const creator = usersData?.find((user) => user.id === run.created_by)
-			return {
-				...run,
-				creator
-			}
-		})
+		return runsArray.map((run) => ({
+			...run,
+			creator: usersData?.find((user) => user.id === run.created_by)
+		}))
+	},
+	{ lazy: true }
+)
 
-		runs.value = runsWithUsers
-	} else {
-		runs.value = runsArray
-	}
-}
+const { data: testPlans } = await useAsyncData(
+	"testPlans",
+	async () => {
+		const { data, error } = await supabase.from("test_plans").select("*")
+		if (error) {
+			console.error(error)
+			return []
+		}
+		return data
+	},
+	{ lazy: true }
+)
+
+const { data: runGroups } = await useAsyncData(
+	"runGroups",
+	async () => {
+		const { data, error } = await supabase.from("test_run_groups").select("*")
+		if (error) {
+			console.error(error)
+			return []
+		}
+		return data
+	},
+	{ lazy: true }
+)
 
 const selectedRunGroup = ref<RunGroupWithLabel>()
 const selectedTestPlan = ref<TestPlanWithLabel>()
 
 const transformedTestPlans = computed(() =>
-	testPlans.value.map((plan) => ({
+	(testPlans.value ?? []).map((plan) => ({
 		...plan,
 		label: plan.title || "",
 		description: plan.description ?? undefined
@@ -88,7 +106,7 @@ const transformedTestPlans = computed(() =>
 )
 
 const transformedRunGroups = computed(() =>
-	runGroups.value.map((group) => ({
+	(runGroups.value ?? []).map((group) => ({
 		...group,
 		label: group.title || "",
 		description: group.description ?? undefined
@@ -116,28 +134,6 @@ async function selectPlan(plan: TestPlanWithLabel) {
 function autoFill() {
 	newRun.value.title = `${selectedRunGroup.value?.title} - ${selectedTestPlan.value?.title}`
 }
-
-async function getRunGroups() {
-	const { data, error } = await supabase.from("test_run_groups").select("*")
-	if (error) {
-		console.error(error)
-		return
-	}
-	runGroups.value = data || []
-}
-
-async function getTestPlans() {
-	const { data, error } = await supabase.from("test_plans").select("*")
-	if (error) {
-		console.error(error)
-		return
-	}
-	testPlans.value = data || []
-}
-
-getRuns()
-getRunGroups()
-getTestPlans()
 
 const createRunModalOpen = ref(false)
 
@@ -209,7 +205,7 @@ async function createRun() {
 	selectedRunGroup.value = undefined
 	selectedTestPlan.value = undefined
 
-	getRuns()
+	await refreshRuns()
 }
 
 useHead({
@@ -320,13 +316,13 @@ useHead({
 		</template>
 		<template #content>
 			<div
-				v-if="runs.length > 0"
+				v-if="runs && runs.length > 0"
 				class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 w-full"
 			>
 				<TestRunCard v-for="item in runs" :key="item.id" :run="item" />
 			</div>
 			<div
-				v-else
+				v-else-if="!runs"
 				class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 w-full"
 			>
 				<div v-for="i in 3" :key="i">
@@ -345,18 +341,11 @@ useHead({
 								<USkeleton class="h-6 w-full" />
 							</span>
 						</template>
-						<!-- <template #footer>
-						<div class="flex items-center justify-between">
-							<div class="text-sm text-neutral-500">
-								<USkeleton class="w-1/2 h-6" />
-							</div>
-							<div class="flex items-center gap-2">
-								<USkeleton width="w-1/2 h-6" />
-							</div>
-						</div>
-					</template> -->
 					</BaseCard>
 				</div>
+			</div>
+			<div v-else class="text-neutral-500">
+				No test runs yet. Click "New Test Run" to create one.
 			</div>
 		</template>
 	</PageWrapper>

@@ -11,27 +11,31 @@ type TestRun = Tables<"test_runs">
 type UserMetadata = Tables<"user_metadata">
 type TestRunWithUser = TestRun & { creator?: UserMetadata }
 
-const sortedTestRuns = ref<TestRunWithUser[]>([])
-async function getTestRuns() {
-	const { data: runsData, error: runsError } = await supabase
-		.from("test_runs")
-		.select("*")
+const { data: testRuns, refresh: refreshTestRuns } = await useAsyncData(
+	"testRuns",
+	async () => {
+		const { data: runsData, error: runsError } = await supabase
+			.from("test_runs")
+			.select("*")
 
-	if (runsError) {
-		console.error(runsError)
-		return
-	}
+		if (runsError) {
+			console.error(runsError)
+			return
+		}
 
-	const runsArray = runsData || []
+		const runsArray = runsData || []
 
-	// Get unique creator IDs
-	const creatorIds = [
-		...new Set(
-			runsArray.filter((run) => run.created_by).map((run) => run.created_by)
-		)
-	]
+		// Get unique creator IDs
+		const creatorIds = [
+			...new Set(
+				runsArray.filter((run) => run.created_by).map((run) => run.created_by)
+			)
+		]
 
-	if (creatorIds.length > 0) {
+		if (creatorIds.length === 0) {
+			return runsArray.map((run) => ({ ...run, creator: undefined }))
+		}
+
 		// Fetch user metadata for all creators
 		const { data: usersData, error: usersError } = await supabase
 			.from("user_metadata")
@@ -43,25 +47,17 @@ async function getTestRuns() {
 
 		if (usersError) {
 			console.error(usersError)
-			sortedTestRuns.value = runsArray
-			return
+			return runsArray.map((run) => ({ ...run, creator: undefined }))
 		}
 
 		// Map users to their respective runs
-		const runsWithUsers = runsArray.map((run) => {
-			const creator = usersData?.find((user) => user.id === run.created_by)
-			return {
-				...run,
-				creator
-			}
-		})
-
-		sortedTestRuns.value = runsWithUsers
-	} else {
-		sortedTestRuns.value = runsArray
-	}
-	sortTestRuns("title", "asc")
-}
+		return runsArray.map((run) => ({
+			...run,
+			creator: usersData?.find((user) => user.id === run.created_by)
+		}))
+	},
+	{ lazy: true }
+)
 
 const { data: runGroups, refresh: refreshRunGroups } = await useAsyncData(
 	"runGroups",
@@ -92,10 +88,13 @@ const testRunsSortOrder = ref<{ label: string; value: string }>(
 	testRunsSortOrders.value[0]!
 )
 
-function sortTestRuns(sortBy: string, sortOrder: string) {
-	if (!sortedTestRuns.value) return
+const sortedTestRuns = computed(() => {
+	if (!testRuns.value) return undefined
 
-	sortedTestRuns.value = [...sortedTestRuns.value].sort((a, b) => {
+	const sortBy = testRunsSortBy.value.value
+	const sortOrder = testRunsSortOrder.value.value
+
+	return [...testRuns.value].sort((a, b) => {
 		let aValue = a[sortBy as keyof TestRunWithUser]
 		let bValue = b[sortBy as keyof TestRunWithUser]
 
@@ -114,15 +113,9 @@ function sortTestRuns(sortBy: string, sortOrder: string) {
 		} else if (typeof aValue === "number" && typeof bValue === "number") {
 			comparison = aValue - bValue
 		}
-		if (sortOrder === "desc") {
-			return -comparison
-		}
-		return comparison
-	})
-}
 
-watch([testRunsSortBy, testRunsSortOrder], () => {
-	sortTestRuns(testRunsSortBy.value.value, testRunsSortOrder.value.value)
+		return sortOrder === "desc" ? -comparison : comparison
+	})
 })
 
 const selectedTestRuns = ref<string[]>([])
@@ -177,8 +170,7 @@ async function createRunGroup() {
 		}
 	}
 
-	refreshRunGroups()
-	getTestRuns()
+	await Promise.all([refreshRunGroups(), refreshTestRuns()])
 	createRunGroupModalOpen.value = false
 
 	// Reset the form for next use
@@ -191,8 +183,6 @@ async function createRunGroup() {
 	}
 	selectedTestRuns.value = []
 }
-
-getTestRuns()
 
 useHead({
 	title: `Run Groups | Test Suite`
@@ -253,7 +243,7 @@ useHead({
 						</div>
 						<div class="grid gap-3 2xl:grid-cols-4 lg:grid-cols-3 grid-cols-2">
 							<TestRunCard
-								v-for="run in sortedTestRuns"
+								v-for="run in sortedTestRuns ?? []"
 								:key="run.id"
 								:run="run"
 								:ui="{
@@ -265,6 +255,18 @@ useHead({
 								}"
 								@click="selectTestRun(run.id)"
 							/>
+							<div
+								v-if="!sortedTestRuns"
+								class="col-span-full text-center text-neutral-500 py-4"
+							>
+								Loading test runs...
+							</div>
+							<div
+								v-else-if="sortedTestRuns.length === 0"
+								class="col-span-full text-center text-neutral-500 py-4"
+							>
+								No test runs available
+							</div>
 						</div>
 					</div>
 				</template>

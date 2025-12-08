@@ -5,47 +5,53 @@ import BaseCard from "~/components/cards/BaseCard.vue"
 
 const supabase = useSupabaseClient<Database>()
 
-type Case = Tables<"test_cases">
 type CaseGroup = Tables<"test_case_groups">
-type GroupedCase = Tables<"test_case_group_links">
+type TestCase = Tables<"test_cases">
 
-const cases = ref<Case[]>([])
-const caseGroups = ref<CaseGroup[]>([])
-const selectedGroup = ref<CaseGroup>()
-const groupedCases = ref<GroupedCase[]>([])
+const { data: caseGroups, refresh: refreshCaseGroups } = await useAsyncData(
+	"caseGroups",
+	async () => {
+		const { data, error } = await supabase.from("test_case_groups").select("*")
+		if (error) {
+			console.error(error)
+		} else {
+			data.sort((a, b) => a.name.localeCompare(b.name))
+			return data
+		}
+	},
+	{ lazy: true }
+)
 
-async function getAllCases() {
-	const { data: casesData, error: casesError } = await supabase
-		.from("test_cases")
-		.select("*")
+const { data: cases, refresh: refreshCases } = await useAsyncData(
+	"cases",
+	async () => {
+		const { data, error } = await supabase.from("test_cases").select("*")
+		if (error) {
+			console.error(error)
+		} else {
+			return data
+		}
+	},
+	{ lazy: true }
+)
 
-	if (casesError) {
-		console.error(casesError)
-		return
-	}
+const { data: caseGroupLinks, refresh: refreshCaseGroupLinks } =
+	await useAsyncData(
+		"caseGroupLinks",
+		async () => {
+			const { data, error } = await supabase
+				.from("test_case_group_links")
+				.select("*")
+			if (error) {
+				console.error(error)
+			} else {
+				return data
+			}
+		},
+		{ lazy: true }
+	)
 
-	const { data: groupingsData, error: groupingsError } = await supabase
-		.from("test_case_group_links")
-		.select("*")
-
-	if (groupingsError) {
-		console.error(groupingsError)
-		return
-	}
-
-	cases.value = casesData
-	groupedCases.value = groupingsData
-}
-
-async function getCaseGroups() {
-	const { data, error } = await supabase.from("test_case_groups").select("*")
-	if (error) {
-		console.error(error)
-	} else {
-		data.sort((a, b) => a.name.localeCompare(b.name))
-		caseGroups.value = data
-	}
-}
+const selectedGroup = ref<CaseGroup | undefined>()
 
 // Filter cases by selected group
 const filteredCases = computed(() => {
@@ -53,25 +59,25 @@ const filteredCases = computed(() => {
 		return cases.value
 	}
 
-	const groupedCaseIds = groupedCases.value
-		.filter((gc) => gc.group === selectedGroup.value?.id)
-		.map((gc) => gc.case)
+	// Show loading state if either data source hasn't loaded yet
+	if (!cases.value || !caseGroupLinks.value) {
+		return undefined
+	}
 
-	return cases.value.filter((c) => groupedCaseIds.includes(c.id))
+	// Get case IDs that belong to the selected group
+	const caseIdsInGroup = caseGroupLinks.value
+		.filter((link) => link.group === selectedGroup.value?.id)
+		.map((link) => link.case)
+
+	return cases.value.filter((c) => caseIdsInGroup.includes(c.id))
 })
-
-// await getAllCases()
-// await getCaseGroups()
-
-getAllCases()
-getCaseGroups()
 
 const groups = computed(() => [
 	{ label: "All", value: "all" },
-	...caseGroups.value.map((item) => ({
+	...(caseGroups.value?.map((item) => ({
 		label: item.title,
 		value: item.name
-	}))
+	})) ?? [])
 ])
 
 const selectedTabGroup = ref<string>("all")
@@ -81,28 +87,35 @@ function filterGroup(value: string) {
 	if (value === "all") {
 		selectedGroup.value = undefined
 	} else {
-		selectedGroup.value = caseGroups.value.find((group) => group.name === value)
+		selectedGroup.value = caseGroups.value?.find(
+			(group) => group.name === value
+		)
 	}
 	editedGroup.value = selectedGroup.value
 }
-
 const caseModalOpen = ref(false)
-const editedCase = ref<Case>()
+const editedCase = ref<TestCase>()
 
 function caseModal(id: string) {
+	if (id) {
+		const foundCase = cases.value?.find((item) => item.id === id)
+		if (!foundCase) return
+
+		editedCase.value = JSON.parse(JSON.stringify(foundCase))
+	} else {
+		editedCase.value = {
+			case_id: 1,
+			title: "",
+			text: "",
+			created_at: new Date().toISOString(),
+			priority: null,
+			id: ""
+		}
+	}
 	caseModalOpen.value = true
-	editedCase.value = id
-		? JSON.parse(JSON.stringify(cases.value.find((item) => item.id === id)))
-		: {
-				case_id: 1,
-				title: "",
-				text: "",
-				created_at: new Date().toISOString(),
-				id: ""
-			}
 }
 
-async function writeCase(data: Case, update: boolean = false) {
+async function writeCase(data: TestCase, update: boolean = false) {
 	if (update) {
 		const { error } = await supabase
 			.from("test_cases")
@@ -110,7 +123,8 @@ async function writeCase(data: Case, update: boolean = false) {
 				title: data.title,
 				text: data.text,
 				case_id: data.case_id,
-				created_at: data.created_at
+				created_at: data.created_at,
+				priority: data.priority
 			})
 			.eq("id", data.id)
 		if (error) {
@@ -124,7 +138,8 @@ async function writeCase(data: Case, update: boolean = false) {
 				{
 					title: data.title,
 					text: data.text,
-					created_at: data.created_at
+					created_at: data.created_at,
+					priority: data.priority
 				}
 			])
 			.select()
@@ -147,9 +162,10 @@ async function writeCase(data: Case, update: boolean = false) {
 			if (groupError) {
 				console.error(groupError)
 			}
+			await refreshCaseGroupLinks()
 		}
 	}
-	await getAllCases()
+	await refreshCases()
 }
 
 async function saveCase(close: boolean = false, update: boolean = false) {
@@ -167,7 +183,7 @@ async function deleteCase(id: string) {
 		console.error(error)
 	}
 	caseModalOpen.value = false
-	getAllCases()
+	await refreshCases()
 }
 
 const linkModalOpen = ref(false)
@@ -176,17 +192,18 @@ async function groupModal(id: string) {
 
 	if (id) {
 		// Load existing group
-		const group = caseGroups.value.find((item) => item.id === id)
+		const group = caseGroups.value?.find((item) => item.id === id)
 		if (!group) return
 
 		editedGroup.value = JSON.parse(JSON.stringify(group))
 
 		// Load associated cases
-		const groupCases = groupedCases.value
-			.filter((gc) => gc.group === id)
-			.map((gc) => gc.case)
+		const groupCaseIds =
+			caseGroupLinks.value
+				?.filter((link) => link.group === id)
+				.map((link) => link.case) ?? []
 
-		selectedCases.value = groupCases
+		selectedCases.value = groupCaseIds
 	} else {
 		// New group
 		editedGroup.value = {
@@ -224,22 +241,41 @@ async function writeGroup(data: CaseGroup, update: boolean = false) {
 			return
 		}
 
-		// Update group-case relationships
-		if (selectedCases.value && data.id) {
-			// Delete existing relationships
-			await supabase.from("test_case_group_links").delete().eq("group", data.id)
+		// Update group-case relationships using diff approach (safer than delete-all + insert)
+		if (data.id) {
+			const currentLinks =
+				caseGroupLinks.value
+					?.filter((link) => link.group === data.id)
+					.map((link) => link.case) ?? []
 
-			// Insert new relationships
-			const { error: groupError } = await supabase
-				.from("test_case_group_links")
-				.insert(
-					selectedCases.value.map((caseId) => ({
-						case: caseId,
-						group: data.id
-					}))
-				)
-			if (groupError) {
-				console.error(groupError)
+			const toAdd = selectedCases.value.filter(
+				(caseId) => !currentLinks.includes(caseId)
+			)
+			const toRemove = currentLinks.filter(
+				(caseId) => !selectedCases.value.includes(caseId)
+			)
+
+			// Insert new relationships first (if this fails, no data is lost)
+			if (toAdd.length > 0) {
+				const { error: insertError } = await supabase
+					.from("test_case_group_links")
+					.insert(toAdd.map((caseId) => ({ case: caseId, group: data.id })))
+				if (insertError) {
+					console.error(insertError)
+					return
+				}
+			}
+
+			// Remove old relationships after (if this fails, we just have extra links)
+			if (toRemove.length > 0) {
+				const { error: deleteError } = await supabase
+					.from("test_case_group_links")
+					.delete()
+					.eq("group", data.id)
+					.in("case", toRemove)
+				if (deleteError) {
+					console.error(deleteError)
+				}
 			}
 		}
 	} else {
@@ -276,8 +312,7 @@ async function writeGroup(data: CaseGroup, update: boolean = false) {
 		}
 	}
 
-	getAllCases()
-	getCaseGroups()
+	await Promise.all([refreshCaseGroups(), refreshCaseGroupLinks()])
 	if (selectedGroup.value?.id === data.id) {
 		selectedGroup.value = data
 	}
@@ -306,7 +341,7 @@ async function removeFromGroup(caseId: string) {
 		return
 	}
 
-	await getAllCases()
+	await refreshCaseGroupLinks()
 	caseModalOpen.value = false
 }
 
@@ -334,7 +369,7 @@ async function deleteGroup(id: string) {
 	}
 
 	linkModalOpen.value = false
-	await getCaseGroups()
+	await Promise.all([refreshCaseGroups(), refreshCaseGroupLinks()])
 	filterGroup("all")
 }
 
@@ -374,6 +409,7 @@ useHead({
 							color="primary"
 							variant="link"
 							icon="i-lucide-plus"
+							:disabled="!caseGroupLinks"
 							@click="groupModal('')"
 						/>
 					</div>
@@ -430,6 +466,7 @@ useHead({
 									size="xs"
 									variant="soft"
 									icon="i-lucide-plus"
+									:disabled="!cases"
 									@click="caseModal('')"
 								>
 									New Case
@@ -444,7 +481,7 @@ useHead({
 									size="xs"
 									variant="soft"
 									icon="i-lucide-pen"
-									:disabled="selectedGroup === undefined"
+									:disabled="selectedGroup === undefined || !caseGroupLinks"
 									@click="groupModal(selectedGroup?.id ? selectedGroup.id : '')"
 								>
 									Edit Group
@@ -453,7 +490,7 @@ useHead({
 						</div>
 					</div>
 					<div
-						v-if="filteredCases.length > 0"
+						v-if="filteredCases && filteredCases.length > 0"
 						class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 w-full"
 					>
 						<div v-for="item in filteredCases" :key="item.id">
@@ -489,7 +526,7 @@ useHead({
 						</div>
 					</div>
 					<div
-						v-else
+						v-else-if="!filteredCases"
 						class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 w-full"
 					>
 						<div v-for="i in 12" :key="i">
@@ -521,6 +558,7 @@ useHead({
 							</BaseCard>
 						</div>
 					</div>
+					<div v-else>No cases found</div>
 				</div>
 				<UModal
 					v-if="editedCase"
@@ -568,11 +606,7 @@ useHead({
 									/>
 								</UTooltip>
 								<UTooltip
-									v-if="
-										editedCase.id &&
-										selectedGroup &&
-										selectedGroup.name !== 'All'
-									"
+									v-if="editedCase.id && selectedGroup"
 									text="Remove from group"
 									:shortcuts="['meta', 'Delete']"
 								>
@@ -624,7 +658,7 @@ useHead({
 							<div
 								class="grid 2xl:grid-cols-4 lg:grid-cols-3 sm:grid-cols-2 grid-cols-1 gap-3"
 							>
-								<div v-for="item in cases" :key="item.id">
+								<div v-for="item in cases ?? []" :key="item.id">
 									<UCard
 										:ui="{
 											header: 'px-4 py-3 sm:p-4',

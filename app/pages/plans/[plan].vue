@@ -1,133 +1,173 @@
 <script setup lang="ts">
-import type { Database, Tables } from "~/types/database.types"
+import type { Database } from "~/types/database.types"
 import VueMarkdown from "vue-markdown-render"
 import BaseCard from "~/components/cards/BaseCard.vue"
 
 const supabase = useSupabaseClient<Database>()
 
-type TestPlan = Tables<"test_plans">
-type TestPlanCase = Tables<"test_plan_case_links">
-type TestCase = Tables<"test_cases">
-
-const plan = ref<TestPlan>()
-const planCases = ref<TestPlanCase[]>([])
-const cases = ref<TestCase[]>([])
-const allCases = ref<TestCase[]>([])
-const groupedCases = ref<{ group: string; cases: TestCase[] }[]>([])
-
 const urlPlan = useRoute().params.plan as string
 
-// get plan from url
-async function getPlan() {
-	const { data, error } = await supabase
-		.from("test_plans")
-		.select("*")
-		.eq("id", urlPlan)
-	if (error) {
-		console.error(error)
-		return
-	}
-	plan.value = data[0]
+// Fetch plan details
+const { data: plan, refresh: refreshPlan } = await useAsyncData(
+	`plan-${urlPlan}`,
+	async () => {
+		const { data, error } = await supabase
+			.from("test_plans")
+			.select("*")
+			.eq("id", urlPlan)
+			.single()
+		if (error) {
+			console.error(error)
+			return
+		}
+		return data
+	},
+	{ lazy: true }
+)
 
-	useHead({
-		title: `${plan.value?.title} | Test Plans | Test Suite`
-	})
+// Fetch plan case links and their associated cases
+const { data: planCasesData, refresh: refreshPlanCases } = await useAsyncData(
+	`planCases-${urlPlan}`,
+	async () => {
+		const { data: linksData, error: linksError } = await supabase
+			.from("test_plan_case_links")
+			.select("*")
+			.eq("plan", urlPlan)
+		if (linksError) {
+			console.error(linksError)
+			return { links: [], cases: [] }
+		}
 
-	planTitle.value = plan.value?.title ?? ""
-	planDescription.value = plan.value?.description ?? ""
-}
+		const caseIds = linksData.map((link) => link.case)
 
-// get plan cases
-async function getPlanCases() {
-	const { data, error } = await supabase
-		.from("test_plan_case_links")
-		.select("*")
-		.eq("plan", urlPlan)
-	if (error) {
-		console.error(error)
-		return
-	}
-	planCases.value = data
+		if (caseIds.length === 0) {
+			return { links: linksData, cases: [] }
+		}
 
-	const caseIds = planCases.value.map((link) => link.case)
+		const { data: casesData, error: casesError } = await supabase
+			.from("test_cases")
+			.select("*")
+			.in("id", caseIds)
+		if (casesError) {
+			console.error(casesError)
+			return { links: linksData, cases: [] }
+		}
 
-	const { data: casesData, error: casesError } = await supabase
-		.from("test_cases")
-		.select("*")
-		.in("id", caseIds)
-	if (casesError) {
-		console.error(casesError)
-		return
-	}
-	cases.value = casesData
+		return { links: linksData, cases: casesData }
+	},
+	{ lazy: true }
+)
 
-	selectedCases.value = caseIds
-}
+// Computed properties for cases and selected case IDs
+// Return undefined while loading to distinguish from empty
+const cases = computed(() => planCasesData.value?.cases)
+const planCaseIds = computed(
+	() => planCasesData.value?.links.map((link) => link.case) ?? []
+)
 
-async function getAllCases() {
-	const { data: casesData, error: casesError } = await supabase
-		.from("test_cases")
-		.select("*")
+// Fetch all cases grouped for the modal
+const { data: groupedCases } = await useAsyncData(
+	"allGroupedCases",
+	async () => {
+		const { data: casesData, error: casesError } = await supabase
+			.from("test_cases")
+			.select("*")
 
-	if (casesError) {
-		console.error(casesError)
-		return
-	}
+		if (casesError) {
+			console.error(casesError)
+			return []
+		}
 
-	const { data: groupingsData, error: groupingsError } = await supabase
-		.from("test_case_group_links")
-		.select("*")
+		const { data: groupingsData, error: groupingsError } = await supabase
+			.from("test_case_group_links")
+			.select("*")
 
-	if (groupingsError) {
-		console.error(groupingsError)
-		return
-	}
+		if (groupingsError) {
+			console.error(groupingsError)
+			return []
+		}
 
-	allCases.value = casesData
+		// get groups from db
+		const groupIds = [...new Set(groupingsData.map((link) => link.group))]
 
-	// get groups from db
-	const groupIds = groupingsData.map((link) => link.group)
-	const { data: groupsData, error: groupsError } = await supabase
-		.from("test_case_groups")
-		.select("*")
-		.in("id", groupIds)
+		if (groupIds.length === 0) {
+			// All cases are ungrouped
+			return [{ group: "Ungrouped", cases: casesData }]
+		}
 
-	if (groupsError) {
-		console.error(groupsError)
-		return
-	}
+		const { data: groupsData, error: groupsError } = await supabase
+			.from("test_case_groups")
+			.select("*")
+			.in("id", groupIds)
 
-	// group cases by group
-	groupedCases.value = groupsData.map((group) => ({
-		group: group.title,
-		cases: casesData.filter((c) =>
-			groupingsData
-				.filter((link) => link.group === group.id)
-				.map((link) => link.case)
-				.includes(c.id)
-		)
-	}))
+		if (groupsError) {
+			console.error(groupsError)
+			return []
+		}
 
-	// add ungrouped cases
-	const groupedCaseIds = groupedCases.value.flatMap((group) =>
-		group.cases.map((c) => c.id)
-	)
-	const ungrouped = casesData.filter((c) => !groupedCaseIds.includes(c.id))
-	if (ungrouped.length > 0) {
-		groupedCases.value.push({
-			group: "Ungrouped",
-			cases: ungrouped
-		})
-	}
-}
+		// group cases by group
+		const grouped = groupsData.map((group) => ({
+			group: group.title,
+			cases: casesData.filter((c) =>
+				groupingsData
+					.filter((link) => link.group === group.id)
+					.map((link) => link.case)
+					.includes(c.id)
+			)
+		}))
+
+		// add ungrouped cases
+		const groupedCaseIds = grouped.flatMap((g) => g.cases.map((c) => c.id))
+		const ungrouped = casesData.filter((c) => !groupedCaseIds.includes(c.id))
+		if (ungrouped.length > 0) {
+			grouped.push({
+				group: "Ungrouped",
+				cases: ungrouped
+			})
+		}
+
+		return grouped
+	},
+	{ lazy: true }
+)
 
 const planCaseModalOpen = ref(false)
 const mdPreviewMode = ref(false)
 
-// selected cases as an array of uids
+// selected cases as an array of uids - initialized from planCaseIds when modal opens
 const selectedCases = ref<string[]>([])
 const planTitle = ref("")
 const planDescription = ref("")
+
+// Initialize form values when plan loads
+watch(
+	plan,
+	(newPlan) => {
+		if (newPlan) {
+			planTitle.value = newPlan.title ?? ""
+			planDescription.value = newPlan.description ?? ""
+		}
+	},
+	{ immediate: true }
+)
+
+// Sync selected cases when plan cases load
+watch(
+	planCaseIds,
+	(newIds) => {
+		selectedCases.value = [...newIds]
+	},
+	{ immediate: true }
+)
+
+// Dynamic page title
+useHead({
+	title: computed(() =>
+		plan.value
+			? `${plan.value.title} | Test Plans | Test Suite`
+			: "Loading... | Test Suite"
+	)
+})
 
 function selectCase(id: string) {
 	if (selectedCases.value.includes(id)) {
@@ -176,8 +216,7 @@ async function savePlan() {
 		return
 	}
 
-	getPlanCases()
-	getPlan()
+	await Promise.all([refreshPlanCases(), refreshPlan()])
 }
 
 const deletePlanModalOpen = ref(false)
@@ -193,10 +232,6 @@ async function deletePlan() {
 
 	navigateTo("/plans")
 }
-
-getPlan()
-getPlanCases()
-getAllCases()
 </script>
 
 <template>
@@ -373,8 +408,9 @@ getAllCases()
 		</template>
 
 		<template #content>
+			<!-- Cases loaded with items -->
 			<div
-				v-if="plan"
+				v-if="plan && cases && cases.length > 0"
 				class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 w-full"
 			>
 				<div v-for="item in cases" :key="item.id" class="h-full">
@@ -393,8 +429,9 @@ getAllCases()
 					</BaseCard>
 				</div>
 			</div>
+			<!-- Loading state: plan or cases still loading -->
 			<div
-				v-else
+				v-else-if="!plan || !cases"
 				class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 w-full"
 			>
 				<div v-for="i in 3" :key="i">
@@ -416,7 +453,8 @@ getAllCases()
 					</BaseCard>
 				</div>
 			</div>
-			<div v-if="plan && cases.length == 0">
+			<!-- Empty state: both loaded but no cases -->
+			<div v-else>
 				No test cases in this plan. Click "Edit Plan" to add cases.
 			</div>
 		</template>
