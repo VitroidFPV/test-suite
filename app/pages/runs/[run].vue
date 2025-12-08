@@ -308,8 +308,7 @@ async function saveRun() {
 	}
 
 	// Always exit edit mode and refresh data, even if there were errors
-	await refreshRun()
-	await refreshRunCases()
+	await Promise.all([refreshRun(), refreshRunCases()])
 
 	editRunModalOpen.value = false
 
