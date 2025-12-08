@@ -1,46 +1,28 @@
 <script setup lang="ts">
-import type { Database, Tables } from "~/types/database.types"
+import type { Database } from "~/types/database.types"
 import VueMarkdown from "vue-markdown-render"
 import BaseCard from "~/components/cards/BaseCard.vue"
 import TestRunCard from "~/components/cards/TestRunCard.vue"
 
 const route = useRoute()
-
 const supabase = useSupabaseClient<Database>()
-type RunGroup = Tables<"test_run_groups">
-type Run = Tables<"test_runs">
-type UserMetadata = Tables<"user_metadata">
 
-type RunWithUser = Run & { creator?: UserMetadata }
+const groupId = route.params.group as string
 
-const runGroup = ref<RunGroup>()
-const runs = ref<RunWithUser[] | undefined>(undefined)
-const allRuns = ref<RunWithUser[]>([])
-
-// slug group is id
-async function getRunGroup() {
-	const { data, error } = await supabase
-		.from("test_run_groups")
-		.select("*")
-		.eq("id", route.params.group as string)
-		.single()
-	if (error) {
-		console.error(error)
-		return
-	}
-	runGroup.value = data
-}
-
-async function getAllRuns() {
-	// Fetch all runs
-	const { data: runsData, error: runsError } = await supabase
+// Helper function to fetch runs with user metadata
+async function fetchRunsWithUsers(runIds?: string[]) {
+	const query = supabase
 		.from("test_runs")
 		.select("*")
 		.order("created_at", { ascending: false })
 
+	const { data: runsData, error: runsError } = runIds
+		? await query.in("id", runIds)
+		: await query
+
 	if (runsError) {
 		console.error(runsError)
-		return
+		return []
 	}
 
 	const runsArray = runsData || []
@@ -52,112 +34,87 @@ async function getAllRuns() {
 		)
 	]
 
-	if (creatorIds.length > 0) {
-		// Fetch user metadata for all creators
-		const { data: usersData, error: usersError } = await supabase
-			.from("user_metadata")
-			.select("*")
-			.in(
-				"id",
-				creatorIds.filter((id): id is string => id !== null)
-			)
-
-		if (usersError) {
-			console.error(usersError)
-			allRuns.value = runsArray
-			return
-		}
-
-		// Map users to their respective runs
-		const runsWithUsers = runsArray.map((run) => {
-			const creator = usersData?.find((user) => user.id === run.created_by)
-			return {
-				...run,
-				creator
-			}
-		})
-
-		allRuns.value = runsWithUsers
-	} else {
-		allRuns.value = runsArray
-	}
-}
-
-async function getRuns() {
-	// Get run IDs from the link table
-	const { data: linkData, error: linkError } = await supabase
-		.from("test_run_group_links")
-		.select("run")
-		.eq("group", route.params.group as string)
-
-	if (linkError) {
-		console.error(linkError)
-		return
+	if (creatorIds.length === 0) {
+		return runsArray.map((run) => ({ ...run, creator: undefined }))
 	}
 
-	const runIds = linkData?.map((link) => link.run) || []
-
-	if (runIds.length === 0) {
-		runs.value = []
-		return
-	}
-
-	// Fetch the actual runs
-	const { data: runsData, error: runsError } = await supabase
-		.from("test_runs")
+	// Fetch user metadata for all creators
+	const { data: usersData, error: usersError } = await supabase
+		.from("user_metadata")
 		.select("*")
-		.in("id", runIds)
+		.in(
+			"id",
+			creatorIds.filter((id): id is string => id !== null)
+		)
 
-	if (runsError) {
-		console.error(runsError)
-		return
+	if (usersError) {
+		console.error(usersError)
+		return runsArray.map((run) => ({ ...run, creator: undefined }))
 	}
 
-	const runsArray = runsData || []
+	// Map users to their respective runs
+	return runsArray.map((run) => ({
+		...run,
+		creator: usersData?.find((user) => user.id === run.created_by)
+	}))
+}
 
-	// Get unique creator IDs
-	const creatorIds = [
-		...new Set(
-			runsArray.filter((run) => run.created_by).map((run) => run.created_by)
-		)
-	]
-
-	if (creatorIds.length > 0) {
-		// Fetch user metadata for all creators
-		const { data: usersData, error: usersError } = await supabase
-			.from("user_metadata")
+// Fetch run group details
+const { data: runGroup, refresh: refreshRunGroup } = await useAsyncData(
+	`runGroup-${groupId}`,
+	async () => {
+		const { data, error } = await supabase
+			.from("test_run_groups")
 			.select("*")
-			.in(
-				"id",
-				creatorIds.filter((id): id is string => id !== null)
-			)
-
-		if (usersError) {
-			console.error(usersError)
-			runs.value = runsArray
+			.eq("id", groupId)
+			.single()
+		if (error) {
+			console.error(error)
 			return
 		}
+		return data
+	},
+	{ lazy: true }
+)
 
-		// Map users to their respective runs
-		const runsWithUsers = runsArray.map((run) => {
-			const creator = usersData?.find((user) => user.id === run.created_by)
-			return {
-				...run,
-				creator
-			}
-		})
+// Fetch runs linked to this group
+const { data: runs, refresh: refreshRuns } = await useAsyncData(
+	`groupRuns-${groupId}`,
+	async () => {
+		// Get run IDs from the link table
+		const { data: linkData, error: linkError } = await supabase
+			.from("test_run_group_links")
+			.select("run")
+			.eq("group", groupId)
 
-		runs.value = runsWithUsers
-	} else {
-		runs.value = runsArray
-	}
-}
+		if (linkError) {
+			console.error(linkError)
+			return []
+		}
+
+		const runIds = linkData?.map((link) => link.run) || []
+
+		if (runIds.length === 0) {
+			return []
+		}
+
+		return fetchRunsWithUsers(runIds)
+	},
+	{ lazy: true }
+)
+
+// Fetch all runs for the edit modal
+const { data: allRuns } = await useAsyncData(
+	"allRunsForGroup",
+	async () => fetchRunsWithUsers(),
+	{ lazy: true }
+)
 
 async function deleteRunGroup() {
 	const { error } = await supabase
 		.from("test_run_groups")
 		.delete()
-		.eq("id", route.params.group as string)
+		.eq("id", groupId)
 	if (error) {
 		console.error(error)
 		return
@@ -166,10 +123,11 @@ async function deleteRunGroup() {
 }
 
 const confirmDeleteModalOpen = ref(false)
-
 const mdPreviewMode = ref(false)
+const editGroupModalOpen = ref(false)
+const selectedRuns = ref<string[]>([])
 
-const editedRunGroup = ref<RunGroup>({
+const editedRunGroup = ref({
 	created_at: new Date().toISOString(),
 	description: "",
 	id: "",
@@ -177,28 +135,19 @@ const editedRunGroup = ref<RunGroup>({
 	title: ""
 })
 
-async function saveRunGroup() {
-	if (!runGroup.value) return
-
-	const { error } = await supabase
-		.from("test_run_groups")
-		.update({
-			title: editedRunGroup.value.title,
-			description: editedRunGroup.value.description
-		})
-		.eq("id", runGroup.value.id)
-	if (error) {
-		console.error(error)
-		return
-	}
-
-	await writeRunsToGroup()
-
-	await getRunGroup()
-}
-
-const editGroupModalOpen = ref(false)
-const selectedRuns = ref<string[]>([])
+// Sync editedRunGroup when runGroup loads
+watch(
+	runGroup,
+	(newGroup) => {
+		if (newGroup) {
+			editedRunGroup.value = {
+				...newGroup,
+				description: newGroup.description ?? ""
+			}
+		}
+	},
+	{ immediate: true }
+)
 
 // Initialize selected runs when modal opens
 watch(editGroupModalOpen, (isOpen) => {
@@ -217,6 +166,7 @@ function selectRun(runId: string) {
 
 async function writeRunsToGroup() {
 	if (!runGroup.value) return
+
 	// add or remove runs from the group based on the selectedRuns array
 	const currentRunIds = runs.value?.map((run) => run.id) || []
 	const runsToAdd = selectedRuns.value.filter(
@@ -226,8 +176,7 @@ async function writeRunsToGroup() {
 		(id: string) => !selectedRuns.value.includes(id)
 	)
 
-	let hasErrors = false
-
+	// Insert new links first (safer - if this fails, no data is lost)
 	if (runsToAdd.length > 0) {
 		const { error } = await supabase
 			.from("test_run_group_links")
@@ -236,9 +185,11 @@ async function writeRunsToGroup() {
 			)
 		if (error) {
 			console.error("Error adding runs to group:", error)
-			hasErrors = true
+			return
 		}
 	}
+
+	// Remove old links after (if this fails, we just have extra links)
 	if (runsToRemove.length > 0) {
 		const { error } = await supabase
 			.from("test_run_group_links")
@@ -247,27 +198,31 @@ async function writeRunsToGroup() {
 			.eq("group", runGroup.value!.id)
 		if (error) {
 			console.error("Error removing runs from group:", error)
-			hasErrors = true
 		}
 	}
 
-	// Always refresh data and close modal, even if there were errors
-	await getRuns()
+	await refreshRuns()
 	editGroupModalOpen.value = false
-
-	if (hasErrors) {
-		// TODO: Show user-friendly error notification
-		console.warn("Some operations failed. Please verify the changes.")
-	}
 }
 
-getRunGroup().then(() => {
-	if (runGroup.value) {
-		editedRunGroup.value = { ...runGroup.value }
+async function saveRunGroup() {
+	if (!runGroup.value) return
+
+	const { error } = await supabase
+		.from("test_run_groups")
+		.update({
+			title: editedRunGroup.value.title,
+			description: editedRunGroup.value.description
+		})
+		.eq("id", runGroup.value.id)
+	if (error) {
+		console.error(error)
+		return
 	}
-})
-getRuns()
-getAllRuns()
+
+	await writeRunsToGroup()
+	await refreshRunGroup()
+}
 
 useHead({
 	title: computed(() =>
@@ -446,14 +401,16 @@ useHead({
 		</template>
 
 		<template #content>
+			<!-- Runs loaded with items -->
 			<div
-				v-if="runs !== undefined"
+				v-if="runGroup && runs && runs.length > 0"
 				class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 w-full"
 			>
 				<TestRunCard v-for="item in runs" :key="item.id" :run="item" />
 			</div>
+			<!-- Loading state -->
 			<div
-				v-else
+				v-else-if="!runGroup || !runs"
 				class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 w-full"
 			>
 				<div v-for="i in 3" :key="i">
@@ -474,6 +431,10 @@ useHead({
 						</template>
 					</BaseCard>
 				</div>
+			</div>
+			<!-- Empty state -->
+			<div v-else class="text-neutral-500">
+				No test runs in this group. Click "Edit Run Group" to add runs.
 			</div>
 		</template>
 	</PageWrapper>
