@@ -18,9 +18,11 @@
 		"@nuxt/eslint": "^0.7.2",
 		"@nuxt/ui": "^4.1.0",
 		"@nuxtjs/supabase": "^1.4.3",
+		"@pinia/nuxt": "^0.11.3",
 		"@types/markdown-it": "^14.1.2",
 		"eslint": "^9.16.0",
 		"nuxt": "^4.2.1",
+		"pinia": "^3.0.4",
 		"supabase": "^1.226.3",
 		"typescript": "^5.7.2"
 	},
