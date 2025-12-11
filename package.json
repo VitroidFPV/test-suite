@@ -30,6 +30,7 @@
 		"dayjs": "^1.11.13",
 		"eslint-config-prettier": "^9.1.0",
 		"eslint-plugin-prettier": "^5.2.1",
+		"pinia-plugin-persistedstate": "^4.7.1",
 		"prettier": "^3.4.1",
 		"tailwindcss": "^4.1.5",
 		"vue-markdown-render": "^2.2.1"
