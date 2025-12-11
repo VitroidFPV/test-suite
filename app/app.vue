@@ -1,7 +1,11 @@
 <template>
-	<NuxtLayout>
-		<UApp>
+	<UApp
+		:tooltip="{
+			delayDuration: 300
+		}"
+	>
+		<NuxtLayout>
 			<NuxtPage />
-		</UApp>
-	</NuxtLayout>
+		</NuxtLayout>
+	</UApp>
 </template>
