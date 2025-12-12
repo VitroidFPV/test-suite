@@ -33,6 +33,10 @@ function signOut() {
 	supabase.auth.signOut()
 	window.location.href = "/login"
 }
+
+defineProps<{
+	shouldShowNav: boolean
+}>()
 </script>
 
 <template>
@@ -77,12 +81,17 @@ function signOut() {
 				<div>Test Suite</div>
 			</NuxtLink>
 			<div class="flex items-center gap-3">
+				<UDashboardSidebarToggle variant="subtle" />
+				<UTooltip v-if="shouldShowNav" text="Toggle Sidebar">
+					<UDashboardSidebarCollapse variant="subtle" />
+				</UTooltip>
+
 				<!-- <div v-if="name != ''" class="">{{ name }}</div> -->
 				<UPopover v-if="user">
 					<UAvatar
 						v-if="avatar != ''"
 						:src="avatar"
-						class="outline-1 outline-neutral-700 justify-self-end"
+						class="outline-2 outline-neutral-700 justify-self-end hover:opacity-80 cursor-pointer"
 						size="md"
 					/>
 					<template #content>

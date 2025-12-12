@@ -50,21 +50,76 @@ const text = computed(() => {
 	}
 	return ""
 })
+
+const links = [
+	[
+		{
+			label: "Home",
+			icon: "i-lucide-home",
+			to: "/"
+		}
+	],
+	[
+		{
+			label: "Test Cases",
+			icon: "i-lucide-book-text",
+			to: "/cases"
+		},
+		{
+			label: "Test Plans",
+			icon: "i-lucide-book-check",
+			to: "/plans"
+		},
+		{
+			label: "Run Groups",
+			icon: "i-lucide-library-big",
+			to: "/run-groups"
+		},
+		{
+			label: "Test Runs",
+			icon: "i-lucide-book-up",
+			to: "/runs"
+		},
+		{
+			label: "Test Reports",
+			icon: "i-lucide-clipboard-list",
+			to: "/reports"
+		}
+	]
+]
 </script>
 
 <template>
 	<main class="h-screen">
-		<NavHeader />
-		<div class="flex flex-col lg:flex-row">
-			<NavSidebar v-if="shouldShowNav" />
-			<div
-				v-if="shouldShowContent"
-				class="p-4 w-full h-full"
-				:class="{ 'p-6': !shouldShowNav }"
-			>
-				<slot />
+		<UDashboardGroup class="flex-col">
+			<NavHeader :should-show-nav="shouldShowNav" />
+			<div class="flex h-full">
+				<UDashboardSidebar
+					v-if="shouldShowNav"
+					:ui="{ root: 'w-fit border-none min-h-full h-full items-center' }"
+					collapsible
+					:toggle-side="'right'"
+				>
+					<!-- <NavSidebar v-if="shouldShowNav" /> -->
+					<template #default="{ collapsed }">
+						<UNavigationMenu
+							:items="links"
+							orientation="vertical"
+							:collapsed="collapsed"
+							tooltip
+							:ui="{
+								list: 'flex gap-1 flex-col h-fit',
+								link: 'px-4 py-3 flex items-center justify-start rounded-lg font-semibold whitespace-nowrap data-active:bg-primary-500/10 before:bg-transparent',
+								linkLeadingIcon: 'h-6 w-6'
+							}"
+						/>
+					</template>
+				</UDashboardSidebar>
+				<div class="p-4 w-full h-full" :class="{ 'p-6': !shouldShowNav }">
+					<slot />
+				</div>
 			</div>
-		</div>
+		</UDashboardGroup>
 		<div v-if="!shouldShowContent">
 			<div
 				class="h-full-nav w-full flex flex-col gap-4 items-center justify-center"
