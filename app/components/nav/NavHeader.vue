@@ -29,16 +29,34 @@ const signInWithOAuth = async () => {
 	}
 }
 
-function signOut() {
-	supabase.auth.signOut()
-	window.location.href = "/login"
+async function signOut() {
+	try {
+		const { error } = await supabase.auth.signOut()
+		if (error) {
+			console.error(error)
+			return
+		}
+	} catch (e) {
+		console.error(e)
+		return
+	}
+	await navigateTo("/login")
 }
+
+withDefaults(
+	defineProps<{
+		shouldShowNav?: boolean
+	}>(),
+	{
+		shouldShowNav: false
+	}
+)
 </script>
 
 <template>
 	<header class="sticky top-0 w-full z-50">
 		<nav
-			class="flex bg-black/0 backdrop-blur-sm h-16 items-center px-6 w-full justify-between"
+			class="flex bg-black/0 backdrop-blur-sm h-16 items-center lg:px-6 px-2 w-full justify-between"
 		>
 			<NuxtLink
 				to="/"
@@ -77,12 +95,17 @@ function signOut() {
 				<div>Test Suite</div>
 			</NuxtLink>
 			<div class="flex items-center gap-3">
+				<UDashboardSidebarToggle v-if="shouldShowNav" variant="subtle" />
+				<UTooltip v-if="shouldShowNav" text="Toggle Sidebar">
+					<UDashboardSidebarCollapse variant="subtle" />
+				</UTooltip>
+
 				<!-- <div v-if="name != ''" class="">{{ name }}</div> -->
 				<UPopover v-if="user">
 					<UAvatar
 						v-if="avatar != ''"
 						:src="avatar"
-						class="outline-1 outline-neutral-700 justify-self-end"
+						class="outline-2 outline-neutral-700 justify-self-end hover:opacity-80 cursor-pointer"
 						size="md"
 					/>
 					<template #content>

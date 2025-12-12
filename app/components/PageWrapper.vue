@@ -17,13 +17,15 @@ const props = defineProps<{
 			</div>
 			<slot name="breadcrumbs-trailing" />
 		</div>
-		<div class="flex items-center justify-between gap-3 w-full">
+		<div
+			class="flex items-start lg:items-center justify-between gap-3 w-full flex-col lg:flex-row"
+		>
 			<div class="flex items-center gap-2">
 				<slot name="title-leading" />
-				<h1 v-if="title && !loading" class="text-5xl font-bold">
+				<h1 v-if="title && !loading" class="lg:text-5xl text-3xl font-bold">
 					{{ props.title }}
 				</h1>
-				<USkeleton v-if="loading" class="w-lg h-12" />
+				<USkeleton v-if="loading" class="lg:w-lg w-xs h-9 lg:h-12" />
 				<slot name="title" />
 			</div>
 			<slot name="title-trailing" />
