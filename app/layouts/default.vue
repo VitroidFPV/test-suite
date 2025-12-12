@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { NavigationMenuItem } from "@nuxt/ui"
+
 const client = useSupabaseClient()
 const user = useSupabaseUser()
 
@@ -19,7 +21,7 @@ const { data: userMetadata } = await useAsyncData(
 		}
 		return []
 	},
-	{ watch: [user] }
+	{ watch: [user], server: false }
 )
 
 const userIsDev = computed(() => {
@@ -90,7 +92,7 @@ const links = [
 			to: "/reports"
 		}
 	]
-]
+] as const satisfies NavigationMenuItem[][] | NavigationMenuItem[]
 </script>
 
 <template>
