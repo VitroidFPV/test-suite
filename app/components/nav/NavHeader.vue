@@ -81,7 +81,7 @@ defineProps<{
 				<div>Test Suite</div>
 			</NuxtLink>
 			<div class="flex items-center gap-3">
-				<UDashboardSidebarToggle variant="subtle" />
+				<UDashboardSidebarToggle v-if="shouldShowNav" variant="subtle" />
 				<UTooltip v-if="shouldShowNav" text="Toggle Sidebar">
 					<UDashboardSidebarCollapse variant="subtle" />
 				</UTooltip>

@@ -93,7 +93,7 @@ const links = [
 	<main class="h-screen">
 		<UDashboardGroup class="flex-col">
 			<NavHeader :should-show-nav="shouldShowNav" />
-			<div class="flex h-full">
+			<div class="flex flex-1 min-h-0">
 				<UDashboardSidebar
 					v-if="shouldShowNav"
 					:ui="{ root: 'w-fit border-none min-h-full h-full items-center' }"
@@ -115,7 +115,10 @@ const links = [
 						/>
 					</template>
 				</UDashboardSidebar>
-				<div class="p-4 w-full h-full" :class="{ 'p-6': !shouldShowNav }">
+				<div
+					class="p-4 w-full h-full overflow-y-auto"
+					:class="{ 'p-6': !shouldShowNav }"
+				>
 					<slot />
 				</div>
 			</div>
