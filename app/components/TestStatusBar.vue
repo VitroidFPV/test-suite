@@ -89,7 +89,7 @@ function getStatusStatsPercentage(value: string) {
 				:style="{ width: `${getStatusStatsPercentage('not_run')}%` }"
 			></div>
 		</div>
-		<div class="text-sm text-neutral-400 flex gap-4">
+		<div class="text-sm text-neutral-400 flex gap-4 flex-wrap">
 			<div
 				v-for="item in statusStats.filter((s) => s.value !== 'total')"
 				:key="item.value"

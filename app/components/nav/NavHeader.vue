@@ -48,7 +48,7 @@ withDefaults(
 <template>
 	<header class="sticky top-0 w-full z-50">
 		<nav
-			class="flex bg-black/0 backdrop-blur-sm h-16 items-center px-6 w-full justify-between"
+			class="flex bg-black/0 backdrop-blur-sm h-16 items-center lg:px-6 px-2 w-full justify-between"
 		>
 			<NuxtLink
 				to="/"
