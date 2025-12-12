@@ -4,19 +4,23 @@ const user = useSupabaseUser()
 
 const userIsLoggedIn = computed(() => user.value !== null)
 
-const { data: userMetadata } = await useAsyncData("userMetadata", async () => {
-	if (user.value?.id) {
-		const { data, error } = await client.rpc("get_user_metadata", {
-			user_ids: [user.value.id]
-		})
-		if (error) {
-			console.error(error)
-			return []
+const { data: userMetadata } = await useAsyncData(
+	"userMetadata",
+	async () => {
+		if (user.value?.id) {
+			const { data, error } = await client.rpc("get_user_metadata", {
+				user_ids: [user.value.id]
+			})
+			if (error) {
+				console.error(error)
+				return []
+			}
+			return data
 		}
-		return data
-	}
-	return []
-})
+		return []
+	},
+	{ watch: [user] }
+)
 
 const userIsDev = computed(() => {
 	return userMetadata.value?.[0]?.role === "dev"
@@ -91,7 +95,7 @@ const links = [
 
 <template>
 	<main class="h-screen">
-		<UDashboardGroup class="flex-col">
+		<UDashboardGroup v-if="shouldShowContent" class="flex-col">
 			<NavHeader :should-show-nav="shouldShowNav" />
 			<div class="flex flex-1 min-h-0">
 				<UDashboardSidebar
@@ -123,9 +127,9 @@ const links = [
 				</div>
 			</div>
 		</UDashboardGroup>
-		<div v-if="!shouldShowContent">
+		<div v-else>
 			<div
-				class="h-full-nav w-full flex flex-col gap-4 items-center justify-center"
+				class="h-screen w-full flex flex-col gap-4 items-center justify-center"
 			>
 				<p>You don't have permission to view this page.</p>
 				<p>{{ text }}</p>

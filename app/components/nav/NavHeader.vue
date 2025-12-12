@@ -29,14 +29,20 @@ const signInWithOAuth = async () => {
 	}
 }
 
-function signOut() {
-	supabase.auth.signOut()
+async function signOut() {
+	const { error } = await supabase.auth.signOut()
+	if (error) console.error(error)
 	window.location.href = "/login"
 }
 
-defineProps<{
-	shouldShowNav: boolean
-}>()
+withDefaults(
+	defineProps<{
+		shouldShowNav?: boolean
+	}>(),
+	{
+		shouldShowNav: false
+	}
+)
 </script>
 
 <template>
