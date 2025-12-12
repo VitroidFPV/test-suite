@@ -125,7 +125,7 @@ withDefaults(
 					color="neutral"
 					variant="subtle"
 					icon="i-lucide-github"
-					@click="signInWithOAuth"
+					to="/login"
 					>Sign In</UButton
 				>
 			</div>
