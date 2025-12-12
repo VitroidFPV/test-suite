@@ -30,9 +30,17 @@ const signInWithOAuth = async () => {
 }
 
 async function signOut() {
-	const { error } = await supabase.auth.signOut()
-	if (error) console.error(error)
-	window.location.href = "/login"
+	try {
+		const { error } = await supabase.auth.signOut()
+		if (error) {
+			console.error(error)
+			return
+		}
+	} catch (e) {
+		console.error(e)
+		return
+	}
+	await navigateTo("/login")
 }
 
 withDefaults(
