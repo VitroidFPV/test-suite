@@ -9,7 +9,6 @@ export function createSupabaseError(error: PostgrestError): Error {
 		code?: string
 		details?: string
 		hint?: string
-		statusCode?: number
 	}
 
 	err.code = error.code

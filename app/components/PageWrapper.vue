@@ -6,7 +6,6 @@ const props = defineProps<{
 	title?: string | null
 	loading?: boolean
 	error?: Error | null
-	resourceName?: string
 	backLink?: string
 }>()
 
@@ -48,9 +47,8 @@ const errorDetails = computed(() => {
 
 	// Common error properties from Supabase/PostgREST
 	if (err.code) details.push({ label: "Code", value: String(err.code) })
-	if (err.statusCode)
-		details.push({ label: "Status", value: String(err.statusCode) })
-	if (err.status) details.push({ label: "Status", value: String(err.status) })
+	const statusValue = err.statusCode ?? err.status
+	if (statusValue) details.push({ label: "Status", value: String(statusValue) })
 	if (err.hint) details.push({ label: "Hint", value: String(err.hint) })
 	if (err.details)
 		details.push({ label: "Details", value: String(err.details) })
