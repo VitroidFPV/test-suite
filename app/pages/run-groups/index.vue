@@ -59,18 +59,24 @@ const { data: testRuns, refresh: refreshTestRuns } = await useAsyncData(
 	{ lazy: true }
 )
 
-const { data: runGroups, refresh: refreshRunGroups } = await useAsyncData(
+const {
+	data: runGroups,
+	error: runGroupsError,
+	refresh: refreshRunGroups
+} = await useAsyncData(
 	"runGroups",
 	async () => {
 		const { data, error } = await supabase.from("test_run_groups").select("*")
 		if (error) {
-			console.error(error)
-			return []
+			throw createSupabaseError(error)
 		}
 		return data
 	},
 	{ lazy: true }
 )
+
+// Consolidated page error
+const pageError = computed(() => runGroupsError.value as Error | null)
 
 const testRunsSortOptions = ref<{ label: string; value: string }[]>([
 	{ label: "Title", value: "title" },
@@ -193,6 +199,8 @@ useHead({
 	<PageWrapper
 		:breadcrumbs="[{ label: 'Dashboard', to: '/' }]"
 		title="Run Groups"
+		:error="pageError"
+		@retry="refreshRunGroups"
 	>
 		<template #title-trailing>
 			<UModal

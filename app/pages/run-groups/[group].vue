@@ -60,7 +60,11 @@ async function fetchRunsWithUsers(runIds?: string[]) {
 }
 
 // Fetch run group details
-const { data: runGroup, refresh: refreshRunGroup } = await useAsyncData(
+const {
+	data: runGroup,
+	error: runGroupError,
+	refresh: refreshRunGroup
+} = await useAsyncData(
 	`runGroup-${groupId}`,
 	async () => {
 		const { data, error } = await supabase
@@ -69,13 +73,15 @@ const { data: runGroup, refresh: refreshRunGroup } = await useAsyncData(
 			.eq("id", groupId)
 			.single()
 		if (error) {
-			console.error(error)
-			return
+			throw createSupabaseError(error)
 		}
 		return data
 	},
 	{ lazy: true }
 )
+
+// Consolidated page error
+const pageError = computed(() => runGroupError.value as Error | null)
 
 // Fetch runs linked to this group
 const { data: runs, refresh: refreshRuns } = await useAsyncData(
@@ -240,7 +246,10 @@ useHead({
 			{ label: 'Run Groups', to: '/run-groups' }
 		]"
 		:title="runGroup?.title"
-		:loading="!runGroup"
+		:loading="!runGroup && !pageError"
+		:error="pageError"
+		back-link="/run-groups"
+		@retry="refreshRunGroup"
 	>
 		<template #title-trailing>
 			<div class="flex gap-2">

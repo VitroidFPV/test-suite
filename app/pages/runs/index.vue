@@ -20,7 +20,11 @@ type RunGroupWithLabel = Omit<RunGroup, "description"> & {
 	description: string | undefined
 }
 
-const { data: runs, refresh: refreshRuns } = await useAsyncData(
+const {
+	data: runs,
+	error: runsError,
+	refresh: refreshRuns
+} = await useAsyncData(
 	"runs",
 	async () => {
 		const { data: runsData, error: runsError } = await supabase
@@ -28,8 +32,7 @@ const { data: runs, refresh: refreshRuns } = await useAsyncData(
 			.select("*")
 
 		if (runsError) {
-			console.error(runsError)
-			return
+			throw createSupabaseError(runsError)
 		}
 
 		const runsArray = runsData || []
@@ -67,6 +70,9 @@ const { data: runs, refresh: refreshRuns } = await useAsyncData(
 	},
 	{ lazy: true }
 )
+
+// Consolidated page error
+const pageError = computed(() => runsError.value as Error | null)
 
 const { data: testPlans } = await useAsyncData(
 	"testPlans",
@@ -217,6 +223,8 @@ useHead({
 	<PageWrapper
 		:breadcrumbs="[{ label: 'Dashboard', to: '/' }]"
 		title="Test Runs"
+		:error="pageError"
+		@retry="refreshRuns"
 	>
 		<template #title-trailing>
 			<UModal

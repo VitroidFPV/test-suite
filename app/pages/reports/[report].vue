@@ -12,20 +12,22 @@ const mdPreviewMode = ref(false)
 const editReportModalOpen = ref(false)
 const confirmDeleteModalOpen = ref(false)
 
-const { data: report, refresh: refreshReport } = await useAsyncData(
+const {
+	data: report,
+	error: reportError,
+	refresh: refreshReport
+} = await useAsyncData(
 	"report",
 	async () => {
 		const { data, error } = await supabase.rpc("get_test_reports", {
 			report_ids: [urlReport]
 		})
 		if (error) {
-			console.error(error)
-			return null
+			throw createSupabaseError(error)
 		}
 		const reportResult = data[0]
 		if (!reportResult) {
-			console.error("Report not found")
-			return null
+			throw new Error("Report not found")
 		}
 
 		const { data: creatorData, error: creatorError } = await supabase.rpc(
@@ -40,6 +42,9 @@ const { data: report, refresh: refreshReport } = await useAsyncData(
 	},
 	{ lazy: true }
 )
+
+// Consolidated page error
+const pageError = computed(() => reportError.value as Error | null)
 
 const user = useSupabaseUser()
 
@@ -191,7 +196,10 @@ const statusStats = computed(() => {
 					]
 		"
 		:title="report?.report.title"
-		:loading="!report"
+		:loading="!report && !pageError"
+		:error="pageError"
+		back-link="/reports"
+		@retry="refreshReport"
 	>
 		<template #title-trailing>
 			<div v-if="userIsLoggedIn" class="flex gap-2 items-center">

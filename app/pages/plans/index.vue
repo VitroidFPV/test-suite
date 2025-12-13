@@ -5,18 +5,24 @@ import BaseCard from "~/components/cards/BaseCard.vue"
 
 const supabase = useSupabaseClient<Database>()
 
-const { data: plans } = await useAsyncData(
+const {
+	data: plans,
+	error: plansError,
+	refresh: refreshPlans
+} = await useAsyncData(
 	"plans",
 	async () => {
 		const { data, error } = await supabase.from("test_plans").select("*")
 		if (error) {
-			console.error(error)
-			return []
+			throw createSupabaseError(error)
 		}
 		return data
 	},
 	{ lazy: true }
 )
+
+// Consolidated page error
+const pageError = computed(() => plansError.value as Error | null)
 
 useHead({
 	title: `Test Plans | Test Suite`
@@ -67,6 +73,8 @@ async function createPlan() {
 	<PageWrapper
 		:breadcrumbs="[{ label: 'Dashboard', to: '/' }]"
 		title="Test Plans"
+		:error="pageError"
+		@retry="refreshPlans"
 	>
 		<template #title-trailing>
 			<UModal

@@ -18,7 +18,11 @@ interface RunCaseWithResult extends RunCase {
 }
 
 // Fetch run details and associated run groups
-const { data: runData, refresh: refreshRun } = await useAsyncData(
+const {
+	data: runData,
+	error: runDataError,
+	refresh: refreshRun
+} = await useAsyncData(
 	`run-${urlRun}`,
 	async () => {
 		const { data, error } = await supabase
@@ -27,8 +31,7 @@ const { data: runData, refresh: refreshRun } = await useAsyncData(
 			.eq("id", urlRun)
 			.single()
 		if (error) {
-			console.error(error)
-			return null
+			throw createSupabaseError(error)
 		}
 
 		// Get run groups from link table
@@ -73,6 +76,9 @@ const { data: runData, refresh: refreshRun } = await useAsyncData(
 	},
 	{ lazy: true }
 )
+
+// Consolidated page error
+const pageError = computed(() => runDataError.value as Error | null)
 
 // Computed properties for run data
 const run = computed(() => runData.value?.run)
@@ -433,7 +439,10 @@ watch(
 			{ label: 'Runs', to: '/runs' }
 		]"
 		:title="run?.title"
-		:loading="!run"
+		:loading="!run && !pageError"
+		:error="pageError"
+		back-link="/runs"
+		@retry="refreshRun"
 	>
 		<template #title-trailing>
 			<div class="flex gap-2 items-center">

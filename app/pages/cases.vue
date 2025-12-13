@@ -8,48 +8,73 @@ const supabase = useSupabaseClient<Database>()
 type CaseGroup = Tables<"test_case_groups">
 type TestCase = Tables<"test_cases">
 
-const { data: caseGroups, refresh: refreshCaseGroups } = await useAsyncData(
+const {
+	data: caseGroups,
+	error: caseGroupsError,
+	refresh: refreshCaseGroups
+} = await useAsyncData(
 	"caseGroups",
 	async () => {
 		const { data, error } = await supabase.from("test_case_groups").select("*")
 		if (error) {
-			console.error(error)
-		} else {
-			data.sort((a, b) => a.name.localeCompare(b.name))
-			return data
+			throw createSupabaseError(error)
 		}
+		data.sort((a, b) => a.name.localeCompare(b.name))
+		return data
 	},
 	{ lazy: true }
 )
 
-const { data: cases, refresh: refreshCases } = await useAsyncData(
+const {
+	data: cases,
+	error: casesError,
+	refresh: refreshCases
+} = await useAsyncData(
 	"cases",
 	async () => {
 		const { data, error } = await supabase.from("test_cases").select("*")
 		if (error) {
-			console.error(error)
-		} else {
-			return data
+			throw createSupabaseError(error)
 		}
+		return data
 	},
 	{ lazy: true }
 )
 
-const { data: caseGroupLinks, refresh: refreshCaseGroupLinks } =
-	await useAsyncData(
-		"caseGroupLinks",
-		async () => {
-			const { data, error } = await supabase
-				.from("test_case_group_links")
-				.select("*")
-			if (error) {
-				console.error(error)
-			} else {
-				return data
-			}
-		},
-		{ lazy: true }
+const {
+	data: caseGroupLinks,
+	error: caseGroupLinksError,
+	refresh: refreshCaseGroupLinks
+} = await useAsyncData(
+	"caseGroupLinks",
+	async () => {
+		const { data, error } = await supabase
+			.from("test_case_group_links")
+			.select("*")
+		if (error) {
+			throw createSupabaseError(error)
+		}
+		return data
+	},
+	{ lazy: true }
+)
+
+// Consolidated page error
+const pageError = computed(() => {
+	return (
+		(caseGroupsError.value as Error | null) ||
+		(casesError.value as Error | null) ||
+		(caseGroupLinksError.value as Error | null)
 	)
+})
+
+async function retryAll() {
+	await Promise.all([
+		refreshCaseGroups(),
+		refreshCases(),
+		refreshCaseGroupLinks()
+	])
+}
 
 const selectedGroup = ref<CaseGroup | undefined>()
 
@@ -399,6 +424,8 @@ useHead({
 	<PageWrapper
 		:breadcrumbs="[{ label: 'Dashboard', to: '/' }]"
 		title="Test Cases"
+		:error="pageError"
+		@retry="retryAll"
 	>
 		<template #content>
 			<div class="flex flex-col lg:flex-row gap-3 w-full">
