@@ -112,8 +112,17 @@ const sortedTestRuns = computed(() => {
 	const sortOrder = testRunsSortOrder.value.value
 
 	return [...testRuns.value].sort((a, b) => {
-		let aValue = a[sortBy as keyof TestRunWithUser]
-		let bValue = b[sortBy as keyof TestRunWithUser]
+		let aValue: unknown
+		let bValue: unknown
+
+		// For "Created By", sort by creator username instead of UUID
+		if (sortBy === "created_by") {
+			aValue = a.creator?.username ?? ""
+			bValue = b.creator?.username ?? ""
+		} else {
+			aValue = a[sortBy as keyof TestRunWithUser]
+			bValue = b[sortBy as keyof TestRunWithUser]
+		}
 
 		// Convert undefined/null to empty string for consistent sorting
 		aValue = aValue ?? ""
