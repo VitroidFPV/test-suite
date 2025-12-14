@@ -17,7 +17,7 @@ const {
 	error: reportError,
 	refresh: refreshReport
 } = await useAsyncData(
-	"report",
+	`report-${urlReport}`,
 	async () => {
 		const { data, error } = await supabase.rpc("get_test_reports", {
 			report_ids: [urlReport]

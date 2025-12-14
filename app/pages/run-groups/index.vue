@@ -11,7 +11,11 @@ type TestRun = Tables<"test_runs">
 type UserMetadata = Tables<"user_metadata">
 type TestRunWithUser = TestRun & { creator?: UserMetadata }
 
-const { data: testRuns, refresh: refreshTestRuns } = await useAsyncData(
+const {
+	data: testRuns,
+	error: testRunsError,
+	refresh: refreshTestRuns
+} = await useAsyncData(
 	"testRuns",
 	async () => {
 		const { data: runsData, error: runsError } = await supabase
@@ -19,8 +23,7 @@ const { data: testRuns, refresh: refreshTestRuns } = await useAsyncData(
 			.select("*")
 
 		if (runsError) {
-			console.error(runsError)
-			return
+			throw createSupabaseError(runsError)
 		}
 
 		const runsArray = runsData || []
@@ -76,7 +79,9 @@ const {
 )
 
 // Consolidated page error
-const pageError = computed(() => runGroupsError.value as Error | null)
+const pageError = computed(
+	() => (testRunsError.value ?? runGroupsError.value) as Error | null
+)
 
 const testRunsSortOptions = ref<{ label: string; value: string }[]>([
 	{ label: "Title", value: "title" },
