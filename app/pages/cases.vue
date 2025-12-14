@@ -21,8 +21,8 @@ const {
 		if (error) {
 			throw createSupabaseError(error)
 		}
-		data.sort((a, b) => a.name.localeCompare(b.name))
-		return data
+		const rows = data ?? []
+		return [...rows].sort((a, b) => a.name.localeCompare(b.name))
 	},
 	{ lazy: true }
 )
