@@ -145,6 +145,7 @@ async function createPlan() {
 							variant="soft"
 							icon="i-lucide-plus"
 							:disabled="!newPlanTitle.trim()"
+							loading-auto
 							@click="createPlan"
 						>
 							Create Plan

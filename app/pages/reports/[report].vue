@@ -302,6 +302,7 @@ const statusStats = computed(() => {
 								size="sm"
 								variant="solid"
 								icon="i-lucide-save"
+								loading-auto
 								@click="saveReport"
 							>
 								Save Changes
@@ -343,6 +344,7 @@ const statusStats = computed(() => {
 								size="sm"
 								variant="solid"
 								icon="i-lucide-trash"
+								loading-auto
 								@click="deleteReport"
 							>
 								Delete Report

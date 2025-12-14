@@ -257,6 +257,7 @@ useHead({
 							size="sm"
 							variant="soft"
 							:disabled="!newReport.title || !selectedRun?.value"
+							loading-auto
 							@click="saveReport"
 							>Create Report</UButton
 						>

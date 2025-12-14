@@ -694,6 +694,7 @@ useHead({
 										size="xs"
 										variant="link"
 										icon="i-lucide-trash"
+										loading-auto
 										@click="deleteCase(editedCase.id)"
 									/>
 								</UTooltip>
@@ -707,6 +708,7 @@ useHead({
 										size="xs"
 										variant="link"
 										icon="i-lucide-unlink"
+										loading-auto
 										@click="removeFromGroup(editedCase.id)"
 									/>
 								</UTooltip>
@@ -721,9 +723,11 @@ useHead({
 										size="xs"
 										variant="soft"
 										icon="i-lucide-save-all"
+										loading-auto
 										@click="saveCase(true, editedCase.id !== '' ? true : false)"
-										>Apply</UButton
 									>
+										Apply
+									</UButton>
 								</UTooltip>
 							</div>
 						</div>
@@ -781,6 +785,7 @@ useHead({
 									size="xs"
 									variant="link"
 									icon="i-lucide-trash"
+									loading-auto
 									@click="deleteGroup(editedGroup.id)"
 								/>
 							</UTooltip>
@@ -791,6 +796,7 @@ useHead({
 										size="xs"
 										variant="link"
 										icon="i-lucide-save"
+										loading-auto
 										@click="
 											saveGroup(false, editedGroup.id !== '' ? true : false)
 										"
@@ -805,6 +811,7 @@ useHead({
 										size="xs"
 										variant="link"
 										icon="i-lucide-save-all"
+										loading-auto
 										@click="
 											saveGroup(true, editedGroup.id !== '' ? true : false)
 										"

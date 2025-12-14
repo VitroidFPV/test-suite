@@ -381,6 +381,7 @@ async function deletePlan() {
 									size="sm"
 									variant="soft"
 									icon="i-lucide-save-all"
+									loading-auto
 									@click="savePlan"
 									>Apply</UButton
 								>
@@ -420,6 +421,7 @@ async function deletePlan() {
 								size="sm"
 								variant="solid"
 								icon="i-lucide-trash"
+								loading-auto
 								@click="deletePlan"
 							>
 								Delete Test Plan

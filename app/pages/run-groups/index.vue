@@ -323,6 +323,7 @@ useHead({
 							variant="soft"
 							icon="i-lucide-plus"
 							:disabled="!newRunGroup.title"
+							loading-auto
 							@click="createRunGroup"
 						>
 							Create Run Group

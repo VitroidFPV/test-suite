@@ -339,6 +339,7 @@ useHead({
 							variant="soft"
 							icon="i-lucide-plus"
 							:disabled="!newRun.title"
+							loading-auto
 							@click="createRun"
 						>
 							Create Run
