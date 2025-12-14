@@ -3,6 +3,7 @@ import type { Database } from "~/types/database.types"
 import VueMarkdown from "vue-markdown-render"
 import BaseCard from "~/components/cards/BaseCard.vue"
 
+const toast = useToast()
 const supabase = useSupabaseClient<Database>()
 
 const {
@@ -57,6 +58,11 @@ async function createPlan() {
 
 	if (error) {
 		console.error(error)
+		toast.add({
+			title: "Error",
+			description: error.message,
+			color: "error"
+		})
 		return
 	}
 

@@ -3,6 +3,7 @@ import type { Database, Tables } from "~/types/database.types"
 import TestRunCaseCard from "~/components/cards/TestRunCaseCard.vue"
 import VueMarkdown from "vue-markdown-render"
 
+const toast = useToast()
 const urlReport = useRoute().params.report as string
 
 const supabase = useSupabaseClient<Database>()
@@ -96,6 +97,11 @@ watch(editReportModalOpen, (isOpen) => {
 async function saveReport() {
 	if (!report.value) {
 		console.error("Cannot save: report not loaded")
+		toast.add({
+			title: "Error",
+			description: "Cannot save: report not loaded",
+			color: "error"
+		})
 		return
 	}
 	const { error } = await supabase
@@ -108,6 +114,11 @@ async function saveReport() {
 		.eq("id", report.value.report.id)
 	if (error) {
 		console.error(error)
+		toast.add({
+			title: "Error",
+			description: error.message,
+			color: "error"
+		})
 		return
 	}
 	editReportModalOpen.value = false
@@ -125,6 +136,11 @@ async function deleteReport() {
 		.eq("id", urlReport)
 	if (error) {
 		console.error(error)
+		toast.add({
+			title: "Error",
+			description: error.message,
+			color: "error"
+		})
 		return
 	}
 	confirmDeleteModalOpen.value = false

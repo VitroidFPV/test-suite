@@ -3,6 +3,8 @@ import dayjs from "dayjs"
 import type { Database, Tables } from "~/types/database.types"
 import BaseCard from "~/components/cards/BaseCard.vue"
 
+const toast = useToast()
+
 const supabase = useSupabaseClient<Database>()
 
 type CaseGroup = Tables<"test_case_groups">
@@ -157,6 +159,11 @@ async function writeCase(data: TestCase, update: boolean = false) {
 			.eq("id", data.id)
 		if (error) {
 			console.error(error)
+			toast.add({
+				title: "Error",
+				description: error.message,
+				color: "error"
+			})
 			return
 		}
 	} else {
@@ -174,6 +181,11 @@ async function writeCase(data: TestCase, update: boolean = false) {
 			.single()
 		if (error) {
 			console.error(error)
+			toast.add({
+				title: "Error",
+				description: error.message,
+				color: "error"
+			})
 			return
 		}
 
@@ -189,6 +201,11 @@ async function writeCase(data: TestCase, update: boolean = false) {
 				])
 			if (groupError) {
 				console.error(groupError)
+				toast.add({
+					title: "Error",
+					description: groupError.message,
+					color: "error"
+				})
 			}
 			await refreshCaseGroupLinks()
 		}
@@ -209,6 +226,11 @@ async function deleteCase(id: string) {
 	const { error } = await supabase.from("test_cases").delete().match({ id })
 	if (error) {
 		console.error(error)
+		toast.add({
+			title: "Error",
+			description: error.message,
+			color: "error"
+		})
 	}
 	caseModalOpen.value = false
 	await refreshCases()
@@ -266,6 +288,11 @@ async function writeGroup(data: CaseGroup, update: boolean = false) {
 			.eq("id", data.id)
 		if (error) {
 			console.error(error)
+			toast.add({
+				title: "Error",
+				description: error.message,
+				color: "error"
+			})
 			return
 		}
 
@@ -290,6 +317,11 @@ async function writeGroup(data: CaseGroup, update: boolean = false) {
 					.insert(toAdd.map((caseId) => ({ case: caseId, group: data.id })))
 				if (insertError) {
 					console.error(insertError)
+					toast.add({
+						title: "Error",
+						description: insertError.message,
+						color: "error"
+					})
 					return
 				}
 			}
@@ -303,6 +335,11 @@ async function writeGroup(data: CaseGroup, update: boolean = false) {
 					.in("case", toRemove)
 				if (deleteError) {
 					console.error(deleteError)
+					toast.add({
+						title: "Error",
+						description: deleteError.message,
+						color: "error"
+					})
 				}
 			}
 		}
@@ -321,6 +358,11 @@ async function writeGroup(data: CaseGroup, update: boolean = false) {
 
 		if (error) {
 			console.error(error)
+			toast.add({
+				title: "Error",
+				description: error.message,
+				color: "error"
+			})
 			return
 		}
 
@@ -336,6 +378,11 @@ async function writeGroup(data: CaseGroup, update: boolean = false) {
 				)
 			if (groupError) {
 				console.error(groupError)
+				toast.add({
+					title: "Error",
+					description: groupError.message,
+					color: "error"
+				})
 			}
 		}
 	}
@@ -366,6 +413,11 @@ async function removeFromGroup(caseId: string) {
 
 	if (error) {
 		console.error(error)
+		toast.add({
+			title: "Error",
+			description: error.message,
+			color: "error"
+		})
 		return
 	}
 
@@ -382,6 +434,11 @@ async function deleteGroup(id: string) {
 
 	if (relError) {
 		console.error(relError)
+		toast.add({
+			title: "Error",
+			description: relError.message,
+			color: "error"
+		})
 		return
 	}
 
@@ -393,6 +450,11 @@ async function deleteGroup(id: string) {
 
 	if (error) {
 		console.error(error)
+		toast.add({
+			title: "Error",
+			description: error.message,
+			color: "error"
+		})
 		return
 	}
 

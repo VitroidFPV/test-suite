@@ -4,6 +4,8 @@ import VueMarkdown from "vue-markdown-render"
 import BaseCard from "~/components/cards/BaseCard.vue"
 import TestRunCard from "~/components/cards/TestRunCard.vue"
 
+const toast = useToast()
+
 const supabase = useSupabaseClient<Database>()
 
 type RunGroup = Tables<"test_run_groups">
@@ -176,7 +178,13 @@ async function createRunGroup() {
 		}
 	])
 	if (error) {
-		throw createSupabaseError(error)
+		console.error(error)
+		toast.add({
+			title: "Error",
+			description: error.message,
+			color: "error"
+		})
+		return
 	}
 
 	// Link selected test runs to the newly created group
@@ -191,7 +199,13 @@ async function createRunGroup() {
 			.insert(runGroupLinks)
 
 		if (linkError) {
-			throw createSupabaseError(linkError)
+			console.error(linkError)
+			toast.add({
+				title: "Error",
+				description: linkError.message,
+				color: "error"
+			})
+			return
 		}
 	}
 

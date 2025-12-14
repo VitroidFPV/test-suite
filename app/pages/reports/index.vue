@@ -3,6 +3,8 @@ import type { Database, Tables } from "~/types/database.types"
 import BaseCard from "~/components/cards/BaseCard.vue"
 import dayjs from "dayjs"
 
+const toast = useToast()
+
 const supabase = useSupabaseClient<Database>()
 const currentUser = useSupabaseUser()
 
@@ -109,6 +111,11 @@ async function saveReport() {
 
 	if (runCasesError) {
 		console.error("Error fetching run cases:", runCasesError)
+		toast.add({
+			title: "Error",
+			description: runCasesError.message,
+			color: "error"
+		})
 		return
 	}
 
@@ -129,6 +136,11 @@ async function saveReport() {
 
 	if (reportError) {
 		console.error("Error creating report:", reportError)
+		toast.add({
+			title: "Error",
+			description: reportError.message,
+			color: "error"
+		})
 		return
 	}
 
@@ -147,6 +159,11 @@ async function saveReport() {
 
 		if (linksError) {
 			console.error("Error creating report case links:", linksError)
+			toast.add({
+				title: "Error",
+				description: linksError.message,
+				color: "error"
+			})
 			return
 		}
 	}

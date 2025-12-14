@@ -4,6 +4,8 @@ import VueMarkdown from "vue-markdown-render"
 import BaseCard from "~/components/cards/BaseCard.vue"
 import TestRunCard from "~/components/cards/TestRunCard.vue"
 
+const toast = useToast()
+
 const route = useRoute()
 const supabase = useSupabaseClient<Database>()
 
@@ -123,6 +125,11 @@ async function deleteRunGroup() {
 		.eq("id", groupId)
 	if (error) {
 		console.error(error)
+		toast.add({
+			title: "Error",
+			description: error.message,
+			color: "error"
+		})
 		return
 	}
 	navigateTo("/run-groups")
@@ -191,6 +198,11 @@ async function writeRunsToGroup() {
 			)
 		if (error) {
 			console.error("Error adding runs to group:", error)
+			toast.add({
+				title: "Error",
+				description: error.message,
+				color: "error"
+			})
 			return
 		}
 	}
@@ -204,6 +216,11 @@ async function writeRunsToGroup() {
 			.eq("group", runGroup.value!.id)
 		if (error) {
 			console.error("Error removing runs from group:", error)
+			toast.add({
+				title: "Error",
+				description: error.message,
+				color: "error"
+			})
 		}
 	}
 
@@ -223,6 +240,11 @@ async function saveRunGroup() {
 		.eq("id", runGroup.value.id)
 	if (error) {
 		console.error(error)
+		toast.add({
+			title: "Error",
+			description: error.message,
+			color: "error"
+		})
 		return
 	}
 

@@ -3,6 +3,7 @@ import type { Database } from "~/types/database.types"
 import VueMarkdown from "vue-markdown-render"
 import BaseCard from "~/components/cards/BaseCard.vue"
 
+const toast = useToast()
 const supabase = useSupabaseClient<Database>()
 
 const urlPlan = useRoute().params.plan as string
@@ -191,6 +192,11 @@ async function savePlan() {
 		.eq("plan", urlPlan)
 	if (error) {
 		console.error(error)
+		toast.add({
+			title: "Error",
+			description: error.message,
+			color: "error"
+		})
 		return
 	}
 
@@ -204,6 +210,11 @@ async function savePlan() {
 		.insert(insertData)
 	if (insertDataError) {
 		console.error(insertDataError)
+		toast.add({
+			title: "Error",
+			description: insertDataError.message,
+			color: "error"
+		})
 		return
 	}
 
@@ -219,6 +230,11 @@ async function savePlan() {
 		.eq("id", urlPlan)
 	if (updateError) {
 		console.error(updateError)
+		toast.add({
+			title: "Error",
+			description: updateError.message,
+			color: "error"
+		})
 		return
 	}
 
@@ -231,6 +247,11 @@ async function deletePlan() {
 	const { error } = await supabase.from("test_plans").delete().eq("id", urlPlan)
 	if (error) {
 		console.error(error)
+		toast.add({
+			title: "Error",
+			description: error.message,
+			color: "error"
+		})
 		return
 	}
 

@@ -2,6 +2,8 @@
 import type { Database, Tables } from "~/types/database.types"
 import TestRunCaseCard from "~/components/cards/TestRunCaseCard.vue"
 
+const toast = useToast()
+
 const currentUser = useSupabaseUser()
 const urlRun = useRoute().params.run as string
 
@@ -193,6 +195,11 @@ async function updateCaseResult(caseId: string, resultValue: string) {
 
 	if (error) {
 		console.error("Error updating result:", error)
+		toast.add({
+			title: "Error",
+			description: error.message,
+			color: "error"
+		})
 		return
 	}
 
@@ -216,6 +223,11 @@ async function updateCaseComment(caseId: string, comment: string) {
 
 	if (error) {
 		console.error("Error updating comment:", error)
+		toast.add({
+			title: "Error",
+			description: error.message,
+			color: "error"
+		})
 		return
 	}
 
@@ -232,6 +244,11 @@ async function deleteRun() {
 	const { error } = await supabase.from("test_runs").delete().eq("id", urlRun)
 	if (error) {
 		console.error(error)
+		toast.add({
+			title: "Error",
+			description: error.message,
+			color: "error"
+		})
 		return
 	}
 	navigateTo("/runs")
@@ -273,6 +290,11 @@ async function saveRun() {
 	if (error) {
 		console.error("Error updating run title:", error)
 		hasErrors = true
+		toast.add({
+			title: "Error",
+			description: error.message,
+			color: "error"
+		})
 	}
 
 	// Handle run group links
@@ -297,6 +319,11 @@ async function saveRun() {
 		if (insertError) {
 			console.error("Error adding group links:", insertError)
 			hasErrors = true
+			toast.add({
+				title: "Error",
+				description: insertError.message,
+				color: "error"
+			})
 		}
 	}
 
@@ -310,6 +337,11 @@ async function saveRun() {
 		if (deleteError) {
 			console.error("Error removing group links:", deleteError)
 			hasErrors = true
+			toast.add({
+				title: "Error",
+				description: deleteError.message,
+				color: "error"
+			})
 		}
 	}
 
@@ -358,6 +390,11 @@ watch(reportModalOpen, (isOpen) => {
 async function generateReport() {
 	if (!currentUser.value?.id) {
 		console.error("Cannot generate report: User not authenticated")
+		toast.add({
+			title: "Error",
+			description: "Cannot generate report: User not authenticated",
+			color: "error"
+		})
 		return
 	}
 
@@ -372,6 +409,11 @@ async function generateReport() {
 	})
 	if (error) {
 		console.error(error)
+		toast.add({
+			title: "Error",
+			description: error.message,
+			color: "error"
+		})
 		return
 	}
 
@@ -405,6 +447,11 @@ async function generateReport() {
 			.eq("id", newReport.value.id)
 		if (cleanupError) {
 			console.error("Error cleaning up orphaned report:", cleanupError)
+			toast.add({
+				title: "Error",
+				description: cleanupError.message,
+				color: "error"
+			})
 		}
 		return
 	}
