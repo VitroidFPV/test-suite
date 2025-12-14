@@ -3,6 +3,8 @@ import type { Database, Tables } from "~/types/database.types"
 import TestRunCard from "~/components/cards/TestRunCard.vue"
 import BaseCard from "~/components/cards/BaseCard.vue"
 
+const toast = useToast()
+
 const supabase = useSupabaseClient<Database>()
 
 type RunGroup = Tables<"test_run_groups">
@@ -20,7 +22,11 @@ type RunGroupWithLabel = Omit<RunGroup, "description"> & {
 	description: string | undefined
 }
 
-const { data: runs, refresh: refreshRuns } = await useAsyncData(
+const {
+	data: runs,
+	error: runsError,
+	refresh: refreshRuns
+} = await useAsyncData(
 	"runs",
 	async () => {
 		const { data: runsData, error: runsError } = await supabase
@@ -28,8 +34,7 @@ const { data: runs, refresh: refreshRuns } = await useAsyncData(
 			.select("*")
 
 		if (runsError) {
-			console.error(runsError)
-			return
+			throw createSupabaseError(runsError)
 		}
 
 		const runsArray = runsData || []
@@ -67,6 +72,9 @@ const { data: runs, refresh: refreshRuns } = await useAsyncData(
 	},
 	{ lazy: true }
 )
+
+// Consolidated page error
+const pageError = computed(() => runsError.value as Error | null)
 
 const { data: testPlans } = await useAsyncData(
 	"testPlans",
@@ -141,6 +149,11 @@ async function createRun() {
 	const { error } = await supabase.from("test_runs").insert([newRun.value])
 	if (error) {
 		console.error(error)
+		toast.add({
+			title: "Error",
+			description: error.message,
+			color: "error"
+		})
 		return
 	}
 
@@ -157,6 +170,12 @@ async function createRun() {
 
 		if (groupLinkError) {
 			console.error("Error linking run to group:", groupLinkError)
+			toast.add({
+				title: "Error",
+				description: groupLinkError.message,
+				color: "error"
+			})
+			return
 		}
 	}
 
@@ -169,6 +188,12 @@ async function createRun() {
 
 		if (planCasesError) {
 			console.error("Error fetching plan cases:", planCasesError)
+			toast.add({
+				title: "Error",
+				description: planCasesError.message,
+				color: "error"
+			})
+			return
 		} else if (planCases && planCases.length > 0) {
 			// Create run-case links for each case in the plan
 			const runCaseLinks = planCases.map((link) => ({
@@ -188,6 +213,12 @@ async function createRun() {
 
 			if (linkError) {
 				console.error("Error creating run-case links:", linkError)
+				toast.add({
+					title: "Error",
+					description: linkError.message,
+					color: "error"
+				})
+				return
 			}
 		}
 	}
@@ -217,6 +248,8 @@ useHead({
 	<PageWrapper
 		:breadcrumbs="[{ label: 'Dashboard', to: '/' }]"
 		title="Test Runs"
+		:error="pageError"
+		@retry="refreshRuns"
 	>
 		<template #title-trailing>
 			<UModal

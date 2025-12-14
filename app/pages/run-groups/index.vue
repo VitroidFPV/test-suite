@@ -4,6 +4,8 @@ import VueMarkdown from "vue-markdown-render"
 import BaseCard from "~/components/cards/BaseCard.vue"
 import TestRunCard from "~/components/cards/TestRunCard.vue"
 
+const toast = useToast()
+
 const supabase = useSupabaseClient<Database>()
 
 type RunGroup = Tables<"test_run_groups">
@@ -11,7 +13,11 @@ type TestRun = Tables<"test_runs">
 type UserMetadata = Tables<"user_metadata">
 type TestRunWithUser = TestRun & { creator?: UserMetadata }
 
-const { data: testRuns, refresh: refreshTestRuns } = await useAsyncData(
+const {
+	data: testRuns,
+	error: testRunsError,
+	refresh: refreshTestRuns
+} = await useAsyncData(
 	"testRuns",
 	async () => {
 		const { data: runsData, error: runsError } = await supabase
@@ -19,8 +25,7 @@ const { data: testRuns, refresh: refreshTestRuns } = await useAsyncData(
 			.select("*")
 
 		if (runsError) {
-			console.error(runsError)
-			return
+			throw createSupabaseError(runsError)
 		}
 
 		const runsArray = runsData || []
@@ -59,18 +64,32 @@ const { data: testRuns, refresh: refreshTestRuns } = await useAsyncData(
 	{ lazy: true }
 )
 
-const { data: runGroups, refresh: refreshRunGroups } = await useAsyncData(
+const {
+	data: runGroups,
+	error: runGroupsError,
+	refresh: refreshRunGroups
+} = await useAsyncData(
 	"runGroups",
 	async () => {
 		const { data, error } = await supabase.from("test_run_groups").select("*")
 		if (error) {
-			console.error(error)
-			return []
+			throw createSupabaseError(error)
 		}
 		return data
 	},
 	{ lazy: true }
 )
+
+// Consolidated page error - combines both errors when both are present
+const pageError = computed(() => {
+	const testRunsErr = testRunsError.value
+	const runGroupsErr = runGroupsError.value
+
+	if (testRunsErr && runGroupsErr) {
+		return [testRunsErr, runGroupsErr] as Error[]
+	}
+	return (testRunsErr ?? runGroupsErr) as Error | null
+})
 
 const testRunsSortOptions = ref<{ label: string; value: string }[]>([
 	{ label: "Title", value: "title" },
@@ -95,8 +114,17 @@ const sortedTestRuns = computed(() => {
 	const sortOrder = testRunsSortOrder.value.value
 
 	return [...testRuns.value].sort((a, b) => {
-		let aValue = a[sortBy as keyof TestRunWithUser]
-		let bValue = b[sortBy as keyof TestRunWithUser]
+		let aValue: unknown
+		let bValue: unknown
+
+		// For "Created By", sort by creator username instead of UUID
+		if (sortBy === "created_by") {
+			aValue = a.creator?.username ?? ""
+			bValue = b.creator?.username ?? ""
+		} else {
+			aValue = a[sortBy as keyof TestRunWithUser]
+			bValue = b[sortBy as keyof TestRunWithUser]
+		}
 
 		// Convert undefined/null to empty string for consistent sorting
 		aValue = aValue ?? ""
@@ -151,6 +179,11 @@ async function createRunGroup() {
 	])
 	if (error) {
 		console.error(error)
+		toast.add({
+			title: "Error",
+			description: error.message,
+			color: "error"
+		})
 		return
 	}
 
@@ -166,7 +199,13 @@ async function createRunGroup() {
 			.insert(runGroupLinks)
 
 		if (linkError) {
-			console.error("Error linking runs to group:", linkError)
+			console.error(linkError)
+			toast.add({
+				title: "Error",
+				description: linkError.message,
+				color: "error"
+			})
+			return
 		}
 	}
 
@@ -184,6 +223,10 @@ async function createRunGroup() {
 	selectedTestRuns.value = []
 }
 
+async function handleRetry() {
+	return Promise.all([refreshTestRuns(), refreshRunGroups()])
+}
+
 useHead({
 	title: `Run Groups | Test Suite`
 })
@@ -193,6 +236,8 @@ useHead({
 	<PageWrapper
 		:breadcrumbs="[{ label: 'Dashboard', to: '/' }]"
 		title="Run Groups"
+		:error="pageError"
+		@retry="handleRetry"
 	>
 		<template #title-trailing>
 			<UModal

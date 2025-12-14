@@ -3,53 +3,83 @@ import dayjs from "dayjs"
 import type { Database, Tables } from "~/types/database.types"
 import BaseCard from "~/components/cards/BaseCard.vue"
 
+const toast = useToast()
+
 const supabase = useSupabaseClient<Database>()
 
 type CaseGroup = Tables<"test_case_groups">
 type TestCase = Tables<"test_cases">
 
-const { data: caseGroups, refresh: refreshCaseGroups } = await useAsyncData(
+const {
+	data: caseGroups,
+	error: caseGroupsError,
+	refresh: refreshCaseGroups
+} = await useAsyncData(
 	"caseGroups",
 	async () => {
 		const { data, error } = await supabase.from("test_case_groups").select("*")
 		if (error) {
-			console.error(error)
-		} else {
-			data.sort((a, b) => a.name.localeCompare(b.name))
-			return data
+			throw createSupabaseError(error)
 		}
+		const rows = data ?? []
+		return [...rows].sort((a, b) => a.name.localeCompare(b.name))
 	},
 	{ lazy: true }
 )
 
-const { data: cases, refresh: refreshCases } = await useAsyncData(
+const {
+	data: cases,
+	error: casesError,
+	refresh: refreshCases
+} = await useAsyncData(
 	"cases",
 	async () => {
 		const { data, error } = await supabase.from("test_cases").select("*")
 		if (error) {
-			console.error(error)
-		} else {
-			return data
+			throw createSupabaseError(error)
 		}
+		return data
 	},
 	{ lazy: true }
 )
 
-const { data: caseGroupLinks, refresh: refreshCaseGroupLinks } =
-	await useAsyncData(
-		"caseGroupLinks",
-		async () => {
-			const { data, error } = await supabase
-				.from("test_case_group_links")
-				.select("*")
-			if (error) {
-				console.error(error)
-			} else {
-				return data
-			}
-		},
-		{ lazy: true }
-	)
+const {
+	data: caseGroupLinks,
+	error: caseGroupLinksError,
+	refresh: refreshCaseGroupLinks
+} = await useAsyncData(
+	"caseGroupLinks",
+	async () => {
+		const { data, error } = await supabase
+			.from("test_case_group_links")
+			.select("*")
+		if (error) {
+			throw createSupabaseError(error)
+		}
+		return data
+	},
+	{ lazy: true }
+)
+
+// Consolidated page error - combines all errors when multiple are present
+const pageError = computed(() => {
+	const errors: Error[] = []
+	if (caseGroupsError.value) errors.push(caseGroupsError.value)
+	if (casesError.value) errors.push(casesError.value)
+	if (caseGroupLinksError.value) errors.push(caseGroupLinksError.value)
+
+	if (errors.length === 0) return null
+	if (errors.length === 1) return errors[0]!
+	return errors
+})
+
+async function retryAll() {
+	await Promise.all([
+		refreshCaseGroups(),
+		refreshCases(),
+		refreshCaseGroupLinks()
+	])
+}
 
 const selectedGroup = ref<CaseGroup | undefined>()
 
@@ -129,6 +159,11 @@ async function writeCase(data: TestCase, update: boolean = false) {
 			.eq("id", data.id)
 		if (error) {
 			console.error(error)
+			toast.add({
+				title: "Error",
+				description: error.message,
+				color: "error"
+			})
 			return
 		}
 	} else {
@@ -146,6 +181,11 @@ async function writeCase(data: TestCase, update: boolean = false) {
 			.single()
 		if (error) {
 			console.error(error)
+			toast.add({
+				title: "Error",
+				description: error.message,
+				color: "error"
+			})
 			return
 		}
 
@@ -161,6 +201,11 @@ async function writeCase(data: TestCase, update: boolean = false) {
 				])
 			if (groupError) {
 				console.error(groupError)
+				toast.add({
+					title: "Error",
+					description: groupError.message,
+					color: "error"
+				})
 			}
 			await refreshCaseGroupLinks()
 		}
@@ -181,6 +226,11 @@ async function deleteCase(id: string) {
 	const { error } = await supabase.from("test_cases").delete().match({ id })
 	if (error) {
 		console.error(error)
+		toast.add({
+			title: "Error",
+			description: error.message,
+			color: "error"
+		})
 	}
 	caseModalOpen.value = false
 	await refreshCases()
@@ -238,6 +288,11 @@ async function writeGroup(data: CaseGroup, update: boolean = false) {
 			.eq("id", data.id)
 		if (error) {
 			console.error(error)
+			toast.add({
+				title: "Error",
+				description: error.message,
+				color: "error"
+			})
 			return
 		}
 
@@ -262,6 +317,11 @@ async function writeGroup(data: CaseGroup, update: boolean = false) {
 					.insert(toAdd.map((caseId) => ({ case: caseId, group: data.id })))
 				if (insertError) {
 					console.error(insertError)
+					toast.add({
+						title: "Error",
+						description: insertError.message,
+						color: "error"
+					})
 					return
 				}
 			}
@@ -275,6 +335,11 @@ async function writeGroup(data: CaseGroup, update: boolean = false) {
 					.in("case", toRemove)
 				if (deleteError) {
 					console.error(deleteError)
+					toast.add({
+						title: "Error",
+						description: deleteError.message,
+						color: "error"
+					})
 				}
 			}
 		}
@@ -293,6 +358,11 @@ async function writeGroup(data: CaseGroup, update: boolean = false) {
 
 		if (error) {
 			console.error(error)
+			toast.add({
+				title: "Error",
+				description: error.message,
+				color: "error"
+			})
 			return
 		}
 
@@ -308,6 +378,11 @@ async function writeGroup(data: CaseGroup, update: boolean = false) {
 				)
 			if (groupError) {
 				console.error(groupError)
+				toast.add({
+					title: "Error",
+					description: groupError.message,
+					color: "error"
+				})
 			}
 		}
 	}
@@ -338,6 +413,11 @@ async function removeFromGroup(caseId: string) {
 
 	if (error) {
 		console.error(error)
+		toast.add({
+			title: "Error",
+			description: error.message,
+			color: "error"
+		})
 		return
 	}
 
@@ -354,6 +434,11 @@ async function deleteGroup(id: string) {
 
 	if (relError) {
 		console.error(relError)
+		toast.add({
+			title: "Error",
+			description: relError.message,
+			color: "error"
+		})
 		return
 	}
 
@@ -365,6 +450,11 @@ async function deleteGroup(id: string) {
 
 	if (error) {
 		console.error(error)
+		toast.add({
+			title: "Error",
+			description: error.message,
+			color: "error"
+		})
 		return
 	}
 
@@ -399,6 +489,8 @@ useHead({
 	<PageWrapper
 		:breadcrumbs="[{ label: 'Dashboard', to: '/' }]"
 		title="Test Cases"
+		:error="pageError"
+		@retry="retryAll"
 	>
 		<template #content>
 			<div class="flex flex-col lg:flex-row gap-3 w-full">

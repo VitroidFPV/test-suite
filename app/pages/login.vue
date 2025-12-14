@@ -2,7 +2,9 @@
 definePageMeta({
 	layout: "blank"
 })
+
 const supabase = useSupabaseClient()
+const toast = useToast()
 
 const signInWithOAuth = async () => {
 	const { error } = await supabase.auth.signInWithOAuth({
@@ -13,6 +15,11 @@ const signInWithOAuth = async () => {
 	})
 	if (error) {
 		console.error(error)
+		toast.add({
+			title: "Error",
+			description: error.message,
+			color: "error"
+		})
 	}
 }
 </script>

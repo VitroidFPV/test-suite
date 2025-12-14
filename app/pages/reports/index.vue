@@ -3,6 +3,8 @@ import type { Database, Tables } from "~/types/database.types"
 import BaseCard from "~/components/cards/BaseCard.vue"
 import dayjs from "dayjs"
 
+const toast = useToast()
+
 const supabase = useSupabaseClient<Database>()
 const currentUser = useSupabaseUser()
 
@@ -11,13 +13,16 @@ type User = Tables<"user_metadata">
 
 type ReportWithUser = Report & { creator?: User }
 
-const { data: reportsData, refresh: refreshReports } = await useAsyncData(
+const {
+	data: reportsData,
+	error: reportsError,
+	refresh: refreshReports
+} = await useAsyncData(
 	"reports",
 	async () => {
 		const { data, error } = await supabase.from("test_run_reports").select("*")
 		if (error) {
-			console.error(error)
-			return []
+			throw createSupabaseError(error)
 		}
 
 		// Return early if no reports
@@ -49,6 +54,9 @@ const { data: reportsData, refresh: refreshReports } = await useAsyncData(
 	},
 	{ lazy: true }
 )
+
+// Consolidated page error
+const pageError = computed(() => reportsError.value as Error | null)
 
 const { data: runsData } = await useAsyncData(
 	"runs",
@@ -103,6 +111,11 @@ async function saveReport() {
 
 	if (runCasesError) {
 		console.error("Error fetching run cases:", runCasesError)
+		toast.add({
+			title: "Error",
+			description: runCasesError.message,
+			color: "error"
+		})
 		return
 	}
 
@@ -123,6 +136,11 @@ async function saveReport() {
 
 	if (reportError) {
 		console.error("Error creating report:", reportError)
+		toast.add({
+			title: "Error",
+			description: reportError.message,
+			color: "error"
+		})
 		return
 	}
 
@@ -141,6 +159,11 @@ async function saveReport() {
 
 		if (linksError) {
 			console.error("Error creating report case links:", linksError)
+			toast.add({
+				title: "Error",
+				description: linksError.message,
+				color: "error"
+			})
 			return
 		}
 	}
@@ -171,6 +194,8 @@ useHead({
 	<PageWrapper
 		:breadcrumbs="[{ label: 'Dashboard', to: '/' }]"
 		title="Test Reports"
+		:error="pageError"
+		@retry="refreshReports"
 	>
 		<template #title-trailing>
 			<UModal

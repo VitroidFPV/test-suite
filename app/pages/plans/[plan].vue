@@ -3,12 +3,17 @@ import type { Database } from "~/types/database.types"
 import VueMarkdown from "vue-markdown-render"
 import BaseCard from "~/components/cards/BaseCard.vue"
 
+const toast = useToast()
 const supabase = useSupabaseClient<Database>()
 
 const urlPlan = useRoute().params.plan as string
 
 // Fetch plan details
-const { data: plan, refresh: refreshPlan } = await useAsyncData(
+const {
+	data: plan,
+	error: planError,
+	refresh: refreshPlan
+} = await useAsyncData(
 	`plan-${urlPlan}`,
 	async () => {
 		const { data, error } = await supabase
@@ -17,13 +22,15 @@ const { data: plan, refresh: refreshPlan } = await useAsyncData(
 			.eq("id", urlPlan)
 			.single()
 		if (error) {
-			console.error(error)
-			return
+			throw createSupabaseError(error)
 		}
 		return data
 	},
 	{ lazy: true }
 )
+
+// Consolidated page error
+const pageError = computed(() => planError.value as Error | null)
 
 // Fetch plan case links and their associated cases
 const { data: planCasesData, refresh: refreshPlanCases } = await useAsyncData(
@@ -185,6 +192,11 @@ async function savePlan() {
 		.eq("plan", urlPlan)
 	if (error) {
 		console.error(error)
+		toast.add({
+			title: "Error",
+			description: error.message,
+			color: "error"
+		})
 		return
 	}
 
@@ -198,6 +210,11 @@ async function savePlan() {
 		.insert(insertData)
 	if (insertDataError) {
 		console.error(insertDataError)
+		toast.add({
+			title: "Error",
+			description: insertDataError.message,
+			color: "error"
+		})
 		return
 	}
 
@@ -213,6 +230,11 @@ async function savePlan() {
 		.eq("id", urlPlan)
 	if (updateError) {
 		console.error(updateError)
+		toast.add({
+			title: "Error",
+			description: updateError.message,
+			color: "error"
+		})
 		return
 	}
 
@@ -225,6 +247,11 @@ async function deletePlan() {
 	const { error } = await supabase.from("test_plans").delete().eq("id", urlPlan)
 	if (error) {
 		console.error(error)
+		toast.add({
+			title: "Error",
+			description: error.message,
+			color: "error"
+		})
 		return
 	}
 
@@ -241,7 +268,10 @@ async function deletePlan() {
 			{ label: 'Test Plans', to: '/plans' }
 		]"
 		:title="plan?.title ?? null"
-		:loading="!plan"
+		:loading="!plan && !pageError"
+		:error="pageError"
+		back-link="/plans"
+		@retry="refreshPlan"
 	>
 		<template #title-trailing>
 			<div class="flex gap-2">

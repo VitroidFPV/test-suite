@@ -3,6 +3,7 @@ import type { Database, Tables } from "~/types/database.types"
 import TestRunCaseCard from "~/components/cards/TestRunCaseCard.vue"
 import VueMarkdown from "vue-markdown-render"
 
+const toast = useToast()
 const urlReport = useRoute().params.report as string
 
 const supabase = useSupabaseClient<Database>()
@@ -12,20 +13,22 @@ const mdPreviewMode = ref(false)
 const editReportModalOpen = ref(false)
 const confirmDeleteModalOpen = ref(false)
 
-const { data: report, refresh: refreshReport } = await useAsyncData(
-	"report",
+const {
+	data: report,
+	error: reportError,
+	refresh: refreshReport
+} = await useAsyncData(
+	`report-${urlReport}`,
 	async () => {
 		const { data, error } = await supabase.rpc("get_test_reports", {
 			report_ids: [urlReport]
 		})
 		if (error) {
-			console.error(error)
-			return null
+			throw createSupabaseError(error)
 		}
 		const reportResult = data[0]
 		if (!reportResult) {
-			console.error("Report not found")
-			return null
+			throw new Error("Report not found")
 		}
 
 		const { data: creatorData, error: creatorError } = await supabase.rpc(
@@ -40,6 +43,9 @@ const { data: report, refresh: refreshReport } = await useAsyncData(
 	},
 	{ lazy: true }
 )
+
+// Consolidated page error
+const pageError = computed(() => reportError.value as Error | null)
 
 const user = useSupabaseUser()
 
@@ -91,6 +97,11 @@ watch(editReportModalOpen, (isOpen) => {
 async function saveReport() {
 	if (!report.value) {
 		console.error("Cannot save: report not loaded")
+		toast.add({
+			title: "Error",
+			description: "Cannot save: report not loaded",
+			color: "error"
+		})
 		return
 	}
 	const { error } = await supabase
@@ -103,6 +114,11 @@ async function saveReport() {
 		.eq("id", report.value.report.id)
 	if (error) {
 		console.error(error)
+		toast.add({
+			title: "Error",
+			description: error.message,
+			color: "error"
+		})
 		return
 	}
 	editReportModalOpen.value = false
@@ -120,6 +136,11 @@ async function deleteReport() {
 		.eq("id", urlReport)
 	if (error) {
 		console.error(error)
+		toast.add({
+			title: "Error",
+			description: error.message,
+			color: "error"
+		})
 		return
 	}
 	confirmDeleteModalOpen.value = false
@@ -191,7 +212,10 @@ const statusStats = computed(() => {
 					]
 		"
 		:title="report?.report.title"
-		:loading="!report"
+		:loading="!report && !pageError"
+		:error="pageError"
+		back-link="/reports"
+		@retry="refreshReport"
 	>
 		<template #title-trailing>
 			<div v-if="userIsLoggedIn" class="flex gap-2 items-center">
