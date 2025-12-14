@@ -78,10 +78,16 @@ const {
 	{ lazy: true }
 )
 
-// Consolidated page error
-const pageError = computed(
-	() => (testRunsError.value ?? runGroupsError.value) as Error | null
-)
+// Consolidated page error - combines both errors when both are present
+const pageError = computed(() => {
+	const testRunsErr = testRunsError.value
+	const runGroupsErr = runGroupsError.value
+
+	if (testRunsErr && runGroupsErr) {
+		return [testRunsErr, runGroupsErr] as Error[]
+	}
+	return (testRunsErr ?? runGroupsErr) as Error | null
+})
 
 const testRunsSortOptions = ref<{ label: string; value: string }[]>([
 	{ label: "Title", value: "title" },
@@ -161,8 +167,7 @@ async function createRunGroup() {
 		}
 	])
 	if (error) {
-		console.error(error)
-		return
+		throw createSupabaseError(error)
 	}
 
 	// Link selected test runs to the newly created group
@@ -177,7 +182,7 @@ async function createRunGroup() {
 			.insert(runGroupLinks)
 
 		if (linkError) {
-			console.error("Error linking runs to group:", linkError)
+			throw createSupabaseError(linkError)
 		}
 	}
 
@@ -195,6 +200,10 @@ async function createRunGroup() {
 	selectedTestRuns.value = []
 }
 
+async function handleRetry() {
+	return Promise.all([refreshTestRuns(), refreshRunGroups()])
+}
+
 useHead({
 	title: `Run Groups | Test Suite`
 })
@@ -205,7 +214,7 @@ useHead({
 		:breadcrumbs="[{ label: 'Dashboard', to: '/' }]"
 		title="Run Groups"
 		:error="pageError"
-		@retry="refreshRunGroups"
+		@retry="handleRetry"
 	>
 		<template #title-trailing>
 			<UModal

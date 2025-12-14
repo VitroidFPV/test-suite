@@ -59,13 +59,16 @@ const {
 	{ lazy: true }
 )
 
-// Consolidated page error
+// Consolidated page error - combines all errors when multiple are present
 const pageError = computed(() => {
-	return (
-		(caseGroupsError.value as Error | null) ||
-		(casesError.value as Error | null) ||
-		(caseGroupLinksError.value as Error | null)
-	)
+	const errors: Error[] = []
+	if (caseGroupsError.value) errors.push(caseGroupsError.value)
+	if (casesError.value) errors.push(casesError.value)
+	if (caseGroupLinksError.value) errors.push(caseGroupLinksError.value)
+
+	if (errors.length === 0) return null
+	if (errors.length === 1) return errors[0]!
+	return errors
 })
 
 async function retryAll() {
