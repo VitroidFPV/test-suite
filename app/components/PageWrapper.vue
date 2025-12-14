@@ -5,7 +5,7 @@ const props = defineProps<{
 	breadcrumbs?: BreadcrumbItem[]
 	title?: string | null
 	loading?: boolean
-	error?: Error | null
+	error?: Error | Error[] | null
 	backLink?: string
 }>()
 
@@ -15,48 +15,59 @@ const emit = defineEmits<{
 
 const hasError = computed(() => !!props.error)
 
+// Normalize error to array for consistent handling
+const errors = computed(() => {
+	if (!props.error) return []
+	return Array.isArray(props.error) ? props.error : [props.error]
+})
+
 // Check if error is a "not found" type error (PGRST116)
 const isNotFound = computed(() => {
-	if (!props.error) return false
-	const message = props.error.message?.toLowerCase() || ""
-	const err = props.error as unknown as Record<string, unknown>
-	const code = String(err.code || "").toLowerCase()
+	if (errors.value.length === 0) return false
 
-	return (
-		code === "pgrst116" ||
-		message.includes("not found") ||
-		message.includes("pgrst116") ||
-		message.includes("no rows") ||
-		message.includes("(or no) rows returned") ||
-		message.includes("0 rows") ||
-		message.includes("cannot coerce") ||
-		message.includes("single json object")
-	)
+	// If any error is a "not found" error, treat as not found
+	return errors.value.some((err) => {
+		const message = err.message?.toLowerCase() || ""
+		const errObj = err as unknown as Record<string, unknown>
+		const code = String(errObj.code || "").toLowerCase()
+
+		return (
+			code === "pgrst116" ||
+			message.includes("not found") ||
+			message.includes("pgrst116") ||
+			message.includes("no rows") ||
+			message.includes("(or no) rows returned") ||
+			message.includes("0 rows") ||
+			message.includes("cannot coerce") ||
+			message.includes("single json object")
+		)
+	})
 })
 
-const errorMessage = computed(() => {
-	return props.error?.message || "Failed to load data"
-})
-
-// Extract all error details for display
-const errorDetails = computed(() => {
-	if (!props.error) return null
-
-	const err = props.error as unknown as Record<string, unknown>
+// Extract error details for a single error
+function getErrorDetails(err: Error) {
+	const errObj = err as unknown as Record<string, unknown>
 	const details: { label: string; value: string }[] = []
 
-	// Common error properties from Supabase/PostgREST
-	if (err.code) details.push({ label: "Code", value: String(err.code) })
-	const statusValue = err.statusCode ?? err.status
-	if (statusValue) details.push({ label: "Status", value: String(statusValue) })
-	if (err.hint) details.push({ label: "Hint", value: String(err.hint) })
-	if (err.details)
-		details.push({ label: "Details", value: String(err.details) })
-	if (err.name && err.name !== "Error")
-		details.push({ label: "Type", value: String(err.name) })
+	if (errObj.code) {
+		details.push({ label: "Code", value: String(errObj.code) })
+	}
+	const statusValue = errObj.statusCode ?? errObj.status
+	if (statusValue) {
+		details.push({ label: "Status", value: String(statusValue) })
+	}
+	if (errObj.hint) {
+		details.push({ label: "Hint", value: String(errObj.hint) })
+	}
+	if (errObj.details) {
+		details.push({ label: "Details", value: String(errObj.details) })
+	}
+	if (errObj.name && errObj.name !== "Error") {
+		details.push({ label: "Type", value: String(errObj.name) })
+	}
 
-	return details.length > 0 ? details : null
-})
+	return details
+}
 </script>
 
 <template>
@@ -121,23 +132,35 @@ const errorDetails = computed(() => {
 						:class="isNotFound ? 'text-warning' : 'text-error'"
 					/>
 				</div>
-				<div class="flex flex-col gap-3">
-					<p class="text-lg font-medium text-neutral-200">
-						{{ errorMessage }}
-					</p>
+				<div class="flex flex-col gap-4 w-full">
 					<div
-						v-if="errorDetails && errorDetails.length > 0"
-						class="flex flex-col gap-1 text-sm text-neutral-500"
+						v-for="(err, index) in errors"
+						:key="index"
+						class="flex flex-col gap-2"
 					>
-						<div
-							v-for="detail in errorDetails"
-							:key="detail.label"
-							class="flex justify-center gap-2"
+						<p
+							v-if="errors.length > 1"
+							class="text-sm font-medium text-neutral-400"
 						>
-							<span class="font-medium text-neutral-400"
-								>{{ detail.label }}:</span
+							Error {{ index + 1 }}
+						</p>
+						<p class="text-lg font-medium text-neutral-200">
+							{{ err.message || "Failed to load data" }}
+						</p>
+						<div
+							v-if="getErrorDetails(err).length > 0"
+							class="flex flex-col gap-1 text-sm text-neutral-500"
+						>
+							<div
+								v-for="detail in getErrorDetails(err)"
+								:key="detail.label"
+								class="flex justify-center gap-2"
 							>
-							<span class="font-mono">{{ detail.value }}</span>
+								<span class="font-medium text-neutral-400"
+									>{{ detail.label }}:</span
+								>
+								<span class="font-mono">{{ detail.value }}</span>
+							</div>
 						</div>
 					</div>
 				</div>
