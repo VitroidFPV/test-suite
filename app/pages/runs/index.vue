@@ -218,6 +218,7 @@ async function createRun() {
 					description: linkError.message,
 					color: "error"
 				})
+				return
 			}
 		}
 	}
