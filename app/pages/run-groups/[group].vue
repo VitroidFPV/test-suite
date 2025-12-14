@@ -371,6 +371,7 @@ useHead({
 								size="sm"
 								variant="soft"
 								icon="i-lucide-save"
+								loading-auto
 								@click="saveRunGroup"
 							>
 								Apply
@@ -410,6 +411,7 @@ useHead({
 								size="sm"
 								variant="solid"
 								icon="i-lucide-trash"
+								loading-auto
 								@click="deleteRunGroup"
 							>
 								Delete Run Group

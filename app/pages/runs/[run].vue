@@ -538,6 +538,7 @@ watch(
 								color="primary"
 								size="sm"
 								variant="solid"
+								loading-auto
 								@click="generateReport"
 								>Generate Report</UButton
 							>
@@ -610,6 +611,7 @@ watch(
 								size="sm"
 								variant="soft"
 								icon="i-lucide-save"
+								loading-auto
 								@click="saveRun"
 							>
 								Apply
@@ -650,6 +652,7 @@ watch(
 								size="sm"
 								variant="solid"
 								icon="i-lucide-trash"
+								loading-auto
 								@click="deleteRun"
 							>
 								Delete Run
