@@ -72,7 +72,11 @@ const {
 	{ lazy: true }
 )
 
-const { data: testPlans, error: testPlansError } = await useAsyncData(
+const {
+	data: testPlans,
+	error: testPlansError,
+	refresh: refreshTestPlans
+} = await useAsyncData(
 	"testPlans",
 	async () => {
 		const { data, error } = await supabase.from("test_plans").select("*")
@@ -84,7 +88,11 @@ const { data: testPlans, error: testPlansError } = await useAsyncData(
 	{ lazy: true }
 )
 
-const { data: runGroups, error: runGroupsError } = await useAsyncData(
+const {
+	data: runGroups,
+	error: runGroupsError,
+	refresh: refreshRunGroups
+} = await useAsyncData(
 	"runGroups",
 	async () => {
 		const { data, error } = await supabase.from("test_run_groups").select("*")
@@ -109,7 +117,7 @@ const pageError = computed(() => {
 })
 
 async function retryAll() {
-	await Promise.all([refreshRuns()])
+	await Promise.all([refreshRuns(), refreshTestPlans(), refreshRunGroups()])
 }
 
 const selectedRunGroup = ref<RunGroupWithLabel>()

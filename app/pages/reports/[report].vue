@@ -48,7 +48,11 @@ const user = useSupabaseUser()
 
 const userIsLoggedIn = computed(() => user.value !== null)
 
-const { data: userMetadata, error: userMetadataError } = await useAsyncData(
+const {
+	data: userMetadata,
+	error: userMetadataError,
+	refresh: refreshUserMetadata
+} = await useAsyncData(
 	"reportPageUserMetadata",
 	async () => {
 		if (user.value?.id) {
@@ -77,7 +81,7 @@ const pageError = computed(() => {
 })
 
 async function retryAll() {
-	await refreshReport()
+	await Promise.all([refreshReport(), refreshUserMetadata()])
 }
 
 const editedReport = ref<Tables<"test_run_reports">>({

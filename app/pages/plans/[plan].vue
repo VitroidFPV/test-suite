@@ -72,7 +72,11 @@ const planCaseIds = computed(
 )
 
 // Fetch all cases grouped for the modal
-const { data: groupedCases, error: groupedCasesError } = await useAsyncData(
+const {
+	data: groupedCases,
+	error: groupedCasesError,
+	refresh: refreshGroupedCases
+} = await useAsyncData(
 	"allGroupedCases",
 	async () => {
 		const { data: casesData, error: casesError } = await supabase
@@ -147,7 +151,7 @@ const pageError = computed(() => {
 })
 
 async function retryAll() {
-	await Promise.all([refreshPlan(), refreshPlanCases()])
+	await Promise.all([refreshPlan(), refreshPlanCases(), refreshGroupedCases()])
 }
 
 const planCaseModalOpen = ref(false)

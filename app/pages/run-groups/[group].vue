@@ -110,11 +110,13 @@ const {
 )
 
 // Fetch all runs for the edit modal
-const { data: allRuns, error: allRunsError } = await useAsyncData(
-	"allRunsForGroup",
-	async () => fetchRunsWithUsers(),
-	{ lazy: true }
-)
+const {
+	data: allRuns,
+	error: allRunsError,
+	refresh: refreshAllRuns
+} = await useAsyncData("allRunsForGroup", async () => fetchRunsWithUsers(), {
+	lazy: true
+})
 
 // Consolidated page error - combines all errors when multiple are present
 const pageError = computed(() => {
@@ -129,7 +131,7 @@ const pageError = computed(() => {
 })
 
 async function retryAll() {
-	await Promise.all([refreshRunGroup(), refreshRuns()])
+	await Promise.all([refreshRunGroup(), refreshRuns(), refreshAllRuns()])
 }
 
 async function deleteRunGroup() {
