@@ -21,7 +21,7 @@ const resultTypes = [
 	{
 		label: "Passed",
 		value: "passed",
-		textColor: "text-lime-400",
+		textColor: "text-lime-500",
 		bgColor: "bg-lime-500/20"
 	},
 	{
