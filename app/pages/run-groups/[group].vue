@@ -23,8 +23,7 @@ async function fetchRunsWithUsers(runIds?: string[]) {
 		: await query
 
 	if (runsError) {
-		console.error(runsError)
-		return []
+		throw createSupabaseError(runsError)
 	}
 
 	const runsArray = runsData || []
@@ -50,8 +49,7 @@ async function fetchRunsWithUsers(runIds?: string[]) {
 		)
 
 	if (usersError) {
-		console.error(usersError)
-		return runsArray.map((run) => ({ ...run, creator: undefined }))
+		throw createSupabaseError(usersError)
 	}
 
 	// Map users to their respective runs
@@ -82,11 +80,12 @@ const {
 	{ lazy: true }
 )
 
-// Consolidated page error
-const pageError = computed(() => runGroupError.value as Error | null)
-
 // Fetch runs linked to this group
-const { data: runs, refresh: refreshRuns } = await useAsyncData(
+const {
+	data: runs,
+	error: runsError,
+	refresh: refreshRuns
+} = await useAsyncData(
 	`groupRuns-${groupId}`,
 	async () => {
 		// Get run IDs from the link table
@@ -96,8 +95,7 @@ const { data: runs, refresh: refreshRuns } = await useAsyncData(
 			.eq("group", groupId)
 
 		if (linkError) {
-			console.error(linkError)
-			return []
+			throw createSupabaseError(linkError)
 		}
 
 		const runIds = linkData?.map((link) => link.run) || []
@@ -112,11 +110,29 @@ const { data: runs, refresh: refreshRuns } = await useAsyncData(
 )
 
 // Fetch all runs for the edit modal
-const { data: allRuns } = await useAsyncData(
-	"allRunsForGroup",
-	async () => fetchRunsWithUsers(),
-	{ lazy: true }
-)
+const {
+	data: allRuns,
+	error: allRunsError,
+	refresh: refreshAllRuns
+} = await useAsyncData("allRunsForGroup", async () => fetchRunsWithUsers(), {
+	lazy: true
+})
+
+// Consolidated page error - combines all errors when multiple are present
+const pageError = computed(() => {
+	const errors: Error[] = []
+	if (runGroupError.value) errors.push(runGroupError.value)
+	if (runsError.value) errors.push(runsError.value)
+	if (allRunsError.value) errors.push(allRunsError.value)
+
+	if (errors.length === 0) return null
+	if (errors.length === 1) return errors[0]!
+	return errors
+})
+
+async function retryAll() {
+	await Promise.all([refreshRunGroup(), refreshRuns(), refreshAllRuns()])
+}
 
 async function deleteRunGroup() {
 	const { error } = await supabase
@@ -271,7 +287,7 @@ useHead({
 		:loading="!runGroup && !pageError"
 		:error="pageError"
 		back-link="/run-groups"
-		@retry="refreshRunGroup"
+		@retry="retryAll"
 	>
 		<template #title-trailing>
 			<div class="flex gap-2">
