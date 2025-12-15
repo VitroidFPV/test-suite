@@ -21,38 +21,50 @@
 
 @theme {
 	--font-sans: "Geist", sans-serif;
+
+	--color-lime-50: oklch(0.99 0.034 114.08);
+	--color-lime-100: oklch(0.982 0.06 116.49);
+	--color-lime-200: oklch(0.958 0.122 120.3);
+	--color-lime-300: oklch(0.923 0.16 123.32);
+	--color-lime-400: oklch(0.876 0.189 126.81);
+	--color-lime-500: oklch(0.806 0.196 129.52);
+	--color-lime-600: oklch(0.742 0.192 128.92);
+	--color-lime-700: oklch(0.631 0.161 127.35);
+	--color-lime-800: oklch(0.486 0.121 124.72);
+	--color-lime-900: oklch(0.319 0.077 121.06);
+	--color-lime-950: oklch(0.206 0.048 117.22);
 }
 
 body {
-	@apply  bg-[#111111]
+	@apply bg-[#111111];
 }
 
 .md div {
-	@apply space-y-3
+	@apply space-y-3;
 }
 
 .md ul {
-	@apply list-disc list-inside
+	@apply list-disc list-inside;
 }
 
 .md ol {
-	@apply list-decimal list-inside
+	@apply list-decimal list-inside;
 }
 
 .md h1 {
-	@apply text-3xl font-bold
+	@apply text-3xl font-bold;
 }
 
 .md h2 {
-	@apply text-2xl font-bold
+	@apply text-2xl font-bold;
 }
 
 .md h3 {
-	@apply text-xl font-bold
+	@apply text-xl font-bold;
 }
 
 .md p {
-	@apply text-base
+	@apply text-base;
 }
 
 /* CSS */
