@@ -29,11 +29,12 @@ const {
 	{ lazy: true }
 )
 
-// Consolidated page error
-const pageError = computed(() => planError.value as Error | null)
-
 // Fetch plan case links and their associated cases
-const { data: planCasesData, refresh: refreshPlanCases } = await useAsyncData(
+const {
+	data: planCasesData,
+	error: planCasesError,
+	refresh: refreshPlanCases
+} = await useAsyncData(
 	`planCases-${urlPlan}`,
 	async () => {
 		const { data: linksData, error: linksError } = await supabase
@@ -41,8 +42,7 @@ const { data: planCasesData, refresh: refreshPlanCases } = await useAsyncData(
 			.select("*")
 			.eq("plan", urlPlan)
 		if (linksError) {
-			console.error(linksError)
-			return { links: [], cases: [] }
+			throw createSupabaseError(linksError)
 		}
 
 		const caseIds = linksData.map((link) => link.case)
@@ -56,8 +56,7 @@ const { data: planCasesData, refresh: refreshPlanCases } = await useAsyncData(
 			.select("*")
 			.in("id", caseIds)
 		if (casesError) {
-			console.error(casesError)
-			return { links: linksData, cases: [] }
+			throw createSupabaseError(casesError)
 		}
 
 		return { links: linksData, cases: casesData }
@@ -73,7 +72,7 @@ const planCaseIds = computed(
 )
 
 // Fetch all cases grouped for the modal
-const { data: groupedCases } = await useAsyncData(
+const { data: groupedCases, error: groupedCasesError } = await useAsyncData(
 	"allGroupedCases",
 	async () => {
 		const { data: casesData, error: casesError } = await supabase
@@ -81,8 +80,7 @@ const { data: groupedCases } = await useAsyncData(
 			.select("*")
 
 		if (casesError) {
-			console.error(casesError)
-			return []
+			throw createSupabaseError(casesError)
 		}
 
 		const { data: groupingsData, error: groupingsError } = await supabase
@@ -90,8 +88,7 @@ const { data: groupedCases } = await useAsyncData(
 			.select("*")
 
 		if (groupingsError) {
-			console.error(groupingsError)
-			return []
+			throw createSupabaseError(groupingsError)
 		}
 
 		// get groups from db
@@ -108,8 +105,7 @@ const { data: groupedCases } = await useAsyncData(
 			.in("id", groupIds)
 
 		if (groupsError) {
-			console.error(groupsError)
-			return []
+			throw createSupabaseError(groupsError)
 		}
 
 		// group cases by group
@@ -137,6 +133,22 @@ const { data: groupedCases } = await useAsyncData(
 	},
 	{ lazy: true }
 )
+
+// Consolidated page error - combines all errors when multiple are present
+const pageError = computed(() => {
+	const errors: Error[] = []
+	if (planError.value) errors.push(planError.value)
+	if (planCasesError.value) errors.push(planCasesError.value)
+	if (groupedCasesError.value) errors.push(groupedCasesError.value)
+
+	if (errors.length === 0) return null
+	if (errors.length === 1) return errors[0]!
+	return errors
+})
+
+async function retryAll() {
+	await Promise.all([refreshPlan(), refreshPlanCases()])
+}
 
 const planCaseModalOpen = ref(false)
 const mdPreviewMode = ref(false)
@@ -271,7 +283,7 @@ async function deletePlan() {
 		:loading="!plan && !pageError"
 		:error="pageError"
 		back-link="/plans"
-		@retry="refreshPlan"
+		@retry="retryAll"
 	>
 		<template #title-trailing>
 			<div class="flex gap-2">

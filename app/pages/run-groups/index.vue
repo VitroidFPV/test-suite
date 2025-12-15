@@ -51,8 +51,7 @@ const {
 			)
 
 		if (usersError) {
-			console.error(usersError)
-			return runsArray.map((run) => ({ ...run, creator: undefined }))
+			throw createSupabaseError(usersError)
 		}
 
 		// Map users to their respective runs
@@ -80,15 +79,15 @@ const {
 	{ lazy: true }
 )
 
-// Consolidated page error - combines both errors when both are present
+// Consolidated page error - combines all errors when multiple are present
 const pageError = computed(() => {
-	const testRunsErr = testRunsError.value
-	const runGroupsErr = runGroupsError.value
+	const errors: Error[] = []
+	if (testRunsError.value) errors.push(testRunsError.value)
+	if (runGroupsError.value) errors.push(runGroupsError.value)
 
-	if (testRunsErr && runGroupsErr) {
-		return [testRunsErr, runGroupsErr] as Error[]
-	}
-	return (testRunsErr ?? runGroupsErr) as Error | null
+	if (errors.length === 0) return null
+	if (errors.length === 1) return errors[0]!
+	return errors
 })
 
 const testRunsSortOptions = ref<{ label: string; value: string }[]>([

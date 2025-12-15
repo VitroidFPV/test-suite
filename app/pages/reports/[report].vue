@@ -44,14 +44,11 @@ const {
 	{ lazy: true }
 )
 
-// Consolidated page error
-const pageError = computed(() => reportError.value as Error | null)
-
 const user = useSupabaseUser()
 
 const userIsLoggedIn = computed(() => user.value !== null)
 
-const { data: userMetadata } = await useAsyncData(
+const { data: userMetadata, error: userMetadataError } = await useAsyncData(
 	"reportPageUserMetadata",
 	async () => {
 		if (user.value?.id) {
@@ -59,14 +56,29 @@ const { data: userMetadata } = await useAsyncData(
 				user_ids: [user.value.id]
 			})
 			if (error) {
-				console.error(error)
-				return []
+				throw createSupabaseError(error)
 			}
 			return data
 		}
 		return []
-	}
+	},
+	{ lazy: true }
 )
+
+// Consolidated page error - combines all errors when multiple are present
+const pageError = computed(() => {
+	const errors: Error[] = []
+	if (reportError.value) errors.push(reportError.value)
+	if (userMetadataError.value) errors.push(userMetadataError.value)
+
+	if (errors.length === 0) return null
+	if (errors.length === 1) return errors[0]!
+	return errors
+})
+
+async function retryAll() {
+	await refreshReport()
+}
 
 const editedReport = ref<Tables<"test_run_reports">>({
 	comment: "",
@@ -128,6 +140,11 @@ async function saveReport() {
 async function deleteReport() {
 	if (!urlReport) {
 		console.error("Cannot delete: report ID missing from route")
+		toast.add({
+			title: "Error",
+			description: "Cannot delete: report ID missing from route",
+			color: "error"
+		})
 		return
 	}
 	const { error } = await supabase
@@ -215,7 +232,7 @@ const statusStats = computed(() => {
 		:loading="!report && !pageError"
 		:error="pageError"
 		back-link="/reports"
-		@retry="refreshReport"
+		@retry="retryAll"
 	>
 		<template #title-trailing>
 			<div v-if="userIsLoggedIn" class="flex gap-2 items-center">

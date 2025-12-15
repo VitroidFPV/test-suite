@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { NavigationMenuItem } from "@nuxt/ui"
 
+const toast = useToast()
+
 const client = useSupabaseClient()
 const user = useSupabaseUser()
 
@@ -22,6 +24,11 @@ const { data: userMetadata, pending: userMetadataPending } = useAsyncData(
 			})
 			if (error) {
 				console.error(error)
+				toast.add({
+					title: "Error fetching user metadata",
+					description: error.message,
+					color: "error"
+				})
 				return []
 			}
 			return data

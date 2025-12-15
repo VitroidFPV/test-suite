@@ -40,8 +40,7 @@ const {
 		)
 
 		if (creatorsError) {
-			console.error(creatorsError)
-			return data as ReportWithUser[]
+			throw createSupabaseError(creatorsError)
 		}
 
 		// Map creators to reports
@@ -55,21 +54,36 @@ const {
 	{ lazy: true }
 )
 
-// Consolidated page error
-const pageError = computed(() => reportsError.value as Error | null)
-
-const { data: runsData } = await useAsyncData(
-	"runs",
+const {
+	data: runsData,
+	error: runsError,
+	refresh: refreshRuns
+} = await useAsyncData(
+	"reportsRuns",
 	async () => {
 		const { data, error } = await supabase.from("test_runs").select("*")
 		if (error) {
-			console.error(error)
-			return []
+			throw createSupabaseError(error)
 		}
 		return data
 	},
 	{ lazy: true }
 )
+
+// Consolidated page error - combines all errors when multiple are present
+const pageError = computed(() => {
+	const errors: Error[] = []
+	if (reportsError.value) errors.push(reportsError.value)
+	if (runsError.value) errors.push(runsError.value)
+
+	if (errors.length === 0) return null
+	if (errors.length === 1) return errors[0]!
+	return errors
+})
+
+async function retryAll() {
+	await Promise.all([refreshReports(), refreshRuns()])
+}
 
 const selectedRun = ref<{ label: string; value: string } | undefined>(undefined)
 const formattedRuns = computed(() => {
@@ -195,7 +209,7 @@ useHead({
 		:breadcrumbs="[{ label: 'Dashboard', to: '/' }]"
 		title="Test Reports"
 		:error="pageError"
-		@retry="refreshReports"
+		@retry="retryAll"
 	>
 		<template #title-trailing>
 			<UModal

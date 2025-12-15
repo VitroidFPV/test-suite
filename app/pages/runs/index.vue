@@ -60,8 +60,7 @@ const {
 			)
 
 		if (usersError) {
-			console.error(usersError)
-			return runsArray.map((run) => ({ ...run, creator: undefined }))
+			throw createSupabaseError(usersError)
 		}
 
 		// Map users to their respective runs
@@ -73,34 +72,45 @@ const {
 	{ lazy: true }
 )
 
-// Consolidated page error
-const pageError = computed(() => runsError.value as Error | null)
-
-const { data: testPlans } = await useAsyncData(
+const { data: testPlans, error: testPlansError } = await useAsyncData(
 	"testPlans",
 	async () => {
 		const { data, error } = await supabase.from("test_plans").select("*")
 		if (error) {
-			console.error(error)
-			return []
+			throw createSupabaseError(error)
 		}
 		return data
 	},
 	{ lazy: true }
 )
 
-const { data: runGroups } = await useAsyncData(
+const { data: runGroups, error: runGroupsError } = await useAsyncData(
 	"runGroups",
 	async () => {
 		const { data, error } = await supabase.from("test_run_groups").select("*")
 		if (error) {
-			console.error(error)
-			return []
+			throw createSupabaseError(error)
 		}
 		return data
 	},
 	{ lazy: true }
 )
+
+// Consolidated page error - combines all errors when multiple are present
+const pageError = computed(() => {
+	const errors: Error[] = []
+	if (runsError.value) errors.push(runsError.value)
+	if (testPlansError.value) errors.push(testPlansError.value)
+	if (runGroupsError.value) errors.push(runGroupsError.value)
+
+	if (errors.length === 0) return null
+	if (errors.length === 1) return errors[0]!
+	return errors
+})
+
+async function retryAll() {
+	await Promise.all([refreshRuns()])
+}
 
 const selectedRunGroup = ref<RunGroupWithLabel>()
 const selectedTestPlan = ref<TestPlanWithLabel>()
@@ -249,7 +259,7 @@ useHead({
 		:breadcrumbs="[{ label: 'Dashboard', to: '/' }]"
 		title="Test Runs"
 		:error="pageError"
-		@retry="refreshRuns"
+		@retry="retryAll"
 	>
 		<template #title-trailing>
 			<UModal

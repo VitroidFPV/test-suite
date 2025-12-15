@@ -42,8 +42,7 @@ const {
 			.select("group")
 			.eq("run", data.id)
 		if (runGroupsError) {
-			console.error(runGroupsError)
-			return { run: data, runGroups: [], allRunGroups: [] }
+			throw createSupabaseError(runGroupsError)
 		}
 
 		// Fetch full group details for each group ID
@@ -56,10 +55,9 @@ const {
 				.select("*")
 				.in("id", groupIds)
 			if (groupsError) {
-				console.error(groupsError)
-			} else {
-				runGroups = groupsData
+				throw createSupabaseError(groupsError)
 			}
+			runGroups = groupsData
 		}
 
 		// Fetch all run groups for the edit modal
@@ -67,7 +65,7 @@ const {
 			.from("test_run_groups")
 			.select("*")
 		if (allRunGroupsError) {
-			console.error(allRunGroupsError)
+			throw createSupabaseError(allRunGroupsError)
 		}
 
 		return {
@@ -79,16 +77,17 @@ const {
 	{ lazy: true }
 )
 
-// Consolidated page error
-const pageError = computed(() => runDataError.value as Error | null)
-
 // Computed properties for run data
 const run = computed(() => runData.value?.run)
 const runGroupsContainingTestRun = computed(() => runData.value?.runGroups)
 const allRunGroups = computed(() => runData.value?.allRunGroups ?? [])
 
 // Fetch run cases with their results
-const { data: runCasesData, refresh: refreshRunCases } = await useAsyncData(
+const {
+	data: runCasesData,
+	error: runCasesError,
+	refresh: refreshRunCases
+} = await useAsyncData(
 	`runCases-${urlRun}`,
 	async () => {
 		const { data: runCasesDb, error: runCasesError } = await supabase
@@ -96,8 +95,7 @@ const { data: runCasesData, refresh: refreshRunCases } = await useAsyncData(
 			.select("case, result, comment")
 			.eq("run", urlRun)
 		if (runCasesError) {
-			console.error(runCasesError)
-			return []
+			throw createSupabaseError(runCasesError)
 		}
 
 		if (runCasesDb.length === 0) {
@@ -113,8 +111,7 @@ const { data: runCasesData, refresh: refreshRunCases } = await useAsyncData(
 				runCasesDb.map((c) => c.case)
 			)
 		if (casesError) {
-			console.error(casesError)
-			return []
+			throw createSupabaseError(casesError)
 		}
 
 		// Merge cases with their results and comments
@@ -129,6 +126,21 @@ const { data: runCasesData, refresh: refreshRunCases } = await useAsyncData(
 	},
 	{ lazy: true }
 )
+
+// Consolidated page error - combines all errors when multiple are present
+const pageError = computed(() => {
+	const errors: Error[] = []
+	if (runDataError.value) errors.push(runDataError.value)
+	if (runCasesError.value) errors.push(runCasesError.value)
+
+	if (errors.length === 0) return null
+	if (errors.length === 1) return errors[0]!
+	return errors
+})
+
+async function retryAll() {
+	await Promise.all([refreshRun(), refreshRunCases()])
+}
 
 // Local reactive copy of run cases for optimistic updates
 const runCases = ref<RunCaseWithResult[]>([])
@@ -489,7 +501,7 @@ watch(
 		:loading="!run && !pageError"
 		:error="pageError"
 		back-link="/runs"
-		@retry="refreshRun"
+		@retry="retryAll"
 	>
 		<template #title-trailing>
 			<div class="flex gap-2 items-center">
