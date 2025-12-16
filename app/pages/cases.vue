@@ -560,7 +560,7 @@ useHead({
 					<div class="flex justify-between px-1">
 						<div class="text-primary font-bold">Cases</div>
 						<div class="flex items-center gap-2">
-							<UTooltip text="Create new Case" :kbds="['shift', 'N']">
+							<UTooltip text="Create new Case" :kbds="['shift', 'A']">
 								<UButton
 									color="primary"
 									size="xs"
