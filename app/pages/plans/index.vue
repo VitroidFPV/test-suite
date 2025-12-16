@@ -73,6 +73,13 @@ async function createPlan() {
 		navigateTo(`/plans/${data[0].id}`)
 	}
 }
+
+defineShortcuts({
+	shift_a: {
+		usingInput: true,
+		handler: () => (createPlanModalOpen.value = true)
+	}
+})
 </script>
 
 <template>
@@ -92,7 +99,7 @@ async function createPlan() {
 					title: 'text-primary'
 				}"
 			>
-				<UTooltip text="Create Test Plan">
+				<UTooltip text="Create Test Plan" :kbds="['shift', 'A']">
 					<UButton
 						color="primary"
 						size="sm"

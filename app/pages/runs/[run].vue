@@ -489,6 +489,17 @@ watch(
 	},
 	{ immediate: true }
 )
+
+defineShortcuts({
+	shift_e: {
+		usingInput: true,
+		handler: () => (editRunModalOpen.value = true)
+	},
+	shift_r: {
+		usingInput: true,
+		handler: () => (reportModalOpen.value = true)
+	}
+})
 </script>
 
 <template>
@@ -511,14 +522,16 @@ watch(
 					description="Generate a report for this test run"
 					:ui="{ title: 'text-primary' }"
 				>
-					<UButton
-						color="primary"
-						size="sm"
-						variant="soft"
-						icon="i-lucide-file-text"
-					>
-						Generate Report
-					</UButton>
+					<UTooltip text="Generate Report" :kbds="['shift', 'R']">
+						<UButton
+							color="primary"
+							size="sm"
+							variant="soft"
+							icon="i-lucide-file-text"
+						>
+							Generate Report
+						</UButton>
+					</UTooltip>
 					<template #body>
 						<div class="flex flex-col gap-3 w-full">
 							<UFieldGroup class="w-full">
@@ -568,7 +581,7 @@ watch(
 						title: 'text-primary'
 					}"
 				>
-					<UTooltip text="Edit Run">
+					<UTooltip text="Edit Run" :kbds="['shift', 'E']">
 						<UButton
 							color="neutral"
 							size="sm"

@@ -275,6 +275,13 @@ useHead({
 			: "Run Group | Test Suite"
 	)
 })
+
+defineShortcuts({
+	shift_e: {
+		usingInput: true,
+		handler: () => (editGroupModalOpen.value = true)
+	}
+})
 </script>
 
 <template>
@@ -300,7 +307,7 @@ useHead({
 						title: 'text-primary'
 					}"
 				>
-					<UTooltip text="Edit Run Group">
+					<UTooltip text="Edit Run Group" :kbds="['shift', 'E']">
 						<UButton
 							color="neutral"
 							size="sm"

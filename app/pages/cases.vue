@@ -474,9 +474,17 @@ defineShortcuts({
 		usingInput: true,
 		handler: () => saveCase(true, true)
 	},
-	meta_n: {
+	shift_a: {
 		usingInput: true,
 		handler: () => caseModal("")
+	},
+	shift_e: {
+		usingInput: true,
+		handler: () => {
+			if (selectedGroup.value?.name) {
+				groupModal(selectedGroup.value?.id ?? "")
+			}
+		}
 	}
 })
 
@@ -552,7 +560,7 @@ useHead({
 					<div class="flex justify-between px-1">
 						<div class="text-primary font-bold">Cases</div>
 						<div class="flex items-center gap-2">
-							<UTooltip text="Create new Case" :shortcuts="['meta', 'N']">
+							<UTooltip text="Create new Case" :kbds="['shift', 'N']">
 								<UButton
 									color="primary"
 									size="xs"
@@ -564,10 +572,7 @@ useHead({
 									New Case
 								</UButton>
 							</UTooltip>
-							<UTooltip
-								text="Add existing case to group"
-								:shortcuts="['meta', 'L']"
-							>
+							<UTooltip text="Edit Group" :kbds="['shift', 'E']">
 								<UButton
 									color="neutral"
 									size="xs"

@@ -229,6 +229,13 @@ async function handleRetry() {
 useHead({
 	title: `Run Groups | Test Suite`
 })
+
+defineShortcuts({
+	shift_a: {
+		usingInput: true,
+		handler: () => (createRunGroupModalOpen.value = true)
+	}
+})
 </script>
 
 <template>
@@ -248,9 +255,16 @@ useHead({
 					content: 'max-w-6xl'
 				}"
 			>
-				<UButton color="primary" size="sm" variant="soft" icon="i-lucide-plus">
-					New Run Group
-				</UButton>
+				<UTooltip text="Create Run Group" :kbds="['shift', 'A']">
+					<UButton
+						color="primary"
+						size="sm"
+						variant="soft"
+						icon="i-lucide-plus"
+					>
+						New Run Group
+					</UButton>
+				</UTooltip>
 				<template #body>
 					<div class="flex flex-col gap-3">
 						<UInput
