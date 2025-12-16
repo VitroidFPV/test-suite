@@ -278,7 +278,11 @@ useHead({
 
 defineShortcuts({
 	shift_e: {
-		handler: () => (editGroupModalOpen.value = true)
+		handler: () => {
+			if (runGroup.value && allRuns.value !== null) {
+				editGroupModalOpen.value = true
+			}
+		}
 	}
 })
 </script>

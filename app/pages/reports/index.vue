@@ -205,7 +205,11 @@ useHead({
 
 defineShortcuts({
 	shift_a: {
-		handler: () => (createReportModalOpen.value = true)
+		handler: () => {
+			if (runsData.value !== null) {
+				createReportModalOpen.value = true
+			}
+		}
 	}
 })
 </script>

@@ -223,7 +223,11 @@ const statusStats = computed(() => {
 
 defineShortcuts({
 	shift_e: {
-		handler: () => (editReportModalOpen.value = true)
+		handler: () => {
+			if (report.value) {
+				editReportModalOpen.value = true
+			}
+		}
 	}
 })
 </script>

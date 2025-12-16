@@ -263,7 +263,11 @@ useHead({
 
 defineShortcuts({
 	shift_a: {
-		handler: () => (createRunModalOpen.value = true)
+		handler: () => {
+			if (testPlans.value !== null && runGroups.value !== null) {
+				createRunModalOpen.value = true
+			}
+		}
 	}
 })
 </script>

@@ -473,11 +473,15 @@ defineShortcuts({
 		handler: () => saveCase(true, true)
 	},
 	shift_a: {
-		handler: () => caseModal("")
+		handler: () => {
+			if (caseGroups.value !== null) {
+				caseModal("")
+			}
+		}
 	},
 	shift_e: {
 		handler: () => {
-			if (selectedGroup.value?.name) {
+			if (selectedGroup.value?.name && caseGroups.value !== null) {
 				groupModal(selectedGroup.value?.id ?? "")
 			}
 		}

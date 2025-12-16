@@ -278,7 +278,11 @@ async function deletePlan() {
 
 defineShortcuts({
 	shift_e: {
-		handler: () => (planCaseModalOpen.value = true)
+		handler: () => {
+			if (plan.value && groupedCases.value !== null) {
+				planCaseModalOpen.value = true
+			}
+		}
 	}
 })
 </script>

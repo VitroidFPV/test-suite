@@ -492,10 +492,18 @@ watch(
 
 defineShortcuts({
 	shift_e: {
-		handler: () => (editRunModalOpen.value = true)
+		handler: () => {
+			if (run.value && allRunGroups.value) {
+				editRunModalOpen.value = true
+			}
+		}
 	},
 	shift_r: {
-		handler: () => (reportModalOpen.value = true)
+		handler: () => {
+			if (run.value) {
+				reportModalOpen.value = true
+			}
+		}
 	}
 })
 </script>

@@ -232,7 +232,11 @@ useHead({
 
 defineShortcuts({
 	shift_a: {
-		handler: () => (createRunGroupModalOpen.value = true)
+		handler: () => {
+			if (testRuns.value !== null) {
+				createRunGroupModalOpen.value = true
+			}
+		}
 	}
 })
 </script>
