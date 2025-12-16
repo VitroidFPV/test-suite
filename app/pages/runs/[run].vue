@@ -492,11 +492,9 @@ watch(
 
 defineShortcuts({
 	shift_e: {
-		usingInput: true,
 		handler: () => (editRunModalOpen.value = true)
 	},
 	shift_r: {
-		usingInput: true,
 		handler: () => (reportModalOpen.value = true)
 	}
 })

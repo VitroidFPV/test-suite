@@ -263,7 +263,6 @@ useHead({
 
 defineShortcuts({
 	shift_a: {
-		usingInput: true,
 		handler: () => (createRunModalOpen.value = true)
 	}
 })

@@ -278,7 +278,6 @@ async function deletePlan() {
 
 defineShortcuts({
 	shift_e: {
-		usingInput: true,
 		handler: () => (planCaseModalOpen.value = true)
 	}
 })

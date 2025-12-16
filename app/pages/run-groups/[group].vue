@@ -278,7 +278,6 @@ useHead({
 
 defineShortcuts({
 	shift_e: {
-		usingInput: true,
 		handler: () => (editGroupModalOpen.value = true)
 	}
 })

@@ -205,7 +205,6 @@ useHead({
 
 defineShortcuts({
 	shift_a: {
-		usingInput: true,
 		handler: () => (createReportModalOpen.value = true)
 	}
 })

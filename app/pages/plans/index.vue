@@ -76,7 +76,6 @@ async function createPlan() {
 
 defineShortcuts({
 	shift_a: {
-		usingInput: true,
 		handler: () => (createPlanModalOpen.value = true)
 	}
 })

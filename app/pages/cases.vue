@@ -467,19 +467,15 @@ const editedGroup = ref<CaseGroup>()
 
 defineShortcuts({
 	meta_s: {
-		usingInput: true,
 		handler: () => saveCase(false, true)
 	},
 	meta_shift_s: {
-		usingInput: true,
 		handler: () => saveCase(true, true)
 	},
 	shift_a: {
-		usingInput: true,
 		handler: () => caseModal("")
 	},
 	shift_e: {
-		usingInput: true,
 		handler: () => {
 			if (selectedGroup.value?.name) {
 				groupModal(selectedGroup.value?.id ?? "")
