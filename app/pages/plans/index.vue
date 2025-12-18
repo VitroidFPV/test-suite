@@ -76,7 +76,11 @@ async function createPlan() {
 
 defineShortcuts({
 	shift_a: {
-		handler: () => (createPlanModalOpen.value = true)
+		handler: () => {
+			if (plans.value !== null) {
+				createPlanModalOpen.value = true
+			}
+		}
 	}
 })
 </script>
