@@ -481,7 +481,7 @@ defineShortcuts({
 	},
 	shift_e: {
 		handler: () => {
-			if (selectedGroup.value?.name && caseGroups.value !== null) {
+			if (selectedGroup.value?.name && caseGroups.value !== null && caseGroupLinks.value !== null) {
 				groupModal(selectedGroup.value?.id ?? "")
 			}
 		}
