@@ -294,6 +294,7 @@ defineShortcuts({
 						size="sm"
 						variant="soft"
 						icon="i-lucide-plus"
+						:disabled="testPlans === null || runGroups === null"
 					>
 						New Test Run
 					</UButton>

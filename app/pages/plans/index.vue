@@ -108,6 +108,7 @@ defineShortcuts({
 						size="sm"
 						variant="soft"
 						icon="i-lucide-plus"
+						:disabled="plans === null"
 					>
 						New Plan
 					</UButton>

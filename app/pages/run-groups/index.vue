@@ -264,6 +264,7 @@ defineShortcuts({
 						size="sm"
 						variant="soft"
 						icon="i-lucide-plus"
+						:disabled="testRuns === null"
 					>
 						New Run Group
 					</UButton>

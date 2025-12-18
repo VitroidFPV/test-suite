@@ -234,6 +234,7 @@ defineShortcuts({
 						size="sm"
 						variant="soft"
 						icon="i-lucide-plus"
+						:disabled="runsData === null"
 					>
 						New Test Report
 					</UButton>

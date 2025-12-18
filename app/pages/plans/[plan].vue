@@ -316,7 +316,7 @@ defineShortcuts({
 							size="sm"
 							variant="soft"
 							icon="i-lucide-pencil"
-							:disabled="!plan"
+							:disabled="!plan || groupedCases === null"
 						/>
 					</UTooltip>
 					<template #body>

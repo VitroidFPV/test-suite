@@ -534,6 +534,7 @@ defineShortcuts({
 							size="sm"
 							variant="soft"
 							icon="i-lucide-file-text"
+							:disabled="!run"
 						>
 							Generate Report
 						</UButton>
@@ -593,6 +594,7 @@ defineShortcuts({
 							size="sm"
 							variant="soft"
 							icon="i-lucide-pencil"
+							:disabled="!run || !allRunGroups"
 						/>
 					</UTooltip>
 					<template #body>
