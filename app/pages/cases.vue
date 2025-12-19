@@ -474,14 +474,18 @@ defineShortcuts({
 	},
 	shift_a: {
 		handler: () => {
-			if (caseGroups.value !== null) {
+			if (caseGroups.value) {
 				caseModal("")
 			}
 		}
 	},
 	shift_e: {
 		handler: () => {
-			if (selectedGroup.value?.name && caseGroups.value !== null && caseGroupLinks.value !== null) {
+			if (
+				selectedGroup.value?.name &&
+				caseGroups.value &&
+				caseGroupLinks.value
+			) {
 				groupModal(selectedGroup.value?.id ?? "")
 			}
 		}
@@ -566,7 +570,7 @@ useHead({
 									size="xs"
 									variant="soft"
 									icon="i-lucide-plus"
-									:disabled="caseGroups === null"
+									:disabled="!caseGroups"
 									@click="caseModal('')"
 								>
 									New Case
@@ -578,7 +582,7 @@ useHead({
 									size="xs"
 									variant="soft"
 									icon="i-lucide-pen"
-									:disabled="selectedGroup === undefined || caseGroups === null"
+									:disabled="!selectedGroup || !caseGroups"
 									@click="groupModal(selectedGroup?.id ? selectedGroup.id : '')"
 								>
 									Edit Group

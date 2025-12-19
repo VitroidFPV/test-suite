@@ -493,14 +493,14 @@ watch(
 defineShortcuts({
 	shift_e: {
 		handler: () => {
-			if (run.value && allRunGroups.value) {
+			if (runData.value) {
 				editRunModalOpen.value = true
 			}
 		}
 	},
 	shift_r: {
 		handler: () => {
-			if (run.value) {
+			if (runData.value) {
 				reportModalOpen.value = true
 			}
 		}
@@ -534,7 +534,7 @@ defineShortcuts({
 							size="sm"
 							variant="soft"
 							icon="i-lucide-file-text"
-							:disabled="!run"
+							:disabled="!runData"
 						>
 							Generate Report
 						</UButton>
@@ -594,7 +594,7 @@ defineShortcuts({
 							size="sm"
 							variant="soft"
 							icon="i-lucide-pencil"
-							:disabled="!run || !allRunGroups"
+							:disabled="!runData"
 						/>
 					</UTooltip>
 					<template #body>

@@ -206,7 +206,7 @@ useHead({
 defineShortcuts({
 	shift_a: {
 		handler: () => {
-			if (runsData.value !== null) {
+			if (runsData.value) {
 				createReportModalOpen.value = true
 			}
 		}
@@ -234,7 +234,7 @@ defineShortcuts({
 						size="sm"
 						variant="soft"
 						icon="i-lucide-plus"
-						:disabled="runsData === null"
+						:disabled="!runsData"
 					>
 						New Test Report
 					</UButton>

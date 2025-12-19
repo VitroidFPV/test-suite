@@ -279,7 +279,7 @@ async function deletePlan() {
 defineShortcuts({
 	shift_e: {
 		handler: () => {
-			if (plan.value && groupedCases.value !== null) {
+			if (plan.value && groupedCases.value) {
 				planCaseModalOpen.value = true
 			}
 		}
@@ -316,7 +316,7 @@ defineShortcuts({
 							size="sm"
 							variant="soft"
 							icon="i-lucide-pencil"
-							:disabled="!plan || groupedCases === null"
+							:disabled="!plan || !groupedCases"
 						/>
 					</UTooltip>
 					<template #body>

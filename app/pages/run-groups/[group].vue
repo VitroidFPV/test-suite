@@ -279,7 +279,7 @@ useHead({
 defineShortcuts({
 	shift_e: {
 		handler: () => {
-			if (runGroup.value && allRuns.value !== null) {
+			if (runGroup.value && allRuns.value) {
 				editGroupModalOpen.value = true
 			}
 		}
@@ -316,7 +316,7 @@ defineShortcuts({
 							size="sm"
 							variant="soft"
 							icon="i-lucide-pencil"
-							:disabled="!runGroup || allRuns === null"
+							:disabled="!runGroup || !allRuns"
 						/>
 					</UTooltip>
 					<template #body>

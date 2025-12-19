@@ -233,7 +233,7 @@ useHead({
 defineShortcuts({
 	shift_a: {
 		handler: () => {
-			if (testRuns.value !== null) {
+			if (testRuns.value) {
 				createRunGroupModalOpen.value = true
 			}
 		}
@@ -264,7 +264,7 @@ defineShortcuts({
 						size="sm"
 						variant="soft"
 						icon="i-lucide-plus"
-						:disabled="testRuns === null"
+						:disabled="!testRuns"
 					>
 						New Run Group
 					</UButton>

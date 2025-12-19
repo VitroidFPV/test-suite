@@ -264,7 +264,7 @@ useHead({
 defineShortcuts({
 	shift_a: {
 		handler: () => {
-			if (testPlans.value !== null && runGroups.value !== null) {
+			if (testPlans.value && runGroups.value) {
 				createRunModalOpen.value = true
 			}
 		}
@@ -294,7 +294,7 @@ defineShortcuts({
 						size="sm"
 						variant="soft"
 						icon="i-lucide-plus"
-						:disabled="testPlans === null || runGroups === null"
+						:disabled="!testPlans || !runGroups"
 					>
 						New Test Run
 					</UButton>

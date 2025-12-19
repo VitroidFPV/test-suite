@@ -77,7 +77,7 @@ async function createPlan() {
 defineShortcuts({
 	shift_a: {
 		handler: () => {
-			if (plans.value !== null) {
+			if (plans.value) {
 				createPlanModalOpen.value = true
 			}
 		}
@@ -108,7 +108,7 @@ defineShortcuts({
 						size="sm"
 						variant="soft"
 						icon="i-lucide-plus"
-						:disabled="plans === null"
+						:disabled="!plans"
 					>
 						New Plan
 					</UButton>
@@ -167,7 +167,7 @@ defineShortcuts({
 		</template>
 		<template #content>
 			<div
-				v-if="plans !== null"
+				v-if="plans"
 				class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 w-full"
 			>
 				<div v-for="item in plans" :key="item.id">
