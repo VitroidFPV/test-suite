@@ -582,7 +582,7 @@ useHead({
 									size="xs"
 									variant="soft"
 									icon="i-lucide-pen"
-									:disabled="!selectedGroup || !caseGroups"
+									:disabled="!selectedGroup || !caseGroups || !caseGroupLinks"
 									@click="groupModal(selectedGroup?.id ? selectedGroup.id : '')"
 								>
 									Edit Group
