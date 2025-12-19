@@ -73,6 +73,16 @@ async function createPlan() {
 		navigateTo(`/plans/${data[0].id}`)
 	}
 }
+
+defineShortcuts({
+	shift_a: {
+		handler: () => {
+			if (plans.value) {
+				createPlanModalOpen.value = true
+			}
+		}
+	}
+})
 </script>
 
 <template>
@@ -92,12 +102,13 @@ async function createPlan() {
 					title: 'text-primary'
 				}"
 			>
-				<UTooltip text="Create Test Plan">
+				<UTooltip text="Create Test Plan" :kbds="['shift', 'A']">
 					<UButton
 						color="primary"
 						size="sm"
 						variant="soft"
 						icon="i-lucide-plus"
+						:disabled="!plans"
 					>
 						New Plan
 					</UButton>
@@ -156,7 +167,7 @@ async function createPlan() {
 		</template>
 		<template #content>
 			<div
-				v-if="plans !== null"
+				v-if="plans"
 				class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 w-full"
 			>
 				<div v-for="item in plans" :key="item.id">

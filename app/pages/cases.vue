@@ -467,16 +467,28 @@ const editedGroup = ref<CaseGroup>()
 
 defineShortcuts({
 	meta_s: {
-		usingInput: true,
 		handler: () => saveCase(false, true)
 	},
 	meta_shift_s: {
-		usingInput: true,
 		handler: () => saveCase(true, true)
 	},
-	meta_n: {
-		usingInput: true,
-		handler: () => caseModal("")
+	shift_a: {
+		handler: () => {
+			if (caseGroups.value) {
+				caseModal("")
+			}
+		}
+	},
+	shift_e: {
+		handler: () => {
+			if (
+				selectedGroup.value?.name &&
+				caseGroups.value &&
+				caseGroupLinks.value
+			) {
+				groupModal(selectedGroup.value?.id ?? "")
+			}
+		}
 	}
 })
 
@@ -552,28 +564,25 @@ useHead({
 					<div class="flex justify-between px-1">
 						<div class="text-primary font-bold">Cases</div>
 						<div class="flex items-center gap-2">
-							<UTooltip text="Create new Case" :shortcuts="['meta', 'N']">
+							<UTooltip text="Create new Case" :kbds="['shift', 'A']">
 								<UButton
 									color="primary"
 									size="xs"
 									variant="soft"
 									icon="i-lucide-plus"
-									:disabled="!cases"
+									:disabled="!caseGroups"
 									@click="caseModal('')"
 								>
 									New Case
 								</UButton>
 							</UTooltip>
-							<UTooltip
-								text="Add existing case to group"
-								:shortcuts="['meta', 'L']"
-							>
+							<UTooltip text="Edit Group" :kbds="['shift', 'E']">
 								<UButton
 									color="neutral"
 									size="xs"
 									variant="soft"
 									icon="i-lucide-pen"
-									:disabled="selectedGroup === undefined || !caseGroupLinks"
+									:disabled="!selectedGroup || !caseGroups || !caseGroupLinks"
 									@click="groupModal(selectedGroup?.id ? selectedGroup.id : '')"
 								>
 									Edit Group

@@ -275,6 +275,16 @@ async function deletePlan() {
 
 	navigateTo("/plans")
 }
+
+defineShortcuts({
+	shift_e: {
+		handler: () => {
+			if (plan.value && groupedCases.value) {
+				planCaseModalOpen.value = true
+			}
+		}
+	}
+})
 </script>
 
 <template>
@@ -300,16 +310,14 @@ async function deletePlan() {
 						title: 'text-primary'
 					}"
 				>
-					<UTooltip text="Edit Plan">
+					<UTooltip text="Edit Plan" :kbds="['shift', 'E']">
 						<UButton
 							color="neutral"
 							size="sm"
 							variant="soft"
 							icon="i-lucide-pencil"
-							:disabled="!plan"
-						>
-							<!-- Edit Plan -->
-						</UButton>
+							:disabled="!plan || !groupedCases"
+						/>
 					</UTooltip>
 					<template #body>
 						<div class="flex flex-col gap-3">
@@ -419,9 +427,7 @@ async function deletePlan() {
 							size="sm"
 							variant="soft"
 							icon="i-lucide-trash"
-						>
-							<!-- Delete Test Plan -->
-						</UButton>
+						/>
 					</UTooltip>
 					<template #footer>
 						<div class="flex gap-3 justify-end w-full">

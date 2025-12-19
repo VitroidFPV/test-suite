@@ -260,6 +260,16 @@ async function createRun() {
 useHead({
 	title: `Test Runs | Test Suite`
 })
+
+defineShortcuts({
+	shift_a: {
+		handler: () => {
+			if (testPlans.value && runGroups.value) {
+				createRunModalOpen.value = true
+			}
+		}
+	}
+})
 </script>
 
 <template>
@@ -278,9 +288,17 @@ useHead({
 					title: 'text-primary'
 				}"
 			>
-				<UButton color="primary" size="sm" variant="soft" icon="i-lucide-plus">
-					New Test Run
-				</UButton>
+				<UTooltip text="Create Test Run" :kbds="['shift', 'A']">
+					<UButton
+						color="primary"
+						size="sm"
+						variant="soft"
+						icon="i-lucide-plus"
+						:disabled="!testPlans || !runGroups"
+					>
+						New Test Run
+					</UButton>
+				</UTooltip>
 
 				<template #body>
 					<div class="flex flex-col gap-3">

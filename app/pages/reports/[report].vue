@@ -220,6 +220,16 @@ const statusStats = computed(() => {
 		}
 	]
 })
+
+defineShortcuts({
+	shift_e: {
+		handler: () => {
+			if (report.value) {
+				editReportModalOpen.value = true
+			}
+		}
+	}
+})
 </script>
 
 <template>
@@ -249,7 +259,7 @@ const statusStats = computed(() => {
 						title: 'text-primary'
 					}"
 				>
-					<UTooltip text="Edit Report">
+					<UTooltip text="Edit Report" :kbds="['shift', 'E']">
 						<UButton
 							color="neutral"
 							size="sm"

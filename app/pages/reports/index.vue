@@ -202,6 +202,16 @@ async function saveReport() {
 useHead({
 	title: `Test Reports | Test Suite`
 })
+
+defineShortcuts({
+	shift_a: {
+		handler: () => {
+			if (runsData.value) {
+				createReportModalOpen.value = true
+			}
+		}
+	}
+})
 </script>
 
 <template>
@@ -218,9 +228,17 @@ useHead({
 				description="Create a new test report, select a run and set the overall pass status and comment"
 				:ui="{ title: 'text-primary' }"
 			>
-				<UButton color="primary" size="sm" variant="soft" icon="i-lucide-plus">
-					Create Report
-				</UButton>
+				<UTooltip text="Create Test Report" :kbds="['shift', 'A']">
+					<UButton
+						color="primary"
+						size="sm"
+						variant="soft"
+						icon="i-lucide-plus"
+						:disabled="!runsData"
+					>
+						New Test Report
+					</UButton>
+				</UTooltip>
 				<template #body>
 					<div class="flex flex-col gap-3 w-full">
 						<UFormField class="w-full" label="Report Title">
