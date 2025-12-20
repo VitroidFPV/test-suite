@@ -39,14 +39,14 @@ async function fetchRunsWithUsers(runIds?: string[]) {
 		return runsArray.map((run) => ({ ...run, creator: undefined }))
 	}
 
-	// Fetch user metadata for all creators
-	const { data: usersData, error: usersError } = await supabase
-		.from("user_metadata")
-		.select("*")
-		.in(
-			"id",
-			creatorIds.filter((id): id is string => id !== null)
-		)
+	// Fetch user metadata for all creators using RPC function
+	const filteredCreatorIds = creatorIds.filter(
+		(id): id is string => id !== null
+	)
+	const { data: usersData, error: usersError } = await supabase.rpc(
+		"get_user_metadata",
+		{ user_ids: filteredCreatorIds }
+	)
 
 	if (usersError) {
 		throw createSupabaseError(usersError)

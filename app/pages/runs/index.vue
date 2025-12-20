@@ -51,13 +51,13 @@ const {
 		}
 
 		// Fetch user metadata for all creators
-		const { data: usersData, error: usersError } = await supabase
-			.from("user_metadata")
-			.select("*")
-			.in(
-				"id",
-				creatorIds.filter((id): id is string => id !== null)
-			)
+		const filteredCreatorIds = creatorIds.filter(
+			(id): id is string => id !== null
+		)
+		const { data: usersData, error: usersError } = await supabase.rpc(
+			"get_user_metadata",
+			{ user_ids: filteredCreatorIds }
+		)
 
 		if (usersError) {
 			throw createSupabaseError(usersError)
