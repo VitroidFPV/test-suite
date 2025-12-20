@@ -719,7 +719,7 @@ defineShortcuts({
 				>
 					<UIcon name="i-lucide-library-big" class="h-4 w-4" />
 					<div
-						v-for="runGroup in runGroupsContainingTestRun"
+						v-for="(runGroup, index) in runGroupsContainingTestRun"
 						:key="runGroup.id"
 						class="flex"
 					>
@@ -729,16 +729,7 @@ defineShortcuts({
 						>
 							<span>{{ runGroup.title }}</span>
 						</NuxtLink>
-						<span
-							v-if="
-								runGroupsContainingTestRun &&
-								runGroup !==
-									runGroupsContainingTestRun[
-										runGroupsContainingTestRun.length - 1
-									]
-							"
-							>,</span
-						>
+						<span v-if="index < runGroupsContainingTestRun.length - 1">,</span>
 					</div>
 					<div
 						v-if="
