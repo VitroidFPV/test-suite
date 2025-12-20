@@ -3,6 +3,8 @@ import type { Database, Tables } from "~/types/database.types"
 import TestRunCard from "~/components/cards/TestRunCard.vue"
 import BaseCard from "~/components/cards/BaseCard.vue"
 
+import { fetchRunsWithUsers } from "~/composables/fetchRunsWithUsers"
+
 const toast = useToast()
 
 const supabase = useSupabaseClient<Database>()
@@ -26,51 +28,7 @@ const {
 	data: runs,
 	error: runsError,
 	refresh: refreshRuns
-} = await useAsyncData(
-	"runs",
-	async () => {
-		const { data: runsData, error: runsError } = await supabase
-			.from("test_runs")
-			.select("*")
-
-		if (runsError) {
-			throw createSupabaseError(runsError)
-		}
-
-		const runsArray = runsData || []
-
-		// Get unique creator IDs
-		const creatorIds = [
-			...new Set(
-				runsArray.filter((run) => run.created_by).map((run) => run.created_by)
-			)
-		]
-
-		if (creatorIds.length === 0) {
-			return runsArray.map((run) => ({ ...run, creator: undefined }))
-		}
-
-		// Fetch user metadata for all creators
-		const filteredCreatorIds = creatorIds.filter(
-			(id): id is string => id !== null
-		)
-		const { data: usersData, error: usersError } = await supabase.rpc(
-			"get_user_metadata",
-			{ user_ids: filteredCreatorIds }
-		)
-
-		if (usersError) {
-			throw createSupabaseError(usersError)
-		}
-
-		// Map users to their respective runs
-		return runsArray.map((run) => ({
-			...run,
-			creator: usersData?.find((user) => user.id === run.created_by)
-		}))
-	},
-	{ lazy: true }
-)
+} = await useAsyncData("runs", async () => await fetchRunsWithUsers(supabase))
 
 const {
 	data: testPlans,
