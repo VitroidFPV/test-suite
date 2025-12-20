@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { Database, Tables } from "~/types/database.types"
 import TestRunCaseCard from "~/components/cards/TestRunCaseCard.vue"
+import { fetchRunsWithUsers } from "~/composables/fetchRunsWithUsers"
 
 const toast = useToast()
 
@@ -27,20 +28,19 @@ const {
 } = await useAsyncData(
 	`run-${urlRun}`,
 	async () => {
-		const { data, error } = await supabase
-			.from("test_runs")
-			.select("*")
-			.eq("id", urlRun)
-			.single()
-		if (error) {
-			throw createSupabaseError(error)
+		// Use fetchRunsWithUsers composable to get run with creator
+		const runsWithUsers = await fetchRunsWithUsers(supabase, [urlRun])
+		const runWithCreator = runsWithUsers[0]
+
+		if (!runWithCreator) {
+			throw new Error("Run not found")
 		}
 
 		// Get run groups from link table
 		const { data: runGroupsData, error: runGroupsError } = await supabase
 			.from("test_run_group_links")
 			.select("group")
-			.eq("run", data.id)
+			.eq("run", runWithCreator.id)
 		if (runGroupsError) {
 			throw createSupabaseError(runGroupsError)
 		}
@@ -69,9 +69,10 @@ const {
 		}
 
 		return {
-			run: data,
+			run: runWithCreator,
 			runGroups,
-			allRunGroups: allRunGroupsData || []
+			allRunGroups: allRunGroupsData || [],
+			creator: runWithCreator.creator || null
 		}
 	},
 	{ lazy: true }
@@ -81,6 +82,7 @@ const {
 const run = computed(() => runData.value?.run)
 const runGroupsContainingTestRun = computed(() => runData.value?.runGroups)
 const allRunGroups = computed(() => runData.value?.allRunGroups ?? [])
+const creator = computed(() => runData.value?.creator)
 
 // Fetch run cases with their results
 const {
@@ -697,40 +699,58 @@ defineShortcuts({
 		</template>
 
 		<template #description>
-			<div
-				v-if="runGroupsContainingTestRun"
-				class="flex gap-1 items-center text-neutral-500 font-semibold"
-			>
-				<UIcon name="i-lucide-library-big" class="h-4 w-4" />
+			<div class="flex gap-3 items-center">
+				<div class="flex gap-2 items-center">
+					<UAvatar
+						v-if="creator"
+						:src="creator.avatar ?? ''"
+						:alt="creator.username"
+					/>
+					<USkeleton v-else class="h-8 w-8 rounded-full" />
+					<div v-if="creator" class="text-neutral-500 font-semibold">
+						{{ creator.username }}
+					</div>
+					<USkeleton v-else class="h-6 w-24" />
+				</div>
+				<USeparator orientation="vertical" class="h-6" />
 				<div
-					v-for="runGroup in runGroupsContainingTestRun"
-					:key="runGroup.id"
-					class="flex"
+					v-if="runGroupsContainingTestRun"
+					class="flex gap-1 items-center text-neutral-500 font-semibold"
 				>
-					<NuxtLink class="hover:underline" :to="`/run-groups/${runGroup.id}`">
-						<span>{{ runGroup.title }}</span>
-					</NuxtLink>
-					<span
+					<UIcon name="i-lucide-library-big" class="h-4 w-4" />
+					<div
+						v-for="runGroup in runGroupsContainingTestRun"
+						:key="runGroup.id"
+						class="flex"
+					>
+						<NuxtLink
+							class="hover:underline"
+							:to="`/run-groups/${runGroup.id}`"
+						>
+							<span>{{ runGroup.title }}</span>
+						</NuxtLink>
+						<span
+							v-if="
+								runGroupsContainingTestRun &&
+								runGroup !==
+									runGroupsContainingTestRun[
+										runGroupsContainingTestRun.length - 1
+									]
+							"
+							>,</span
+						>
+					</div>
+					<div
 						v-if="
 							runGroupsContainingTestRun &&
-							runGroup !==
-								runGroupsContainingTestRun[
-									runGroupsContainingTestRun.length - 1
-								]
+							runGroupsContainingTestRun.length === 0
 						"
-						>,</span
 					>
+						<span>This test run is not associated with any run groups</span>
+					</div>
 				</div>
-				<div
-					v-if="
-						runGroupsContainingTestRun &&
-						runGroupsContainingTestRun.length === 0
-					"
-				>
-					<span>This test run is not associated with any run groups</span>
-				</div>
+				<USkeleton v-else class="h-6 w-32" />
 			</div>
-			<USkeleton v-else class="h-6 w-1/4" />
 			<TestStatusBar :status-stats="statusStats" />
 		</template>
 
