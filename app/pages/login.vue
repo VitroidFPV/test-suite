@@ -25,7 +25,14 @@ const signInWithOAuth = async () => {
 </script>
 
 <template>
-	<div>
-		<UButton @click="signInWithOAuth">Sign In with GitHub</UButton>
+	<div class="flex flex-col items-center justify-center gap-4">
+		<UButton icon="i-lucide-github" @click="signInWithOAuth"
+			>Sign In with GitHub</UButton
+		>
+		<p class="text-sm text-neutral-500 max-w-[80ch] text-center">
+			After signing in, accounts need to be manually verified by an
+			administrator before they can access the app.<br />
+			Unexpected/unknown account sign-ins will not be approved.
+		</p>
 	</div>
 </template>
