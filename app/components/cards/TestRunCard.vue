@@ -10,6 +10,8 @@ type RunWithUser = Run & { creator?: UserMetadata }
 const props = defineProps<{
 	run: RunWithUser
 }>()
+
+const { dateTimeProps } = useDateTimeFormat()
 </script>
 
 <template>
@@ -37,12 +39,7 @@ const props = defineProps<{
 				<NuxtTime
 					:datetime="props.run.created_at"
 					class="text-sm text-neutral-500"
-					locale="de-DE"
-					day="numeric"
-					month="2-digit"
-					year="numeric"
-					hour="2-digit"
-					minute="2-digit"
+					v-bind="dateTimeProps"
 				/>
 			</div>
 		</template>

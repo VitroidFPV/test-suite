@@ -2,6 +2,8 @@
 import type { Database, Tables } from "~/types/database.types"
 import BaseCard from "~/components/cards/BaseCard.vue"
 
+const { dateTimeProps } = useDateTimeFormat()
+
 const toast = useToast()
 
 const supabase = useSupabaseClient<Database>()
@@ -611,12 +613,7 @@ useHead({
 										<NuxtTime
 											:datetime="item.created_at"
 											class="text-sm text-neutral-500"
-											locale="de-DE"
-											day="numeric"
-											month="2-digit"
-											year="numeric"
-											hour="2-digit"
-											minute="2-digit"
+											v-bind="dateTimeProps"
 										/>
 										<div class="flex items-center gap-2">
 											<UButton
