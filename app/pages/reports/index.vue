@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import type { Database, Tables } from "~/types/database.types"
 import BaseCard from "~/components/cards/BaseCard.vue"
-import dayjs from "dayjs"
 
 const toast = useToast()
 
@@ -335,9 +334,16 @@ defineShortcuts({
 								/>
 								{{ item.creator?.username || "Unknown user" }}
 							</div>
-							<div class="text-sm text-neutral-500">
-								{{ dayjs(item.created_at).format("D.MM.YYYY HH:mm") }}
-							</div>
+							<NuxtTime
+								:datetime="item.created_at"
+								class="text-sm text-neutral-500"
+								locale="de-DE"
+								day="numeric"
+								month="2-digit"
+								year="numeric"
+								hour="2-digit"
+								minute="2-digit"
+							/>
 						</div>
 					</template>
 				</BaseCard>

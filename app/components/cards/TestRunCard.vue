@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { Tables } from "~/types/database.types"
-import dayjs from "dayjs"
 import BaseCard from "./BaseCard.vue"
 
 type Run = Tables<"test_runs">
@@ -35,9 +34,16 @@ const props = defineProps<{
 					/>
 					{{ props.run.creator?.username || "Unknown user" }}
 				</div>
-				<div class="text-sm text-neutral-500">
-					{{ dayjs(props.run.created_at).format("D.MM.YYYY HH:mm") }}
-				</div>
+				<NuxtTime
+					:datetime="props.run.created_at"
+					class="text-sm text-neutral-500"
+					locale="de-DE"
+					day="numeric"
+					month="2-digit"
+					year="numeric"
+					hour="2-digit"
+					minute="2-digit"
+				/>
 			</div>
 		</template>
 	</BaseCard>
