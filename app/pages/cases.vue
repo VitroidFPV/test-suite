@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import dayjs from "dayjs"
 import type { Database, Tables } from "~/types/database.types"
 import BaseCard from "~/components/cards/BaseCard.vue"
+
+const { dateTimeProps } = useDateTimeFormat()
 
 const toast = useToast()
 
@@ -609,9 +610,11 @@ useHead({
 								</template>
 								<template #footer>
 									<div class="flex items-center justify-between">
-										<div class="text-sm text-neutral-500">
-											{{ dayjs(item.created_at).format("D.MM.YYYY HH:mm") }}
-										</div>
+										<NuxtTime
+											:datetime="item.created_at"
+											class="text-sm text-neutral-500"
+											v-bind="dateTimeProps"
+										/>
 										<div class="flex items-center gap-2">
 											<UButton
 												color="primary"

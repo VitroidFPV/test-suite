@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import type { Database, Tables } from "~/types/database.types"
 import BaseCard from "~/components/cards/BaseCard.vue"
-import dayjs from "dayjs"
+
+const { dateTimeProps } = useDateTimeFormat()
 
 const toast = useToast()
 
@@ -335,9 +336,11 @@ defineShortcuts({
 								/>
 								{{ item.creator?.username || "Unknown user" }}
 							</div>
-							<div class="text-sm text-neutral-500">
-								{{ dayjs(item.created_at).format("D.MM.YYYY HH:mm") }}
-							</div>
+							<NuxtTime
+								:datetime="item.created_at"
+								class="text-sm text-neutral-500"
+								v-bind="dateTimeProps"
+							/>
 						</div>
 					</template>
 				</BaseCard>
