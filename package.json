@@ -4,7 +4,7 @@
 	"type": "module",
 	"scripts": {
 		"build": "nuxt build",
-		"dev": "nuxt dev",
+		"dev": "nuxt dev --dotenv .env.local",
 		"generate": "nuxt generate",
 		"preview": "nuxt preview",
 		"postinstall": "nuxt prepare",
@@ -19,12 +19,15 @@
 		"@nuxt/ui": "^4.1.0",
 		"@nuxtjs/supabase": "^1.4.3",
 		"@types/markdown-it": "^14.1.2",
+		"convex-nuxt": "^0.1.5",
+		"convex-vue": "^0.1.5",
 		"eslint": "^9.16.0",
 		"nuxt": "^4.2.1",
 		"supabase": "^1.226.3",
 		"typescript": "^5.7.2"
 	},
 	"dependencies": {
+		"convex": "^1.31.4",
 		"eslint-config-prettier": "^9.1.0",
 		"eslint-plugin-prettier": "^5.2.1",
 		"prettier": "^3.4.1",
