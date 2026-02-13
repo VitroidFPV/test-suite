@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Database, Tables } from "~/types/database.types"
+import type { ResultType } from "~/types/resultTypes"
 import TestRunCaseCard from "~/components/cards/TestRunCaseCard.vue"
 import { fetchRunsWithUsers } from "~/composables/fetchRunsWithUsers"
 
@@ -16,7 +17,7 @@ type RunGroup = Tables<"test_run_groups">
 type Report = Tables<"test_run_reports">
 
 interface RunCaseWithResult extends RunCase {
-	result: string | null
+	result: ResultType | null
 	comment: string | null
 }
 
@@ -159,50 +160,43 @@ watch(
 )
 
 // Computed status stats
-const statusStats = computed(() => {
-	const stats = [
-		{ title: "Total", value: "total", number: runCases.value.length },
-		{
-			title: "Passed",
-			value: "passed",
-			number: runCases.value.filter((c) => c.result === "passed").length
-		},
-		{
-			title: "Failed",
-			value: "failed",
-			number: runCases.value.filter((c) => c.result === "failed").length
-		},
-		{
-			title: "Blocked",
-			value: "blocked",
-			number: runCases.value.filter((c) => c.result === "blocked").length
-		},
-		{
-			title: "Skipped",
-			value: "skipped",
-			number: runCases.value.filter((c) => c.result === "skipped").length
-		},
-		{
-			title: "Not Run",
-			value: "not_run",
-			number: runCases.value.filter((c) => c.result === "not_run").length
-		}
-	]
-	return stats
-})
+type StatusStat = { title: string; value: ResultType | "total"; number: number }
+const statusStats = computed<StatusStat[]>(() => [
+	{ title: "Total", value: "total", number: runCases.value.length },
+	{
+		title: "Passed",
+		value: "passed",
+		number: runCases.value.filter((c) => c.result === "passed").length
+	},
+	{
+		title: "Failed",
+		value: "failed",
+		number: runCases.value.filter((c) => c.result === "failed").length
+	},
+	{
+		title: "Blocked",
+		value: "blocked",
+		number: runCases.value.filter((c) => c.result === "blocked").length
+	},
+	{
+		title: "Skipped",
+		value: "skipped",
+		number: runCases.value.filter((c) => c.result === "skipped").length
+	},
+	{
+		title: "Not Run",
+		value: "not_run",
+		number: runCases.value.filter((c) => c.result === "not_run").length
+	}
+])
 
-async function updateCaseResult(caseId: string, resultValue: string) {
+async function updateCaseResult(caseId: string, resultValue: ResultType) {
 	if (!run.value) return
 
 	const { error } = await supabase
 		.from("test_run_case_links")
 		.update({
-			result: resultValue as
-				| "passed"
-				| "failed"
-				| "blocked"
-				| "skipped"
-				| "not_run"
+			result: resultValue
 		})
 		.eq("run", run.value.id)
 		.eq("case", caseId)
@@ -444,12 +438,7 @@ async function generateReport() {
 		.insert(
 			reportLinks.map((link) => ({
 				...link,
-				result: link.result as
-					| "not_run"
-					| "passed"
-					| "failed"
-					| "blocked"
-					| "skipped"
+				result: link.result as ResultType
 			}))
 		)
 	if (linksError) {

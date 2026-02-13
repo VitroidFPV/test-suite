@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Database, Tables } from "~/types/database.types"
+import type { ResultType } from "~/types/resultTypes"
 import TestRunCard from "~/components/cards/TestRunCard.vue"
 import BaseCard from "~/components/cards/BaseCard.vue"
 
@@ -175,12 +176,7 @@ async function createRun() {
 			const runCaseLinks = planCases.map((link) => ({
 				run: newRun.value.id,
 				case: link.case,
-				result: "not_run" as
-					| "not_run"
-					| "passed"
-					| "failed"
-					| "blocked"
-					| "skipped"
+				result: "not_run" as ResultType
 			}))
 
 			const { error: linkError } = await supabase

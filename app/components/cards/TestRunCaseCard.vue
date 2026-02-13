@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import BaseCard from "~/components/cards/BaseCard.vue"
 import VueMarkdown from "vue-markdown-render"
+import type { ResultType } from "~/types/resultTypes"
 
 interface RunCaseWithResult {
 	id: string
@@ -8,7 +9,7 @@ interface RunCaseWithResult {
 	text: string | null
 	case_id: number | null
 	created_at: string
-	result: string | null
+	result: ResultType | null
 	comment: string | null
 }
 
@@ -19,11 +20,19 @@ interface Props {
 
 const props = defineProps<Props>()
 const emit = defineEmits<{
-	updateResult: [caseId: string, newResult: string]
+	updateResult: [caseId: string, newResult: ResultType]
 	updateComment: [caseId: string, newComment: string]
 }>()
 
-const resultTypes = [
+const resultTypes: {
+	label: string
+	value: ResultType
+	textColor: string
+	bgColor: string
+	hoverBgColor: string
+	outlineColor: string
+	icon: string
+}[] = [
 	{
 		label: "Not Run",
 		value: "not_run",
@@ -71,7 +80,7 @@ const resultTypes = [
 	}
 ]
 
-function getResultType(resultValue: string | null) {
+function getResultType(resultValue: ResultType | null) {
 	const result = resultTypes.find((r) => r.value === resultValue)
 	return result || resultTypes[0]!
 }
@@ -87,8 +96,8 @@ watch(
 	}
 )
 
-function handleResultChange(caseId: string, newResult: string) {
-	emit("updateResult", caseId, newResult)
+function handleResultChange(caseId: string, newResult: unknown) {
+	emit("updateResult", caseId, newResult as ResultType)
 }
 
 function handleCommentUpdate() {
@@ -127,7 +136,10 @@ function handleCommentUpdate() {
 							}"
 							@update:model-value="
 								(newResult) => {
-									handleResultChange(props.runCase.id, newResult.value)
+									handleResultChange(
+										props.runCase.id,
+										newResult.value as ResultType
+									)
 								}
 							"
 						>

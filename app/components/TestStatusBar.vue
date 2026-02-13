@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import type { ResultType } from "~/types/resultTypes"
+
 interface StatusStat {
 	title: string
-	value: string
+	value: ResultType | "total"
 	number: number
 }
 
@@ -11,7 +13,12 @@ interface Props {
 
 const props = defineProps<Props>()
 
-const resultTypes = [
+const resultTypes: {
+	label: string
+	value: ResultType
+	textColor: string
+	bgColor: string
+}[] = [
 	{
 		label: "Not Run",
 		value: "not_run",
@@ -44,12 +51,12 @@ const resultTypes = [
 	}
 ]
 
-function getResultType(resultValue: string | null) {
+function getResultType(resultValue: ResultType | "total" | null) {
 	const result = resultTypes.find((r) => r.value === resultValue)
 	return result || resultTypes[0]!
 }
 
-function getStatusStatsPercentage(value: string) {
+function getStatusStatsPercentage(value: ResultType | "total") {
 	const valueStats = props.statusStats.find((s) => s.value === value)
 	const totalStats = props.statusStats.find((s) => s.value === "total")
 

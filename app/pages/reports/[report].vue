@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Database, Tables } from "~/types/database.types"
+import type { ResultType } from "~/types/resultTypes"
 import TestRunCaseCard from "~/components/cards/TestRunCaseCard.vue"
 import VueMarkdown from "vue-markdown-render"
 
@@ -189,8 +190,22 @@ watch(
 	{ immediate: true }
 )
 
-const statusStats = computed(() => {
-	const cases = (report.value?.report?.cases as { result: string }[]) || []
+type StatusStat = { title: string; value: ResultType | "total"; number: number }
+type ReportCase = {
+	id: string
+	title: string
+	text: string | null
+	case_id: number | null
+	created_at: string
+	result: ResultType | null
+	comment: string | null
+}
+const reportCases = computed<ReportCase[]>(() => {
+	const cases = report.value?.report?.cases
+	return (Array.isArray(cases) ? cases : []) as ReportCase[]
+})
+const statusStats = computed<StatusStat[]>(() => {
+	const cases = reportCases.value
 	return [
 		{ title: "Total", value: "total", number: cases.length },
 		{
@@ -406,7 +421,7 @@ defineShortcuts({
 		<template #content>
 			<div v-if="report" class="flex flex-col gap-y-3">
 				<TestRunCaseCard
-					v-for="(item, index) in report.report.cases"
+					v-for="(item, index) in reportCases"
 					:key="index"
 					:run-case="item"
 					readonly
