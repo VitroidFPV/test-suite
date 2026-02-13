@@ -482,7 +482,6 @@ const selectedCaseId = ref<string | undefined>(undefined)
 
 function selectCase(caseId: string) {
 	if (runCases.value.length > 0) {
-		console.log("selecting case", caseId)
 		selectedCaseId.value = caseId
 	}
 }
@@ -534,6 +533,11 @@ function isCaseExpanded(caseId: string) {
 	return expandedCaseId.value === caseId
 }
 
+function updateSelectedCaseResult(result: ResultType) {
+	if (!selectedCaseId.value) return
+	updateCaseResult(selectedCaseId.value, result)
+}
+
 // Initialize editedRun and selectedRunGroups when data is loaded
 watch(
 	run,
@@ -564,45 +568,37 @@ defineShortcuts({
 	},
 	j: {
 		handler: () => {
-			// select previous case
-			// console.log("j")
 			previousCase()
 		}
 	},
 	k: {
 		handler: () => {
-			// select next case
-			// console.log("k")
 			nextCase()
 		}
 	},
 	1: {
 		handler: () => {
-			updateCaseResult(selectedCaseId.value!, "not_run")
+			updateSelectedCaseResult("not_run")
 		}
 	},
 	2: {
 		handler: () => {
-			// set result to passed
-			updateCaseResult(selectedCaseId.value!, "passed")
+			updateSelectedCaseResult("passed")
 		}
 	},
 	3: {
 		handler: () => {
-			// set result to failed
-			updateCaseResult(selectedCaseId.value!, "failed")
+			updateSelectedCaseResult("failed")
 		}
 	},
 	4: {
 		handler: () => {
-			// set result to blocked
-			updateCaseResult(selectedCaseId.value!, "blocked")
+			updateSelectedCaseResult("blocked")
 		}
 	},
 	5: {
 		handler: () => {
-			// set result to skipped
-			updateCaseResult(selectedCaseId.value!, "skipped")
+			updateSelectedCaseResult("skipped")
 		}
 	},
 	escape: {
