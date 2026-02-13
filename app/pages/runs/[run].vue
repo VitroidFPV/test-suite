@@ -193,6 +193,13 @@ const statusStats = computed<StatusStat[]>(() => [
 async function updateCaseResult(caseId: string, resultValue: ResultType) {
 	if (!run.value) return
 
+	// Update local state optimistically
+	const caseItem = runCases.value.find((c) => c.id === caseId)
+	const previousResult = caseItem?.result
+	if (caseItem) {
+		caseItem.result = resultValue
+	}
+
 	const { error } = await supabase
 		.from("test_run_case_links")
 		.update({
@@ -203,6 +210,10 @@ async function updateCaseResult(caseId: string, resultValue: ResultType) {
 
 	if (error) {
 		console.error("Error updating result:", error)
+		// Revert optimistic update on error
+		if (caseItem) {
+			caseItem.result = previousResult ?? null
+		}
 		toast.add({
 			title: "Error",
 			description: error.message,
@@ -210,16 +221,17 @@ async function updateCaseResult(caseId: string, resultValue: ResultType) {
 		})
 		return
 	}
-
-	// Update local state (optimistic update)
-	const caseItem = runCases.value.find((c) => c.id === caseId)
-	if (caseItem) {
-		caseItem.result = resultValue
-	}
 }
 
 async function updateCaseComment(caseId: string, comment: string) {
 	if (!run.value) return
+
+	// Update local state optimistically
+	const caseItem = runCases.value.find((c) => c.id === caseId)
+	const previousComment = caseItem?.comment
+	if (caseItem) {
+		caseItem.comment = comment || null
+	}
 
 	const { error } = await supabase
 		.from("test_run_case_links")
@@ -231,18 +243,16 @@ async function updateCaseComment(caseId: string, comment: string) {
 
 	if (error) {
 		console.error("Error updating comment:", error)
+		// Revert optimistic update on error
+		if (caseItem) {
+			caseItem.comment = previousComment ?? null
+		}
 		toast.add({
 			title: "Error",
 			description: error.message,
 			color: "error"
 		})
 		return
-	}
-
-	// Update local state
-	const caseItem = runCases.value.find((c) => c.id === caseId)
-	if (caseItem) {
-		caseItem.comment = comment || null
 	}
 }
 
@@ -468,6 +478,62 @@ function autoFillReportTitle() {
 	}
 }
 
+const selectedCaseId = ref<string | undefined>(undefined)
+
+function selectCase(caseId: string) {
+	if (runCases.value.length > 0) {
+		console.log("selecting case", caseId)
+		selectedCaseId.value = caseId
+	}
+}
+
+// Select next/previous case, wrapping around if at the end/start, use the existing selectCase function
+function nextCase() {
+	if (!selectedCaseId.value) {
+		if (runCases.value.length > 0) {
+			selectCase(runCases.value[0]!.id)
+		}
+		return
+	}
+	const currentIndex = runCases.value.findIndex(
+		(c) => c.id === selectedCaseId.value
+	)
+	const nextIndex = (currentIndex + 1) % runCases.value.length
+	selectCase(runCases.value[nextIndex]!.id)
+}
+
+function previousCase() {
+	if (!selectedCaseId.value) {
+		if (runCases.value.length > 0) {
+			selectCase(runCases.value[0]!.id)
+		}
+		return
+	}
+	const currentIndex = runCases.value.findIndex(
+		(c) => c.id === selectedCaseId.value
+	)
+	const previousIndex =
+		(currentIndex - 1 + runCases.value.length) % runCases.value.length
+	selectCase(runCases.value[previousIndex]!.id)
+}
+
+function clearSelectedCase() {
+	selectedCaseId.value = undefined
+}
+
+const expandedCaseId = ref<string | undefined>(undefined)
+function toggleCaseExpanded(caseId: string) {
+	if (!selectedCaseId.value) return
+	if (expandedCaseId.value === caseId) {
+		expandedCaseId.value = undefined
+	} else {
+		expandedCaseId.value = caseId
+	}
+}
+function isCaseExpanded(caseId: string) {
+	return expandedCaseId.value === caseId
+}
+
 // Initialize editedRun and selectedRunGroups when data is loaded
 watch(
 	run,
@@ -493,6 +559,61 @@ defineShortcuts({
 		handler: () => {
 			if (runData.value) {
 				reportModalOpen.value = true
+			}
+		}
+	},
+	j: {
+		handler: () => {
+			// select previous case
+			// console.log("j")
+			previousCase()
+		}
+	},
+	k: {
+		handler: () => {
+			// select next case
+			// console.log("k")
+			nextCase()
+		}
+	},
+	1: {
+		handler: () => {
+			updateCaseResult(selectedCaseId.value!, "not_run")
+		}
+	},
+	2: {
+		handler: () => {
+			// set result to passed
+			updateCaseResult(selectedCaseId.value!, "passed")
+		}
+	},
+	3: {
+		handler: () => {
+			// set result to failed
+			updateCaseResult(selectedCaseId.value!, "failed")
+		}
+	},
+	4: {
+		handler: () => {
+			// set result to blocked
+			updateCaseResult(selectedCaseId.value!, "blocked")
+		}
+	},
+	5: {
+		handler: () => {
+			// set result to skipped
+			updateCaseResult(selectedCaseId.value!, "skipped")
+		}
+	},
+	escape: {
+		handler: () => {
+			clearSelectedCase()
+		}
+	},
+	enter: {
+		handler: () => {
+			if (selectedCaseId.value) {
+				toggleCaseExpanded(selectedCaseId.value)
 			}
 		}
 	}
@@ -740,6 +861,8 @@ defineShortcuts({
 					v-for="item in runCases"
 					:key="item.id"
 					:run-case="item"
+					:selected="selectedCaseId === item.id"
+					:expanded="isCaseExpanded(item.id)"
 					@update-result="updateCaseResult"
 					@update-comment="updateCaseComment"
 				/>
