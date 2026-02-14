@@ -178,17 +178,13 @@ const userIsGuest = computed(() => {
 	return !userIsLoggedIn.value || !userIsDev.value
 })
 
-watch(
-	() => report.value?.report?.title,
-	(title) => {
-		if (title) {
-			useHead({
-				title: `${title} | Test Suite`
-			})
-		}
-	},
-	{ immediate: true }
-)
+useStablePageTitle({
+	title: computed(() => {
+		const title = report.value?.report?.title?.trim()
+		return title ? `${title} | Test Reports | Test Suite` : ""
+	}),
+	ready: computed(() => Boolean(report.value?.report?.title?.trim()))
+})
 
 type StatusStat = { title: string; value: ResultType | "total"; number: number }
 type ReportCase = {

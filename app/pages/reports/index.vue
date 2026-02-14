@@ -200,7 +200,7 @@ async function saveReport() {
 	await refreshReports()
 }
 
-useHead({
+useStablePageTitle({
 	title: `Test Reports | Test Suite`
 })
 

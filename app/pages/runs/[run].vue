@@ -85,6 +85,14 @@ const runGroupsContainingTestRun = computed(() => runData.value?.runGroups)
 const allRunGroups = computed(() => runData.value?.allRunGroups ?? [])
 const creator = computed(() => runData.value?.creator)
 
+useStablePageTitle({
+	title: computed(() => {
+		const title = run.value?.title?.trim()
+		return title ? `${title} | Test Runs | Test Suite` : ""
+	}),
+	ready: computed(() => Boolean(run.value?.title?.trim()))
+})
+
 // Fetch run cases with their results
 const {
 	data: runCasesData,

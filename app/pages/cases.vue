@@ -493,7 +493,7 @@ defineShortcuts({
 	}
 })
 
-useHead({
+useStablePageTitle({
 	title: `Test Cases | Test Suite`
 })
 </script>

@@ -183,13 +183,12 @@ watch(
 	{ immediate: true }
 )
 
-// Dynamic page title
-useHead({
-	title: computed(() =>
-		plan.value
-			? `${plan.value.title} | Test Plans | Test Suite`
-			: "Loading... | Test Suite"
-	)
+useStablePageTitle({
+	title: computed(() => {
+		const title = plan.value?.title?.trim()
+		return title ? `${title} | Test Plans | Test Suite` : ""
+	}),
+	ready: computed(() => Boolean(plan.value?.title?.trim()))
 })
 
 function selectCase(id: string) {
