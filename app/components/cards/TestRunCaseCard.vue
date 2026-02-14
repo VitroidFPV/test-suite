@@ -16,6 +16,8 @@ interface RunCaseWithResult {
 interface Props {
 	runCase: RunCaseWithResult
 	readonly?: boolean
+	selected?: boolean
+	expanded?: boolean
 }
 
 const props = defineProps<Props>()
@@ -96,6 +98,17 @@ watch(
 	}
 )
 
+watch(
+	() => props.expanded,
+	(newExpanded) => {
+		if (newExpanded) {
+			collapsibleOpen.value = true
+		} else {
+			collapsibleOpen.value = false
+		}
+	}
+)
+
 function handleResultChange(caseId: string, newResult: unknown) {
 	emit("updateResult", caseId, newResult as ResultType)
 }
@@ -106,7 +119,7 @@ function handleCommentUpdate() {
 </script>
 
 <template>
-	<BaseCard>
+	<BaseCard :class="{ 'outline-2 outline-primary-500/50': props.selected }">
 		<template #default>
 			<div class="flex flex-col">
 				<div class="flex items-center justify-between w-full">
