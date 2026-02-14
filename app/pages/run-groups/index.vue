@@ -188,7 +188,7 @@ async function handleRetry() {
 	return Promise.all([refreshTestRuns(), refreshRunGroups()])
 }
 
-useHead({
+useStablePageTitle({
 	title: `Run Groups | Test Suite`
 })
 

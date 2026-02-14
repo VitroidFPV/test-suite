@@ -25,7 +25,7 @@ const {
 // Consolidated page error
 const pageError = computed(() => plansError.value as Error | null)
 
-useHead({
+useStablePageTitle({
 	title: `Test Plans | Test Suite`
 })
 

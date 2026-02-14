@@ -226,12 +226,12 @@ async function saveRunGroup() {
 	await refreshRunGroup()
 }
 
-useHead({
-	title: computed(() =>
-		runGroup.value?.title
-			? `${runGroup.value.title} | Test Suite`
-			: "Run Group | Test Suite"
-	)
+useStablePageTitle({
+	title: computed(() => {
+		const title = runGroup.value?.title?.trim()
+		return title ? `${title} | Run Groups | Test Suite` : ""
+	}),
+	ready: computed(() => Boolean(runGroup.value?.title?.trim()))
 })
 
 defineShortcuts({

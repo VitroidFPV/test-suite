@@ -211,7 +211,7 @@ async function createRun() {
 	await refreshRuns()
 }
 
-useHead({
+useStablePageTitle({
 	title: `Test Runs | Test Suite`
 })
 

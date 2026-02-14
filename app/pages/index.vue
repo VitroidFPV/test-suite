@@ -1,5 +1,5 @@
 <script setup lang="ts">
-useHead({
+useStablePageTitle({
 	title: `Home | Test Suite`
 })
 </script>
