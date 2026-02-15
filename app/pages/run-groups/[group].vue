@@ -95,7 +95,7 @@ async function retryAll() {
 async function deleteRunGroup() {
 	const { error } = await supabase
 		.from("test_run_groups")
-		.delete()
+		.update({ deleted_at: new Date().toISOString() })
 		.eq("id", groupId)
 	if (error) {
 		console.error(error)

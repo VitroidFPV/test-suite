@@ -32,7 +32,10 @@ const {
 } = await useAsyncData(
 	"runGroups",
 	async () => {
-		const { data, error } = await supabase.from("test_run_groups").select("*")
+		const { data, error } = await supabase
+			.from("test_run_groups")
+			.select("*")
+			.is("deleted_at", null)
 		if (error) {
 			throw createSupabaseError(error)
 		}

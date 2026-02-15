@@ -154,7 +154,7 @@ async function deleteReport() {
 	}
 	const { error } = await supabase
 		.from("test_run_reports")
-		.delete()
+		.update({ deleted_at: new Date().toISOString() })
 		.eq("id", urlReport)
 	if (error) {
 		console.error(error)

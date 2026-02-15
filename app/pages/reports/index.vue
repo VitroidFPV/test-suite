@@ -21,7 +21,10 @@ const {
 } = await useAsyncData(
 	"reports",
 	async () => {
-		const { data, error } = await supabase.from("test_run_reports").select("*")
+		const { data, error } = await supabase
+			.from("test_run_reports")
+			.select("*")
+			.is("deleted_at", null)
 		if (error) {
 			throw createSupabaseError(error)
 		}
@@ -62,7 +65,10 @@ const {
 } = await useAsyncData(
 	"reportsRuns",
 	async () => {
-		const { data, error } = await supabase.from("test_runs").select("*")
+		const { data, error } = await supabase
+			.from("test_runs")
+			.select("*")
+			.is("deleted_at", null)
 		if (error) {
 			throw createSupabaseError(error)
 		}

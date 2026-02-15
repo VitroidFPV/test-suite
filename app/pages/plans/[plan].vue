@@ -55,6 +55,7 @@ const {
 			.from("test_cases")
 			.select("*")
 			.in("id", caseIds)
+			.is("deleted_at", null)
 		if (casesError) {
 			throw createSupabaseError(casesError)
 		}
@@ -82,6 +83,7 @@ const {
 		const { data: casesData, error: casesError } = await supabase
 			.from("test_cases")
 			.select("*")
+			.is("deleted_at", null)
 
 		if (casesError) {
 			throw createSupabaseError(casesError)
@@ -107,6 +109,7 @@ const {
 			.from("test_case_groups")
 			.select("*")
 			.in("id", groupIds)
+			.is("deleted_at", null)
 
 		if (groupsError) {
 			throw createSupabaseError(groupsError)
@@ -259,7 +262,10 @@ async function savePlan() {
 const deletePlanModalOpen = ref(false)
 
 async function deletePlan() {
-	const { error } = await supabase.from("test_plans").delete().eq("id", urlPlan)
+	const { error } = await supabase
+		.from("test_plans")
+		.update({ deleted_at: new Date().toISOString() })
+		.eq("id", urlPlan)
 	if (error) {
 		console.error(error)
 		toast.add({

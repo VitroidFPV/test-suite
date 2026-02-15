@@ -13,7 +13,10 @@ const {
 } = await useAsyncData(
 	"plans",
 	async () => {
-		const { data, error } = await supabase.from("test_plans").select("*")
+		const { data, error } = await supabase
+			.from("test_plans")
+			.select("*")
+			.is("deleted_at", null)
 		if (error) {
 			throw createSupabaseError(error)
 		}

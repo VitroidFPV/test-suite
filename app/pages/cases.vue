@@ -18,7 +18,10 @@ const {
 } = await useAsyncData(
 	"caseGroups",
 	async () => {
-		const { data, error } = await supabase.from("test_case_groups").select("*")
+		const { data, error } = await supabase
+			.from("test_case_groups")
+			.select("*")
+			.is("deleted_at", null)
 		if (error) {
 			throw createSupabaseError(error)
 		}
@@ -35,7 +38,10 @@ const {
 } = await useAsyncData(
 	"cases",
 	async () => {
-		const { data, error } = await supabase.from("test_cases").select("*")
+		const { data, error } = await supabase
+			.from("test_cases")
+			.select("*")
+			.is("deleted_at", null)
 		if (error) {
 			throw createSupabaseError(error)
 		}
@@ -224,7 +230,10 @@ async function saveCase(close: boolean = false, update: boolean = false) {
 }
 
 async function deleteCase(id: string) {
-	const { error } = await supabase.from("test_cases").delete().match({ id })
+	const { error } = await supabase
+		.from("test_cases")
+		.update({ deleted_at: new Date().toISOString() })
+		.eq("id", id)
 	if (error) {
 		console.error(error)
 		toast.add({
@@ -443,10 +452,10 @@ async function deleteGroup(id: string) {
 		return
 	}
 
-	// Then delete the group
+	// Soft delete the group
 	const { error } = await supabase
 		.from("test_case_groups")
-		.delete()
+		.update({ deleted_at: new Date().toISOString() })
 		.eq("id", id)
 
 	if (error) {

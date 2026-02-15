@@ -55,6 +55,7 @@ const {
 				.from("test_run_groups")
 				.select("*")
 				.in("id", groupIds)
+				.is("deleted_at", null)
 			if (groupsError) {
 				throw createSupabaseError(groupsError)
 			}
@@ -65,6 +66,7 @@ const {
 		const { data: allRunGroupsData, error: allRunGroupsError } = await supabase
 			.from("test_run_groups")
 			.select("*")
+			.is("deleted_at", null)
 		if (allRunGroupsError) {
 			throw createSupabaseError(allRunGroupsError)
 		}
@@ -121,6 +123,7 @@ const {
 				"id",
 				runCasesDb.map((c) => c.case)
 			)
+			.is("deleted_at", null)
 		if (casesError) {
 			throw createSupabaseError(casesError)
 		}
@@ -267,7 +270,10 @@ async function updateCaseComment(caseId: string, comment: string) {
 const confirmDeleteModalOpen = ref(false)
 
 async function deleteRun() {
-	const { error } = await supabase.from("test_runs").delete().eq("id", urlRun)
+	const { error } = await supabase
+		.from("test_runs")
+		.update({ deleted_at: new Date().toISOString() })
+		.eq("id", urlRun)
 	if (error) {
 		console.error(error)
 		toast.add({
