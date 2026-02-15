@@ -267,7 +267,7 @@ function handleCommentUpdate() {
 	</BaseCard>
 
 	<div v-else class="flex flex-col gap-4 w-full h-full justify-between">
-		<div class="flex-col gap-4">
+		<div class="flex flex-col gap-4">
 			<div class="flex gap-2 items-end mb-6">
 				<span
 					v-if="
@@ -322,7 +322,7 @@ function handleCommentUpdate() {
 					:icon="result.icon"
 					:ui="{
 						base: `w-full lg:min-h-24 min-h-16 text-xl items-center justify-center ring-3
-						${result.value === props.runCase.result ? `ring-${result.textColor}` : 'ring-transparent'}
+						${result.value === props.runCase.result ? `` : 'ring-transparent'}
 						${result.value === 'skipped' ? `${getResultType('skipped').bgColor} bg-transparent` : ''}
 						`
 					}"

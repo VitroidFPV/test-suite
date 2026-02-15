@@ -531,6 +531,10 @@ const selectedCaseIndex = computed(() => {
 	return runCases.value.findIndex((c) => c.id === selectedCaseId.value)
 })
 
+const selectedCase = computed(() =>
+	selectedCaseId.value ? getCaseById(selectedCaseId.value) : undefined
+)
+
 // Select next/previous case, wrapping around if at the end/start, use the existing selectCase function
 function nextCase() {
 	if (!selectedCaseId.value) {
@@ -933,8 +937,8 @@ defineShortcuts({
 					class="w-full xl:col-span-1 col-span-2 order-2 flex flex-col gap-6"
 				>
 					<TestRunCaseCard
-						v-if="selectedCaseId"
-						:run-case="getCaseById(selectedCaseId)!"
+						v-if="selectedCase"
+						:run-case="selectedCase"
 						individual
 						:individual-index="selectedCaseIndex"
 						:total-cases="runCases.length"
