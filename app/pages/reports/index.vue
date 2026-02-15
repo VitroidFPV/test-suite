@@ -308,7 +308,7 @@ defineShortcuts({
 		</template>
 		<template #content>
 			<div
-				v-if="reportsData"
+				v-if="reportsData && reportsData.length > 0"
 				class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 w-full"
 			>
 				<BaseCard
@@ -354,7 +354,7 @@ defineShortcuts({
 				</BaseCard>
 			</div>
 			<div
-				v-else
+				v-else-if="!reportsData"
 				class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 w-full"
 			>
 				<div v-for="i in 5" :key="i">
@@ -376,7 +376,7 @@ defineShortcuts({
 					</BaseCard>
 				</div>
 			</div>
-			<div v-if="reportsData && reportsData.length == 0">
+			<div v-else class="text-neutral-500">
 				No test reports yet. Click "Create Report" to create a new report.
 			</div>
 		</template>

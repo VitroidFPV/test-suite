@@ -514,7 +514,7 @@ defineShortcuts({
 				</div>
 			</div>
 			<!-- Empty state: both loaded but no cases -->
-			<div v-else>
+			<div v-else class="text-neutral-500">
 				No test cases in this plan. Click "Edit Plan" to add cases.
 			</div>
 		</template>

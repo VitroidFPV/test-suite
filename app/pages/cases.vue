@@ -514,15 +514,16 @@ useStablePageTitle({
 						/>
 					</div>
 					<UTabs
-						v-if="groups.length > 1"
+						v-if="caseGroups !== undefined"
 						v-model="selectedTabGroup"
 						:items="groups"
 						orientation="vertical"
 						as="ul"
 						:ui="{
-							list: 'dark:bg-neutral-900! lg:w-52 w-full',
+							root: 'w-full min-w-full',
+							list: 'dark:bg-neutral-900! lg:w-52 w-full min-w-full',
 							indicator: 'bg-primary-500/10!',
-							trigger: 'w-full'
+							trigger: 'w-full justify-start'
 						}"
 						@update:model-value="(val) => filterGroup(String(val))"
 					>
@@ -657,7 +658,7 @@ useStablePageTitle({
 							</BaseCard>
 						</div>
 					</div>
-					<div v-else>No cases found</div>
+					<div v-else class="text-neutral-500">No cases found</div>
 				</div>
 				<UModal
 					v-if="editedCase"

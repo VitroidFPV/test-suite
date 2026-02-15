@@ -170,7 +170,7 @@ defineShortcuts({
 		</template>
 		<template #content>
 			<div
-				v-if="plans"
+				v-if="plans && plans.length > 0"
 				class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 w-full"
 			>
 				<div v-for="item in plans" :key="item.id">
@@ -195,7 +195,7 @@ defineShortcuts({
 				</div>
 			</div>
 			<div
-				v-else
+				v-else-if="!plans"
 				class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 w-full"
 			>
 				<div v-for="i in 3" :key="i">
@@ -217,7 +217,7 @@ defineShortcuts({
 					</BaseCard>
 				</div>
 			</div>
-			<div v-if="plans && plans.length == 0">
+			<div v-else class="text-neutral-500">
 				No test plans yet. Click "Create Plan" to create a new plan.
 			</div>
 		</template>
