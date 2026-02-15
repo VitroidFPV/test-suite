@@ -145,6 +145,7 @@ function caseModal(id: string) {
 			title: "",
 			text: "",
 			created_at: new Date().toISOString(),
+			deleted_at: null,
 			priority: null,
 			id: ""
 		}
@@ -269,6 +270,7 @@ async function groupModal(id: string) {
 		editedGroup.value = {
 			title: "",
 			created_at: new Date().toISOString(),
+			deleted_at: null,
 			id: "",
 			name: ""
 		}

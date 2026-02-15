@@ -108,6 +108,7 @@ const newReport = ref<Tables<"test_run_reports">>({
 	run: "",
 	created_by: currentUser.value?.id || "",
 	created_at: new Date().toISOString(),
+	deleted_at: null,
 	pass: false,
 	comment: ""
 })
@@ -197,6 +198,7 @@ async function saveReport() {
 		run: "",
 		created_by: currentUser.value?.id || "",
 		created_at: new Date().toISOString(),
+		deleted_at: null,
 		pass: false,
 		comment: ""
 	}

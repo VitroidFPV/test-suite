@@ -111,6 +111,7 @@ const newRun = ref<NewRun>({
 	title: "",
 	created_at: new Date().toISOString(),
 	created_by: user.value?.id || "",
+	deleted_at: null,
 	plan: null
 })
 
@@ -209,6 +210,7 @@ async function createRun() {
 		title: "",
 		created_at: new Date().toISOString(),
 		created_by: user.value?.id || "",
+		deleted_at: null,
 		plan: null
 	}
 	selectedRunGroup.value = undefined

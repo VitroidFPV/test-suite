@@ -125,6 +125,7 @@ const newRunGroup = ref<RunGroup>({
 	id: crypto.randomUUID(),
 	title: "",
 	description: "",
+	deleted_at: null,
 	created_at: new Date().toISOString()
 })
 
@@ -182,6 +183,7 @@ async function createRunGroup() {
 		id: crypto.randomUUID(),
 		title: "",
 		description: "",
+		deleted_at: null,
 		created_at: new Date().toISOString()
 	}
 	selectedTestRuns.value = []

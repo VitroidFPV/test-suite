@@ -288,6 +288,7 @@ async function deleteRun() {
 const editedRun = ref<Run>({
 	created_at: new Date().toISOString(),
 	created_by: "",
+	deleted_at: null,
 	id: "",
 	plan: null,
 	title: ""
@@ -394,6 +395,7 @@ const newReport = ref<Report>({
 	run: urlRun,
 	created_by: currentUser.value?.id || "",
 	created_at: new Date().toISOString(),
+	deleted_at: null,
 	pass: false,
 	comment: ""
 })
@@ -405,6 +407,7 @@ function resetReportForm() {
 		run: urlRun,
 		created_by: currentUser.value?.id || "",
 		created_at: new Date().toISOString(),
+		deleted_at: null,
 		pass: false,
 		comment: ""
 	}

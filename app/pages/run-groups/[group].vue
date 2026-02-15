@@ -116,6 +116,7 @@ const selectedRuns = ref<string[]>([])
 
 const editedRunGroup = ref({
 	created_at: new Date().toISOString(),
+	deleted_at: null as string | null,
 	description: "",
 	id: "",
 	name: "",
