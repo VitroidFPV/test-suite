@@ -369,7 +369,7 @@ defineShortcuts({
 				<UModal
 					v-model:open="confirmDeleteModalOpen"
 					title="Delete Run Group"
-					description="Are you sure you want to delete this run group? This action cannot be undone."
+					description="Are you sure you want to delete this run group?"
 					:ui="{
 						title: 'text-error'
 					}"

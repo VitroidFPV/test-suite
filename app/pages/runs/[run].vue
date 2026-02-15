@@ -825,7 +825,7 @@ defineShortcuts({
 				<UModal
 					v-model:open="confirmDeleteModalOpen"
 					title="Delete Run"
-					description="Are you sure you want to delete this run? This action cannot be undone."
+					description="Are you sure you want to delete this run?"
 					:ui="{
 						title: 'text-error'
 					}"

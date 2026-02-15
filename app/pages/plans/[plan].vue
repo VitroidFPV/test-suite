@@ -422,7 +422,7 @@ defineShortcuts({
 				<UModal
 					v-model:open="deletePlanModalOpen"
 					title="Delete Test Plan"
-					description="Are you sure you want to delete this test plan? This action cannot be undone."
+					description="Are you sure you want to delete this test plan?"
 					:ui="{
 						title: 'text-error'
 					}"
