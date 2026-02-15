@@ -857,7 +857,7 @@ defineShortcuts({
 		</template>
 
 		<template #description>
-			<div class="flex gap-3 items-center">
+			<div class="flex gap-3 items-center flex-wrap">
 				<div class="flex gap-2 items-center">
 					<UAvatar
 						v-if="creator"
@@ -919,7 +919,7 @@ defineShortcuts({
 			</div>
 			<div
 				v-else
-				class="grid xl:grid-cols-[fit-content(100%)_1fr_fit-content(100%)] grid-cols-2 h-full gap-4"
+				class="grid xl:grid-cols-[fit-content(100%)_1fr_fit-content(100%)] grid-cols-2 h-full lg:gap-4 gap-2 lg:pb-0 pb-2"
 			>
 				<UButton
 					color="primary"
@@ -934,7 +934,7 @@ defineShortcuts({
 					<UKbd color="primary" variant="subtle">J</UKbd>
 				</UButton>
 				<div
-					class="w-full xl:col-span-1 col-span-2 order-2 flex flex-col gap-6"
+					class="w-full xl:col-span-1 col-span-2 order-2 flex flex-col lg:gap-6 gap-2"
 				>
 					<TestRunCaseCard
 						v-if="selectedCase"

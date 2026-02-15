@@ -268,7 +268,7 @@ function handleCommentUpdate() {
 
 	<div v-else class="flex flex-col gap-4 w-full h-full justify-between">
 		<div class="flex flex-col gap-4">
-			<div class="flex gap-2 items-end mb-6">
+			<div class="flex gap-2 items-end lg:mb-6">
 				<span
 					v-if="
 						props.individualIndex !== undefined &&
@@ -280,7 +280,7 @@ function handleCommentUpdate() {
 					>/{{ props.totalCases }}
 				</span>
 				<h3
-					:class="`${getResultType(props.runCase.result).textColor} font-bold text-3xl`"
+					:class="`${getResultType(props.runCase.result).textColor} font-bold lg:text-3xl text-xl`"
 				>
 					{{ props.runCase.title }}
 				</h3>
@@ -298,7 +298,7 @@ function handleCommentUpdate() {
 					color="primary"
 					variant="soft"
 					placeholder="Add a comment about this test result..."
-					:rows="8"
+					:rows="5"
 					autoresize
 					@blur="handleCommentUpdate"
 				/>
@@ -313,7 +313,7 @@ function handleCommentUpdate() {
 					</VueMarkdown>
 				</div>
 			</div>
-			<div class="flex lg:flex-row flex-col xl:gap-4 gap-3 w-full p-1">
+			<div class="flex lg:flex-row flex-col xl:gap-4 gap-3 w-full">
 				<UButton
 					v-for="result in resultTypes"
 					:key="result.value"
@@ -321,7 +321,7 @@ function handleCommentUpdate() {
 					variant="soft"
 					:icon="result.icon"
 					:ui="{
-						base: `w-full lg:min-h-24 min-h-16 text-xl items-center justify-center ring-3
+						base: `w-full lg:min-h-24 min-h-12 text-xl items-center justify-center ring-3
 						${result.value === props.runCase.result ? `` : 'ring-transparent'}
 						${result.value === 'skipped' ? `${getResultType('skipped').bgColor} bg-transparent` : ''}
 						`
