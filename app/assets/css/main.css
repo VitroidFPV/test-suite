@@ -89,4 +89,9 @@ body {
 		var(--ui-color-neutral-800) 5px,
 		var(--ui-color-neutral-800) 10px /* cool stripy gradient */
 	);
+	transition: filter 0.15s ease;
+}
+
+.stripe-gradient:hover {
+	filter: brightness(1.2);
 }

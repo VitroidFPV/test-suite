@@ -2,6 +2,7 @@
 import BaseCard from "~/components/cards/BaseCard.vue"
 import VueMarkdown from "vue-markdown-render"
 import type { ResultType } from "~/types/resultTypes"
+import type { ButtonProps } from "@nuxt/ui"
 
 interface RunCaseWithResult {
 	id: string
@@ -18,6 +19,9 @@ interface Props {
 	readonly?: boolean
 	selected?: boolean
 	expanded?: boolean
+	individual?: boolean
+	individualIndex?: number
+	totalCases?: number
 }
 
 const props = defineProps<Props>()
@@ -34,15 +38,19 @@ const resultTypes: {
 	hoverBgColor: string
 	outlineColor: string
 	icon: string
+	color: ButtonProps["color"]
+	key: string
 }[] = [
 	{
 		label: "Not Run",
 		value: "not_run",
-		textColor: "text-neutral-400",
+		textColor: "text-neutral-100",
 		bgColor: "bg-neutral-500/20",
 		hoverBgColor: "hover:bg-neutral-500/30",
 		outlineColor: "outline-neutral-500/50",
-		icon: "i-lucide-circle-dot-dashed"
+		icon: "i-lucide-circle-dot-dashed",
+		color: "neutral",
+		key: "1"
 	},
 	{
 		label: "Passed",
@@ -51,7 +59,9 @@ const resultTypes: {
 		bgColor: "bg-lime-500/20",
 		hoverBgColor: "hover:bg-lime-500/30",
 		outlineColor: "outline-lime-500/50",
-		icon: "i-lucide-circle-check"
+		icon: "i-lucide-circle-check",
+		color: "success",
+		key: "2"
 	},
 	{
 		label: "Failed",
@@ -60,7 +70,9 @@ const resultTypes: {
 		bgColor: "bg-red-500/20",
 		hoverBgColor: "hover:bg-red-500/30",
 		outlineColor: "outline-red-500/50",
-		icon: "i-lucide-circle-x"
+		icon: "i-lucide-circle-x",
+		color: "error",
+		key: "3"
 	},
 	{
 		label: "Blocked",
@@ -69,16 +81,20 @@ const resultTypes: {
 		bgColor: "bg-yellow-500/20",
 		hoverBgColor: "hover:bg-yellow-500/30",
 		outlineColor: "outline-yellow-500/50",
-		icon: "i-lucide-circle-alert"
+		icon: "i-lucide-circle-alert",
+		color: "warning",
+		key: "4"
 	},
 	{
 		label: "Skipped",
 		value: "skipped",
-		textColor: "text-neutral-200",
+		textColor: "text-neutral-400",
 		bgColor: "stripe-gradient",
 		hoverBgColor: "hover:bg-neutral-500/30",
 		outlineColor: "outline-neutral-500/50",
-		icon: "i-lucide-circle-arrow-right"
+		icon: "i-lucide-circle-arrow-right",
+		color: "neutral",
+		key: "5"
 	}
 ]
 
@@ -119,7 +135,10 @@ function handleCommentUpdate() {
 </script>
 
 <template>
-	<BaseCard :class="{ 'outline-2 outline-primary-500/50': props.selected }">
+	<BaseCard
+		v-if="!props.individual"
+		:class="{ 'outline-2 outline-primary-500/50': props.selected }"
+	>
 		<template #default>
 			<div class="flex flex-col">
 				<div class="flex items-center justify-between w-full">
@@ -246,4 +265,73 @@ function handleCommentUpdate() {
 			</div>
 		</template>
 	</BaseCard>
+
+	<div v-else class="flex flex-col gap-4 w-full h-full justify-between">
+		<div class="flex flex-col gap-4">
+			<div class="flex gap-2 items-end mb-6">
+				<span
+					v-if="
+						props.individualIndex !== undefined &&
+						props.totalCases !== undefined
+					"
+					class="text-sm text-neutral-500 whitespace-nowrap font-mono"
+				>
+					<span class="text-xl">{{ props.individualIndex + 1 }}</span
+					>/{{ props.totalCases }}
+				</span>
+				<h3
+					:class="`${getResultType(props.runCase.result).textColor} font-bold text-3xl`"
+				>
+					{{ props.runCase.title }}
+				</h3>
+			</div>
+			<VueMarkdown v-if="props.runCase.text" :source="props.runCase.text">
+			</VueMarkdown>
+			<div v-else class="opacity-50">No description</div>
+		</div>
+
+		<div class="flex flex-col gap-4">
+			<div v-if="!props.readonly" class="flex flex-col gap-1 w-full">
+				<div class="text-sm text-neutral-400">Test Case Comment</div>
+				<UTextarea
+					v-model="localComment"
+					color="primary"
+					variant="soft"
+					placeholder="Add a comment about this test result..."
+					:rows="8"
+					autoresize
+					@blur="handleCommentUpdate"
+				/>
+			</div>
+			<div v-else class="flex flex-col gap-1 w-full">
+				<div class="text-sm text-neutral-400">Test Case Comment</div>
+				<div class="md h-full bg-neutral-800/50 p-2 rounded-md">
+					<VueMarkdown
+						v-if="props.runCase.comment"
+						:source="props.runCase.comment"
+					>
+					</VueMarkdown>
+				</div>
+			</div>
+			<div class="flex lg:flex-row flex-col xl:gap-4 gap-3 w-full p-1">
+				<UButton
+					v-for="result in resultTypes"
+					:key="result.value"
+					:color="result.color"
+					variant="soft"
+					:icon="result.icon"
+					:ui="{
+						base: `w-full lg:min-h-24 min-h-16 text-xl items-center justify-center ring-3
+						${result.value === props.runCase.result ? `` : 'ring-transparent'}
+						${result.value === 'skipped' ? `${getResultType('skipped').bgColor} bg-transparent` : ''}
+						`
+					}"
+					@click="handleResultChange(props.runCase.id, result.value)"
+				>
+					{{ result.label }}
+					<UKbd :color="result.color" variant="subtle">{{ result.key }}</UKbd>
+				</UButton>
+			</div>
+		</div>
+	</div>
 </template>
