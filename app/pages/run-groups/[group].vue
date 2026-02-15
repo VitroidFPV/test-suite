@@ -25,6 +25,7 @@ const {
 			.from("test_run_groups")
 			.select("*")
 			.eq("id", groupId)
+			.is("deleted_at", null)
 			.single()
 		if (error) {
 			throw createSupabaseError(error)
@@ -95,7 +96,7 @@ async function retryAll() {
 async function deleteRunGroup() {
 	const { error } = await supabase
 		.from("test_run_groups")
-		.delete()
+		.update({ deleted_at: new Date().toISOString() })
 		.eq("id", groupId)
 	if (error) {
 		console.error(error)
@@ -116,6 +117,7 @@ const selectedRuns = ref<string[]>([])
 
 const editedRunGroup = ref({
 	created_at: new Date().toISOString(),
+	deleted_at: null as string | null,
 	description: "",
 	id: "",
 	name: "",
@@ -367,7 +369,7 @@ defineShortcuts({
 				<UModal
 					v-model:open="confirmDeleteModalOpen"
 					title="Delete Run Group"
-					description="Are you sure you want to delete this run group? This action cannot be undone."
+					description="Are you sure you want to delete this run group?"
 					:ui="{
 						title: 'text-error'
 					}"

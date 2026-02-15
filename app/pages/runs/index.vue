@@ -38,7 +38,10 @@ const {
 } = await useAsyncData(
 	"testPlans",
 	async () => {
-		const { data, error } = await supabase.from("test_plans").select("*")
+		const { data, error } = await supabase
+			.from("test_plans")
+			.select("*")
+			.is("deleted_at", null)
 		if (error) {
 			throw createSupabaseError(error)
 		}
@@ -54,7 +57,10 @@ const {
 } = await useAsyncData(
 	"runGroups",
 	async () => {
-		const { data, error } = await supabase.from("test_run_groups").select("*")
+		const { data, error } = await supabase
+			.from("test_run_groups")
+			.select("*")
+			.is("deleted_at", null)
 		if (error) {
 			throw createSupabaseError(error)
 		}
@@ -105,6 +111,7 @@ const newRun = ref<NewRun>({
 	title: "",
 	created_at: new Date().toISOString(),
 	created_by: user.value?.id || "",
+	deleted_at: null,
 	plan: null
 })
 
@@ -203,6 +210,7 @@ async function createRun() {
 		title: "",
 		created_at: new Date().toISOString(),
 		created_by: user.value?.id || "",
+		deleted_at: null,
 		plan: null
 	}
 	selectedRunGroup.value = undefined

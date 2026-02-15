@@ -89,6 +89,7 @@ const editedReport = ref<Tables<"test_run_reports">>({
 	comment: "",
 	created_at: "",
 	created_by: "",
+	deleted_at: null,
 	id: "",
 	pass: false,
 	run: "",
@@ -103,6 +104,7 @@ watch(editReportModalOpen, (isOpen) => {
 			comment: report.value.report.comment || "",
 			created_at: report.value.report.created_at,
 			created_by: report.value.report.created_by,
+			deleted_at: null,
 			id: report.value.report.id,
 			pass: report.value.report.pass,
 			run: report.value.report.run,
@@ -154,7 +156,7 @@ async function deleteReport() {
 	}
 	const { error } = await supabase
 		.from("test_run_reports")
-		.delete()
+		.update({ deleted_at: new Date().toISOString() })
 		.eq("id", urlReport)
 	if (error) {
 		console.error(error)
@@ -356,7 +358,7 @@ defineShortcuts({
 				<UModal
 					v-model:open="confirmDeleteModalOpen"
 					title="Delete Report"
-					description="Are you sure you want to delete this report? This action cannot be undone."
+					description="Are you sure you want to delete this report?"
 					:ui="{
 						title: 'text-error'
 					}"

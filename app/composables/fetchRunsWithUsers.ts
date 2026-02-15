@@ -7,6 +7,7 @@ export async function fetchRunsWithUsers(
 	const query = supabase
 		.from("test_runs")
 		.select("*")
+		.is("deleted_at", null)
 		.order("created_at", { ascending: false })
 
 	const { data: runsData, error: runsError } = runIds

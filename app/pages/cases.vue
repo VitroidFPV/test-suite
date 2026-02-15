@@ -18,7 +18,10 @@ const {
 } = await useAsyncData(
 	"caseGroups",
 	async () => {
-		const { data, error } = await supabase.from("test_case_groups").select("*")
+		const { data, error } = await supabase
+			.from("test_case_groups")
+			.select("*")
+			.is("deleted_at", null)
 		if (error) {
 			throw createSupabaseError(error)
 		}
@@ -35,7 +38,10 @@ const {
 } = await useAsyncData(
 	"cases",
 	async () => {
-		const { data, error } = await supabase.from("test_cases").select("*")
+		const { data, error } = await supabase
+			.from("test_cases")
+			.select("*")
+			.is("deleted_at", null)
 		if (error) {
 			throw createSupabaseError(error)
 		}
@@ -139,6 +145,7 @@ function caseModal(id: string) {
 			title: "",
 			text: "",
 			created_at: new Date().toISOString(),
+			deleted_at: null,
 			priority: null,
 			id: ""
 		}
@@ -224,7 +231,10 @@ async function saveCase(close: boolean = false, update: boolean = false) {
 }
 
 async function deleteCase(id: string) {
-	const { error } = await supabase.from("test_cases").delete().match({ id })
+	const { error } = await supabase
+		.from("test_cases")
+		.update({ deleted_at: new Date().toISOString() })
+		.eq("id", id)
 	if (error) {
 		console.error(error)
 		toast.add({
@@ -260,6 +270,7 @@ async function groupModal(id: string) {
 		editedGroup.value = {
 			title: "",
 			created_at: new Date().toISOString(),
+			deleted_at: null,
 			id: "",
 			name: ""
 		}
@@ -427,26 +438,10 @@ async function removeFromGroup(caseId: string) {
 }
 
 async function deleteGroup(id: string) {
-	// Delete group-case relationships first
-	const { error: relError } = await supabase
-		.from("test_case_group_links")
-		.delete()
-		.eq("group", id)
-
-	if (relError) {
-		console.error(relError)
-		toast.add({
-			title: "Error",
-			description: relError.message,
-			color: "error"
-		})
-		return
-	}
-
-	// Then delete the group
+	// Soft delete the group. Link rows are preserved so undelete can restore associations.
 	const { error } = await supabase
 		.from("test_case_groups")
-		.delete()
+		.update({ deleted_at: new Date().toISOString() })
 		.eq("id", id)
 
 	if (error) {
@@ -519,15 +514,16 @@ useStablePageTitle({
 						/>
 					</div>
 					<UTabs
-						v-if="groups.length > 1"
+						v-if="caseGroups !== undefined"
 						v-model="selectedTabGroup"
 						:items="groups"
 						orientation="vertical"
 						as="ul"
 						:ui="{
-							list: 'dark:bg-neutral-900! lg:w-52 w-full',
+							root: 'w-full min-w-full',
+							list: 'dark:bg-neutral-900! lg:w-52 w-full min-w-full',
 							indicator: 'bg-primary-500/10!',
-							trigger: 'w-full'
+							trigger: 'w-full justify-start'
 						}"
 						@update:model-value="(val) => filterGroup(String(val))"
 					>
@@ -662,7 +658,7 @@ useStablePageTitle({
 							</BaseCard>
 						</div>
 					</div>
-					<div v-else>No cases found</div>
+					<div v-else class="text-neutral-500">No cases found</div>
 				</div>
 				<UModal
 					v-if="editedCase"

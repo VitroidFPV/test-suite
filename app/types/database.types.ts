@@ -65,18 +65,21 @@ export type Database = {
       test_case_groups: {
         Row: {
           created_at: string
+          deleted_at: string | null
           id: string
           name: string
           title: string
         }
         Insert: {
           created_at?: string
+          deleted_at?: string | null
           id?: string
           name: string
           title: string
         }
         Update: {
           created_at?: string
+          deleted_at?: string | null
           id?: string
           name?: string
           title?: string
@@ -87,6 +90,7 @@ export type Database = {
         Row: {
           case_id: number
           created_at: string
+          deleted_at: string | null
           id: string
           priority: Database["public"]["Enums"]["priority_string"] | null
           text: string | null
@@ -95,6 +99,7 @@ export type Database = {
         Insert: {
           case_id?: number
           created_at?: string
+          deleted_at?: string | null
           id?: string
           priority?: Database["public"]["Enums"]["priority_string"] | null
           text?: string | null
@@ -103,6 +108,7 @@ export type Database = {
         Update: {
           case_id?: number
           created_at?: string
+          deleted_at?: string | null
           id?: string
           priority?: Database["public"]["Enums"]["priority_string"] | null
           text?: string | null
@@ -143,6 +149,7 @@ export type Database = {
       test_plans: {
         Row: {
           created_at: string
+          deleted_at: string | null
           description: string | null
           id: string
           name: string
@@ -150,6 +157,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          deleted_at?: string | null
           description?: string | null
           id?: string
           name?: string
@@ -157,6 +165,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          deleted_at?: string | null
           description?: string | null
           id?: string
           name?: string
@@ -233,6 +242,7 @@ export type Database = {
       test_run_groups: {
         Row: {
           created_at: string
+          deleted_at: string | null
           description: string | null
           id: string
           name: string
@@ -240,6 +250,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          deleted_at?: string | null
           description?: string | null
           id?: string
           name?: string
@@ -247,6 +258,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          deleted_at?: string | null
           description?: string | null
           id?: string
           name?: string
@@ -295,6 +307,7 @@ export type Database = {
           comment: string | null
           created_at: string
           created_by: string
+          deleted_at: string | null
           id: string
           pass: boolean
           run: string
@@ -304,6 +317,7 @@ export type Database = {
           comment?: string | null
           created_at?: string
           created_by: string
+          deleted_at?: string | null
           id: string
           pass: boolean
           run: string
@@ -313,6 +327,7 @@ export type Database = {
           comment?: string | null
           created_at?: string
           created_by?: string
+          deleted_at?: string | null
           id?: string
           pass?: boolean
           run?: string
@@ -332,6 +347,7 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string | null
+          deleted_at: string | null
           id: string
           plan: string | null
           title: string | null
@@ -339,6 +355,7 @@ export type Database = {
         Insert: {
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           id?: string
           plan?: string | null
           title?: string | null
@@ -346,6 +363,7 @@ export type Database = {
         Update: {
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           id?: string
           plan?: string | null
           title?: string | null

@@ -55,6 +55,7 @@ const {
 				.from("test_run_groups")
 				.select("*")
 				.in("id", groupIds)
+				.is("deleted_at", null)
 			if (groupsError) {
 				throw createSupabaseError(groupsError)
 			}
@@ -65,6 +66,7 @@ const {
 		const { data: allRunGroupsData, error: allRunGroupsError } = await supabase
 			.from("test_run_groups")
 			.select("*")
+			.is("deleted_at", null)
 		if (allRunGroupsError) {
 			throw createSupabaseError(allRunGroupsError)
 		}
@@ -121,6 +123,7 @@ const {
 				"id",
 				runCasesDb.map((c) => c.case)
 			)
+			.is("deleted_at", null)
 		if (casesError) {
 			throw createSupabaseError(casesError)
 		}
@@ -267,7 +270,10 @@ async function updateCaseComment(caseId: string, comment: string) {
 const confirmDeleteModalOpen = ref(false)
 
 async function deleteRun() {
-	const { error } = await supabase.from("test_runs").delete().eq("id", urlRun)
+	const { error } = await supabase
+		.from("test_runs")
+		.update({ deleted_at: new Date().toISOString() })
+		.eq("id", urlRun)
 	if (error) {
 		console.error(error)
 		toast.add({
@@ -282,6 +288,7 @@ async function deleteRun() {
 const editedRun = ref<Run>({
 	created_at: new Date().toISOString(),
 	created_by: "",
+	deleted_at: null,
 	id: "",
 	plan: null,
 	title: ""
@@ -388,6 +395,7 @@ const newReport = ref<Report>({
 	run: urlRun,
 	created_by: currentUser.value?.id || "",
 	created_at: new Date().toISOString(),
+	deleted_at: null,
 	pass: false,
 	comment: ""
 })
@@ -399,6 +407,7 @@ function resetReportForm() {
 		run: urlRun,
 		created_by: currentUser.value?.id || "",
 		created_at: new Date().toISOString(),
+		deleted_at: null,
 		pass: false,
 		comment: ""
 	}
@@ -816,7 +825,7 @@ defineShortcuts({
 				<UModal
 					v-model:open="confirmDeleteModalOpen"
 					title="Delete Run"
-					description="Are you sure you want to delete this run? This action cannot be undone."
+					description="Are you sure you want to delete this run?"
 					:ui="{
 						title: 'text-error'
 					}"

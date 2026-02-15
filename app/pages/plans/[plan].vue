@@ -20,6 +20,7 @@ const {
 			.from("test_plans")
 			.select("*")
 			.eq("id", urlPlan)
+			.is("deleted_at", null)
 			.single()
 		if (error) {
 			throw createSupabaseError(error)
@@ -55,6 +56,7 @@ const {
 			.from("test_cases")
 			.select("*")
 			.in("id", caseIds)
+			.is("deleted_at", null)
 		if (casesError) {
 			throw createSupabaseError(casesError)
 		}
@@ -82,6 +84,7 @@ const {
 		const { data: casesData, error: casesError } = await supabase
 			.from("test_cases")
 			.select("*")
+			.is("deleted_at", null)
 
 		if (casesError) {
 			throw createSupabaseError(casesError)
@@ -107,6 +110,7 @@ const {
 			.from("test_case_groups")
 			.select("*")
 			.in("id", groupIds)
+			.is("deleted_at", null)
 
 		if (groupsError) {
 			throw createSupabaseError(groupsError)
@@ -259,7 +263,10 @@ async function savePlan() {
 const deletePlanModalOpen = ref(false)
 
 async function deletePlan() {
-	const { error } = await supabase.from("test_plans").delete().eq("id", urlPlan)
+	const { error } = await supabase
+		.from("test_plans")
+		.update({ deleted_at: new Date().toISOString() })
+		.eq("id", urlPlan)
 	if (error) {
 		console.error(error)
 		toast.add({
@@ -415,7 +422,7 @@ defineShortcuts({
 				<UModal
 					v-model:open="deletePlanModalOpen"
 					title="Delete Test Plan"
-					description="Are you sure you want to delete this test plan? This action cannot be undone."
+					description="Are you sure you want to delete this test plan?"
 					:ui="{
 						title: 'text-error'
 					}"
@@ -507,7 +514,7 @@ defineShortcuts({
 				</div>
 			</div>
 			<!-- Empty state: both loaded but no cases -->
-			<div v-else>
+			<div v-else class="text-neutral-500">
 				No test cases in this plan. Click "Edit Plan" to add cases.
 			</div>
 		</template>

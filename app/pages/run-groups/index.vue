@@ -32,7 +32,10 @@ const {
 } = await useAsyncData(
 	"runGroups",
 	async () => {
-		const { data, error } = await supabase.from("test_run_groups").select("*")
+		const { data, error } = await supabase
+			.from("test_run_groups")
+			.select("*")
+			.is("deleted_at", null)
 		if (error) {
 			throw createSupabaseError(error)
 		}
@@ -122,6 +125,7 @@ const newRunGroup = ref<RunGroup>({
 	id: crypto.randomUUID(),
 	title: "",
 	description: "",
+	deleted_at: null,
 	created_at: new Date().toISOString()
 })
 
@@ -179,6 +183,7 @@ async function createRunGroup() {
 		id: crypto.randomUUID(),
 		title: "",
 		description: "",
+		deleted_at: null,
 		created_at: new Date().toISOString()
 	}
 	selectedTestRuns.value = []
@@ -313,7 +318,7 @@ defineShortcuts({
 		</template>
 		<template #content>
 			<div
-				v-if="runGroups"
+				v-if="runGroups && runGroups.length > 0"
 				class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 w-full"
 			>
 				<div v-for="run in runGroups" :key="run.id">
@@ -347,7 +352,7 @@ defineShortcuts({
 				</div>
 			</div>
 			<div
-				v-else
+				v-else-if="!runGroups"
 				class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 w-full"
 			>
 				<div v-for="i in 5" :key="i">
@@ -369,7 +374,7 @@ defineShortcuts({
 					</BaseCard>
 				</div>
 			</div>
-			<div v-if="runGroups && runGroups.length === 0">
+			<div v-else class="text-neutral-500">
 				No run groups yet. Click "Create Run Group" to create a new group.
 			</div>
 		</template>

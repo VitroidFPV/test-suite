@@ -21,7 +21,10 @@ const {
 } = await useAsyncData(
 	"reports",
 	async () => {
-		const { data, error } = await supabase.from("test_run_reports").select("*")
+		const { data, error } = await supabase
+			.from("test_run_reports")
+			.select("*")
+			.is("deleted_at", null)
 		if (error) {
 			throw createSupabaseError(error)
 		}
@@ -62,7 +65,10 @@ const {
 } = await useAsyncData(
 	"reportsRuns",
 	async () => {
-		const { data, error } = await supabase.from("test_runs").select("*")
+		const { data, error } = await supabase
+			.from("test_runs")
+			.select("*")
+			.is("deleted_at", null)
 		if (error) {
 			throw createSupabaseError(error)
 		}
@@ -102,6 +108,7 @@ const newReport = ref<Tables<"test_run_reports">>({
 	run: "",
 	created_by: currentUser.value?.id || "",
 	created_at: new Date().toISOString(),
+	deleted_at: null,
 	pass: false,
 	comment: ""
 })
@@ -191,6 +198,7 @@ async function saveReport() {
 		run: "",
 		created_by: currentUser.value?.id || "",
 		created_at: new Date().toISOString(),
+		deleted_at: null,
 		pass: false,
 		comment: ""
 	}
@@ -300,7 +308,7 @@ defineShortcuts({
 		</template>
 		<template #content>
 			<div
-				v-if="reportsData"
+				v-if="reportsData && reportsData.length > 0"
 				class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 w-full"
 			>
 				<BaseCard
@@ -346,7 +354,7 @@ defineShortcuts({
 				</BaseCard>
 			</div>
 			<div
-				v-else
+				v-else-if="!reportsData"
 				class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 w-full"
 			>
 				<div v-for="i in 5" :key="i">
@@ -368,7 +376,7 @@ defineShortcuts({
 					</BaseCard>
 				</div>
 			</div>
-			<div v-if="reportsData && reportsData.length == 0">
+			<div v-else class="text-neutral-500">
 				No test reports yet. Click "Create Report" to create a new report.
 			</div>
 		</template>
