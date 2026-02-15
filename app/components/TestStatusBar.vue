@@ -100,7 +100,7 @@ function getStatusStatsPercentage(value: ResultType | "total") {
 			<div
 				v-for="item in statusStats.filter((s) => s.value !== 'total')"
 				:key="item.value"
-				class="flex gap-1"
+				class="flex gap-1 items-center"
 			>
 				<UBadge
 					:ui="{

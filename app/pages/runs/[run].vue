@@ -486,13 +486,50 @@ function autoFillReportTitle() {
 	}
 }
 
+const isTestRunMode = ref(false)
+
 const selectedCaseId = ref<string | undefined>(undefined)
+
+// Load initial value from localStorage on client
+onMounted(() => {
+	const stored = localStorage.getItem("testRunMode")
+	if (stored !== null) {
+		isTestRunMode.value = stored === "true"
+	}
+})
+
+// Save to localStorage whenever the value changes
+watch(isTestRunMode, (newValue) => {
+	localStorage.setItem("testRunMode", String(newValue))
+})
+
+// Select the first case when run mode is true and cases are loaded
+// Clear selection when run mode is false
+watch(
+	[isTestRunMode, runCases],
+	([mode, cases]) => {
+		if (mode && cases.length > 0 && !selectedCaseId.value) {
+			selectCase(cases[0]!.id)
+		} else if (!mode) {
+			selectedCaseId.value = undefined
+		}
+	},
+	{ immediate: true }
+)
 
 function selectCase(caseId: string) {
 	if (runCases.value.length > 0) {
 		selectedCaseId.value = caseId
 	}
 }
+
+function getCaseById(caseId: string): RunCaseWithResult | undefined {
+	return runCases.value.find((c) => c.id === caseId)
+}
+
+const selectedCaseIndex = computed(() => {
+	return runCases.value.findIndex((c) => c.id === selectedCaseId.value)
+})
 
 // Select next/previous case, wrapping around if at the end/start, use the existing selectCase function
 function nextCase() {
@@ -525,7 +562,9 @@ function previousCase() {
 }
 
 function clearSelectedCase() {
-	selectedCaseId.value = undefined
+	if (!isTestRunMode.value) {
+		selectedCaseId.value = undefined
+	}
 }
 
 const expandedCaseId = ref<string | undefined>(undefined)
@@ -651,6 +690,7 @@ defineShortcuts({
 							variant="soft"
 							icon="i-lucide-file-text"
 							:disabled="!runData"
+							class="whitespace-nowrap"
 						>
 							Generate Report
 						</UButton>
@@ -855,12 +895,14 @@ defineShortcuts({
 					</div>
 				</div>
 				<USkeleton v-else class="h-6 w-32" />
+				<USeparator orientation="vertical" class="h-6" />
+				<USwitch v-model="isTestRunMode" label="Test Run Mode" />
 			</div>
 			<TestStatusBar :status-stats="statusStats" />
 		</template>
 
-		<template #content>
-			<div class="flex flex-col gap-y-3">
+		<template v-if="runCases.length > 0" #content>
+			<div v-if="!isTestRunMode" class="flex flex-col gap-y-3">
 				<TestRunCaseCard
 					v-for="item in runCases"
 					:key="item.id"
@@ -870,6 +912,49 @@ defineShortcuts({
 					@update-result="updateCaseResult"
 					@update-comment="updateCaseComment"
 				/>
+			</div>
+			<div
+				v-else
+				class="grid xl:grid-cols-[fit-content(100%)_1fr_fit-content(100%)] grid-cols-2 h-full gap-4"
+			>
+				<UButton
+					color="primary"
+					size="sm"
+					variant="soft"
+					leading-icon="i-lucide-arrow-left"
+					:ui="{
+						base: 'px-8 xl:order-1 order-3 justify-start min-h-16'
+					}"
+					@click="previousCase()"
+				>
+					<UKbd color="primary" variant="subtle">J</UKbd>
+				</UButton>
+				<div
+					class="w-full xl:col-span-1 col-span-2 order-2 flex flex-col gap-6"
+				>
+					<TestRunCaseCard
+						v-if="selectedCaseId"
+						:run-case="getCaseById(selectedCaseId)!"
+						individual
+						:individual-index="selectedCaseIndex"
+						:total-cases="runCases.length"
+						@update-result="updateCaseResult"
+						@update-comment="updateCaseComment"
+					/>
+					<USeparator class="block xl:hidden" />
+				</div>
+				<UButton
+					color="primary"
+					size="sm"
+					variant="soft"
+					trailing-icon="i-lucide-arrow-right"
+					:ui="{
+						base: 'px-8 order-4 justify-end min-h-16'
+					}"
+					@click="nextCase()"
+				>
+					<UKbd color="primary" variant="subtle">K</UKbd>
+				</UButton>
 			</div>
 		</template>
 	</PageWrapper>

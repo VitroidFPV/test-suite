@@ -71,7 +71,7 @@ function getErrorDetails(err: Error) {
 </script>
 
 <template>
-	<div class="flex flex-col gap-y-6">
+	<div class="flex flex-col gap-y-6 h-full">
 		<div class="flex items-center justify-between gap-3 w-full">
 			<div class="flex items-center gap-2">
 				<slot name="breadcrumbs-leading" />
