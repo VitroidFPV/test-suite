@@ -285,7 +285,11 @@ function handleCommentUpdate() {
 					{{ props.runCase.title }}
 				</h3>
 			</div>
-			<VueMarkdown v-if="props.runCase.text" :source="props.runCase.text">
+			<VueMarkdown
+				v-if="props.runCase.text"
+				:source="props.runCase.text"
+				class="lg:text-base text-sm"
+			>
 			</VueMarkdown>
 			<div v-else class="opacity-50">No description</div>
 		</div>
@@ -313,7 +317,7 @@ function handleCommentUpdate() {
 					</VueMarkdown>
 				</div>
 			</div>
-			<div class="flex lg:flex-row flex-col xl:gap-4 gap-3 w-full">
+			<div class="flex lg:flex-row flex-col xl:gap-4 gap-2 w-full">
 				<UButton
 					v-for="result in resultTypes"
 					:key="result.value"
@@ -321,7 +325,7 @@ function handleCommentUpdate() {
 					variant="soft"
 					:icon="result.icon"
 					:ui="{
-						base: `w-full lg:min-h-24 min-h-12 text-xl items-center justify-center ring-3
+						base: `w-full lg:min-h-24 lg:text-xl items-center justify-center ring-3
 						${result.value === props.runCase.result ? `` : 'ring-transparent'}
 						${result.value === 'skipped' ? `${getResultType('skipped').bgColor} bg-transparent` : ''}
 						`

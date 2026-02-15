@@ -927,7 +927,7 @@ defineShortcuts({
 					variant="soft"
 					leading-icon="i-lucide-arrow-left"
 					:ui="{
-						base: 'px-8 xl:order-1 order-3 justify-start min-h-16'
+						base: 'px-8 xl:order-1 order-3 justify-start lg:min-h-16'
 					}"
 					@click="previousCase()"
 				>
@@ -953,7 +953,7 @@ defineShortcuts({
 					variant="soft"
 					trailing-icon="i-lucide-arrow-right"
 					:ui="{
-						base: 'px-8 order-4 justify-end min-h-16'
+						base: 'px-8 order-4 justify-end lg:min-h-16'
 					}"
 					@click="nextCase()"
 				>
