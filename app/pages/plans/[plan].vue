@@ -20,6 +20,7 @@ const {
 			.from("test_plans")
 			.select("*")
 			.eq("id", urlPlan)
+			.is("deleted_at", null)
 			.single()
 		if (error) {
 			throw createSupabaseError(error)

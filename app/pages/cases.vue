@@ -438,23 +438,7 @@ async function removeFromGroup(caseId: string) {
 }
 
 async function deleteGroup(id: string) {
-	// Delete group-case relationships first
-	const { error: relError } = await supabase
-		.from("test_case_group_links")
-		.delete()
-		.eq("group", id)
-
-	if (relError) {
-		console.error(relError)
-		toast.add({
-			title: "Error",
-			description: relError.message,
-			color: "error"
-		})
-		return
-	}
-
-	// Soft delete the group
+	// Soft delete the group. Link rows are preserved so undelete can restore associations.
 	const { error } = await supabase
 		.from("test_case_groups")
 		.update({ deleted_at: new Date().toISOString() })

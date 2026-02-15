@@ -25,6 +25,7 @@ const {
 			.from("test_run_groups")
 			.select("*")
 			.eq("id", groupId)
+			.is("deleted_at", null)
 			.single()
 		if (error) {
 			throw createSupabaseError(error)
