@@ -268,7 +268,7 @@ function handleCommentUpdate() {
 
 	<div v-else class="flex flex-col gap-4 w-full h-full justify-between">
 		<div class="flex flex-col gap-4">
-			<div class="flex gap-2 items-end lg:mb-6">
+			<div class="flex gap-2 lg:items-end lg:mb-6 lg:flex-row flex-col">
 				<span
 					v-if="
 						props.individualIndex !== undefined &&
@@ -325,7 +325,7 @@ function handleCommentUpdate() {
 					variant="soft"
 					:icon="result.icon"
 					:ui="{
-						base: `w-full lg:min-h-24 lg:text-xl items-center justify-center ring-3
+						base: `w-full lg:min-h-24 min-h-10 lg:text-xl items-center justify-center ring-3
 						${result.value === props.runCase.result ? `` : 'ring-transparent'}
 						${result.value === 'skipped' ? `${getResultType('skipped').bgColor} bg-transparent` : ''}
 						`
