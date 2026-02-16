@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Database, Tables } from "~/types/database.types"
+import VueMarkdown from "vue-markdown-render"
 import BaseCard from "~/components/cards/BaseCard.vue"
 
 const { dateTimeProps } = useDateTimeFormat()
@@ -132,6 +133,13 @@ function filterGroup(value: string) {
 }
 const caseModalOpen = ref(false)
 const editedCase = ref<TestCase>()
+const mdPreviewMode = ref(false)
+
+watch(caseModalOpen, (isOpen) => {
+	if (!isOpen) {
+		mdPreviewMode.value = false
+	}
+})
 
 function caseModal(id: string) {
 	if (id) {
@@ -589,7 +597,7 @@ useStablePageTitle({
 					</div>
 					<div
 						v-if="filteredCases && filteredCases.length > 0"
-						class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 w-full"
+						class="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-3 w-full"
 					>
 						<div v-for="item in filteredCases" :key="item.id">
 							<BaseCard>
@@ -663,30 +671,51 @@ useStablePageTitle({
 				<UModal
 					v-if="editedCase"
 					v-model:open="caseModalOpen"
-					title="Edit Case"
-					description="Edit the case title and description"
+					:title="editedCase.id ? 'Edit Case' : 'Create Case'"
+					:description="
+						editedCase.id
+							? 'Edit the case title and description'
+							: 'Create a new test case with a title and description'
+					"
 					:ui="{
+						content: 'max-w-3xl',
 						title: 'text-primary'
 					}"
 				>
 					<template #body>
 						<div class="flex flex-col gap-3">
-							<UInput
+							<textarea
 								v-model="editedCase.title"
-								color="primary"
 								placeholder="Case Title"
-								class="font-bold text-primary-500 w-full rounded-lg resize-none outline-none focus-visible:outline-primary-500/50 placeholder:font-normal"
+								class="font-bold text-primary-500 w-full p-3 rounded-lg resize-none outline-none focus-visible:outline-primary-500/5 placeholder:font-normal bg-neutral-800"
 							/>
-							<UTextarea
-								v-model="editedCase.text"
-								:autoresize="true"
-								:rows="5"
-								:maxrows="10"
-								color="primary"
-								variant="soft"
-								class="w-full rounded-lg resize-none outline-none focus-visible:outline-primary-500/50"
-								placeholder="Description"
-							/>
+							<!-- Description with markdown preview -->
+							<div class="flex flex-col gap-2">
+								<div class="flex items-center justify-between">
+									<span class="text-sm text-neutral-400">Description</span>
+									<USwitch v-model="mdPreviewMode" label="Markdown Preview" />
+								</div>
+								<UTextarea
+									v-if="!mdPreviewMode"
+									v-model="editedCase.text"
+									color="primary"
+									placeholder="Case Description (supports Markdown)"
+									variant="soft"
+									:rows="7"
+									class="min-h-40"
+									:ui="{ base: 'text-base' }"
+								/>
+								<div
+									v-if="mdPreviewMode"
+									class="md min-h-40 max-h-80 overflow-y-auto p-2 rounded-lg"
+								>
+									<VueMarkdown
+										v-if="editedCase.text"
+										:source="editedCase.text"
+									/>
+									<span v-else class="text-neutral-500">No description</span>
+								</div>
+							</div>
 						</div>
 					</template>
 					<template #footer>
@@ -723,18 +752,21 @@ useStablePageTitle({
 							</div>
 							<div class="flex items-center gap-2 h-fit">
 								<UTooltip
-									text="Save & Close"
+									:text="editedCase.id ? 'Save & Close' : 'Create Case'"
 									:shortcuts="['meta', 'Shift', 'S']"
 								>
 									<UButton
 										color="primary"
-										size="xs"
+										size="sm"
 										variant="soft"
-										icon="i-lucide-save-all"
+										:icon="
+											editedCase.id ? 'i-lucide-save-all' : 'i-lucide-plus'
+										"
+										:disabled="!editedCase.title?.trim()"
 										loading-auto
 										@click="saveCase(true, editedCase.id !== '' ? true : false)"
 									>
-										Apply
+										{{ editedCase.id ? "Apply" : "Create Case" }}
 									</UButton>
 								</UTooltip>
 							</div>
