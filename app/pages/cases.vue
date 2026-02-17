@@ -606,7 +606,12 @@ useStablePageTitle({
 									size="xs"
 									variant="soft"
 									icon="i-lucide-pen"
-									:disabled="!selectedGroup || !caseGroups || !caseGroupLinks || selectedGroup.name === 'ungrouped'"
+									:disabled="
+										!selectedGroup ||
+										!caseGroups ||
+										!caseGroupLinks ||
+										selectedGroup.name === 'ungrouped'
+									"
 									@click="groupModal(selectedGroup?.id ? selectedGroup.id : '')"
 								>
 									Edit Group
