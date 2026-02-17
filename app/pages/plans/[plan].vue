@@ -262,6 +262,22 @@ async function savePlan() {
 
 const deletePlanModalOpen = ref(false)
 
+const viewMode = ref<"list" | "grid" | "card">("grid")
+const viewClasses = {
+	list: {
+		grid: "grid grid-cols-1 gap-3",
+		description: "text-ellipsis line-clamp-2"
+	},
+	grid: {
+		grid: "grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3",
+		description: "text-ellipsis line-clamp-2"
+	},
+	card: {
+		grid: "grid grid-cols-1 gap-3",
+		description: "text-ellipsis"
+	}
+}
+
 async function deletePlan() {
 	const { error } = await supabase
 		.from("test_plans")
@@ -305,6 +321,38 @@ defineShortcuts({
 		back-link="/plans"
 		@retry="retryAll"
 	>
+		<template #separator-trailing>
+			<div class="flex items-center gap-2 shrink-0">
+				<UTooltip text="Grid view">
+					<UButton
+						color="neutral"
+						size="xs"
+						:variant="viewMode === 'grid' ? 'subtle' : 'soft'"
+						icon="i-lucide-grid-2x2"
+						@click="viewMode = 'grid'"
+					/>
+				</UTooltip>
+				<UTooltip text="List view">
+					<UButton
+						color="neutral"
+						size="xs"
+						:variant="viewMode === 'list' ? 'subtle' : 'soft'"
+						icon="i-lucide-rows-3"
+						@click="viewMode = 'list'"
+					/>
+				</UTooltip>
+				<UTooltip text="Card view">
+					<UButton
+						color="neutral"
+						size="xs"
+						:variant="viewMode === 'card' ? 'subtle' : 'soft'"
+						icon="i-lucide-rows-2"
+						@click="viewMode = 'card'"
+					/>
+				</UTooltip>
+			</div>
+		</template>
+
 		<template #title-trailing>
 			<div class="flex gap-2">
 				<UModal
@@ -471,7 +519,7 @@ defineShortcuts({
 			<!-- Cases loaded with items -->
 			<div
 				v-if="plan && cases && cases.length > 0"
-				class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 w-full"
+				:class="[viewClasses[viewMode].grid, 'w-full']"
 			>
 				<div v-for="item in cases" :key="item.id" class="h-full">
 					<BaseCard class="h-full">
@@ -481,9 +529,12 @@ defineShortcuts({
 							</div>
 						</template>
 						<template #default>
-							<span v-if="item.text" class="line-clamp-2 text-ellipsis">{{
-								item.text
-							}}</span>
+							<div
+								v-if="item.text"
+								:class="['md', viewClasses[viewMode].description]"
+							>
+								<VueMarkdown :source="item.text" />
+							</div>
 							<div v-else class="opacity-50">No description</div>
 						</template>
 					</BaseCard>

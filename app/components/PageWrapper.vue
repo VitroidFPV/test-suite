@@ -112,7 +112,10 @@ function getErrorDetails(err: Error) {
 			<slot v-if="!hasError" name="title-trailing" />
 		</div>
 		<slot v-if="!hasError" name="description" />
-		<USeparator />
+		<div class="flex items-center gap-3 w-full">
+			<USeparator class="flex-1 min-w-0" />
+			<slot v-if="!hasError" name="separator-trailing" />
+		</div>
 
 		<!-- Error State -->
 		<div
