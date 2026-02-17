@@ -487,6 +487,22 @@ async function deleteGroup(id: string) {
 
 const editedGroup = ref<CaseGroup>()
 
+const viewMode = ref<"list" | "grid" | "card">("grid")
+const viewClasses = {
+	list: {
+		grid: "grid grid-cols-1 gap-3",
+		description: "text-ellipsis line-clamp-2"
+	},
+	grid: {
+		grid: "grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-3",
+		description: "text-ellipsis line-clamp-2"
+	},
+	card: {
+		grid: "grid grid-cols-1 gap-3",
+		description: "text-ellipsis"
+	}
+}
+
 defineShortcuts({
 	meta_s: {
 		handler: () => saveCase(false, true)
@@ -528,8 +544,8 @@ useStablePageTitle({
 		@retry="retryAll"
 	>
 		<template #content>
-			<div class="flex flex-col lg:flex-row gap-3 w-full">
-				<div class="w-full lg:w-52 space-y-3 h-full">
+			<div class="flex flex-col lg:flex-row gap-2 w-full">
+				<div class="w-full lg:w-52 lg:sticky lg:-top-4 lg:self-start">
 					<div class="flex justify-between px-1">
 						<div class="text-primary font-bold">Groups</div>
 						<UButton
@@ -568,7 +584,7 @@ useStablePageTitle({
 					</UTabs>
 					<div v-else>
 						<div
-							class="w-52 flex flex-col dark:bg-neutral-900! h-fit rounded-lg p-1"
+							class="flex flex-col dark:bg-neutral-900! h-fit rounded-lg p-1"
 						>
 							<div
 								v-for="i in 3"
@@ -585,43 +601,77 @@ useStablePageTitle({
 					</div>
 				</div>
 				<div class="flex flex-col gap-3 w-full">
-					<div class="flex justify-between px-1">
+					<div class="flex lg:flex-row flex-col justify-between px-1 gap-2">
 						<div class="text-primary font-bold">Cases</div>
 						<div class="flex items-center gap-2">
-							<UTooltip text="Create new Case" :kbds="['shift', 'A']">
-								<UButton
-									color="primary"
-									size="xs"
-									variant="soft"
-									icon="i-lucide-plus"
-									:disabled="!caseGroups"
-									@click="caseModal('')"
-								>
-									New Case
-								</UButton>
-							</UTooltip>
-							<UTooltip text="Edit Group" :kbds="['shift', 'E']">
-								<UButton
-									color="neutral"
-									size="xs"
-									variant="soft"
-									icon="i-lucide-pen"
-									:disabled="
-										!selectedGroup ||
-										!caseGroups ||
-										!caseGroupLinks ||
-										selectedGroup.name === 'ungrouped'
-									"
-									@click="groupModal(selectedGroup?.id ? selectedGroup.id : '')"
-								>
-									Edit Group
-								</UButton>
-							</UTooltip>
+							<div class="flex items-center gap-2">
+								<UTooltip text="Grid view">
+									<UButton
+										color="neutral"
+										size="xs"
+										:variant="viewMode === 'grid' ? 'subtle' : 'soft'"
+										icon="i-lucide-grid-2x2"
+										@click="viewMode = 'grid'"
+									/>
+								</UTooltip>
+								<UTooltip text="List view">
+									<UButton
+										color="neutral"
+										size="xs"
+										:variant="viewMode === 'list' ? 'subtle' : 'soft'"
+										icon="i-lucide-rows-3"
+										@click="viewMode = 'list'"
+									/>
+								</UTooltip>
+								<UTooltip text="Card view">
+									<UButton
+										color="neutral"
+										size="xs"
+										:variant="viewMode === 'card' ? 'subtle' : 'soft'"
+										icon="i-lucide-rows-2"
+										@click="viewMode = 'card'"
+									/>
+								</UTooltip>
+							</div>
+							<USeparator orientation="vertical" />
+							<div class="flex items-center gap-2">
+								<UTooltip text="Create new Case" :kbds="['shift', 'A']">
+									<UButton
+										color="primary"
+										size="xs"
+										variant="soft"
+										icon="i-lucide-plus"
+										:disabled="!caseGroups"
+										@click="caseModal('')"
+									>
+										New Case
+									</UButton>
+								</UTooltip>
+								<UTooltip text="Edit Group" :kbds="['shift', 'E']">
+									<UButton
+										color="neutral"
+										size="xs"
+										variant="soft"
+										icon="i-lucide-pen"
+										:disabled="
+											!selectedGroup ||
+											!caseGroups ||
+											!caseGroupLinks ||
+											selectedGroup.name === 'ungrouped'
+										"
+										@click="
+											groupModal(selectedGroup?.id ? selectedGroup.id : '')
+										"
+									>
+										Edit Group
+									</UButton>
+								</UTooltip>
+							</div>
 						</div>
 					</div>
 					<div
 						v-if="filteredCases && filteredCases.length > 0"
-						class="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-3 w-full"
+						:class="viewClasses[viewMode].grid"
 					>
 						<div v-for="item in filteredCases" :key="item.id">
 							<BaseCard>
@@ -631,9 +681,12 @@ useStablePageTitle({
 									</div>
 								</template>
 								<template #default>
-									<span v-if="item.text" class="line-clamp-1 text-ellipsis">{{
-										item.text
-									}}</span>
+									<div
+										v-if="item.text"
+										:class="['md', viewClasses[viewMode].description]"
+									>
+										<VueMarkdown :source="item.text" />
+									</div>
 									<div v-else class="opacity-50">No description</div>
 								</template>
 								<template #footer>
