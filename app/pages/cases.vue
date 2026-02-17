@@ -102,6 +102,14 @@ const filteredCases = computed(() => {
 		return undefined
 	}
 
+	// Handle "ungrouped" - cases that don't belong to any group
+	if (selectedGroup.value.name === "ungrouped") {
+		const allLinkedCaseIds = new Set(
+			caseGroupLinks.value.map((link) => link.case)
+		)
+		return cases.value.filter((c) => !allLinkedCaseIds.has(c.id))
+	}
+
 	// Get case IDs that belong to the selected group
 	const caseIdsInGroup = caseGroupLinks.value
 		.filter((link) => link.group === selectedGroup.value?.id)
@@ -112,6 +120,7 @@ const filteredCases = computed(() => {
 
 const groups = computed(() => [
 	{ label: "All", value: "all" },
+	{ label: "Ungrouped", value: "ungrouped" },
 	...(caseGroups.value?.map((item) => ({
 		label: item.title,
 		value: item.name
@@ -124,6 +133,15 @@ function filterGroup(value: string) {
 	selectedTabGroup.value = value
 	if (value === "all") {
 		selectedGroup.value = undefined
+	} else if (value === "ungrouped") {
+		// Create a virtual group for ungrouped cases
+		selectedGroup.value = {
+			id: "",
+			name: "ungrouped",
+			title: "Ungrouped",
+			created_at: "",
+			deleted_at: null
+		}
 	} else {
 		selectedGroup.value = caseGroups.value?.find(
 			(group) => group.name === value
@@ -487,6 +505,7 @@ defineShortcuts({
 		handler: () => {
 			if (
 				selectedGroup.value?.name &&
+				selectedGroup.value.name !== "ungrouped" &&
 				caseGroups.value &&
 				caseGroupLinks.value
 			) {
@@ -587,7 +606,7 @@ useStablePageTitle({
 									size="xs"
 									variant="soft"
 									icon="i-lucide-pen"
-									:disabled="!selectedGroup || !caseGroups || !caseGroupLinks"
+									:disabled="!selectedGroup || !caseGroups || !caseGroupLinks || selectedGroup.name === 'ungrouped'"
 									@click="groupModal(selectedGroup?.id ? selectedGroup.id : '')"
 								>
 									Edit Group
