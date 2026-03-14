@@ -96,7 +96,7 @@ function getStatusStatsPercentage(value: ResultType | "total") {
 				:style="{ width: `${getStatusStatsPercentage('not_run')}%` }"
 			></div>
 		</div>
-		<div class="text-sm text-neutral-400 flex gap-4 flex-wrap">
+		<div class="text-sm text-neutral-400 flex gap-4 flex-wrap items-center">
 			<div
 				v-for="item in statusStats.filter((s) => s.value !== 'total')"
 				:key="item.value"
@@ -109,10 +109,12 @@ function getStatusStatsPercentage(value: ResultType | "total") {
 					>{{ item.title }}</UBadge
 				>
 				<span class="text-neutral-400">{{ item.number }}</span>
-				<span class="text-neutral-400"
-					>({{ getStatusStatsPercentage(item.value) }}%)</span
-				>
+				<span class="text-neutral-400">
+					({{ parseFloat(getStatusStatsPercentage(item.value).toFixed(2)) }}%)
+				</span>
 			</div>
+			<span>/</span>
+			<span>{{ statusStats.find((s) => s.value === "total")?.number }}</span>
 		</div>
 	</div>
 </template>
