@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import BaseCard from "~/components/cards/BaseCard.vue"
 import VueMarkdown from "vue-markdown-render"
 import type { ResultType } from "~/types/resultTypes"
 import type { ButtonProps } from "@nuxt/ui"
@@ -28,6 +27,7 @@ const props = defineProps<Props>()
 const emit = defineEmits<{
 	updateResult: [caseId: string, newResult: ResultType]
 	updateComment: [caseId: string, newComment: string]
+	toggleExpanded: [caseId: string]
 }>()
 
 const resultTypes: {
@@ -103,25 +103,27 @@ function getResultType(resultValue: ResultType | null) {
 	return result || resultTypes[0]!
 }
 
-const collapsibleOpen = ref(false)
+const localCollapsibleOpen = ref(false)
 const localComment = ref(props.runCase.comment || "")
+const collapsibleOpen = computed({
+	get: () => props.expanded ?? localCollapsibleOpen.value,
+	set: (value: boolean) => {
+		if (props.expanded !== undefined) {
+			if (value !== props.expanded) {
+				emit("toggleExpanded", props.runCase.id)
+			}
+			return
+		}
+
+		localCollapsibleOpen.value = value
+	}
+})
 
 // Watch for external changes to the comment
 watch(
 	() => props.runCase.comment,
 	(newComment) => {
 		localComment.value = newComment || ""
-	}
-)
-
-watch(
-	() => props.expanded,
-	(newExpanded) => {
-		if (newExpanded) {
-			collapsibleOpen.value = true
-		} else {
-			collapsibleOpen.value = false
-		}
 	}
 )
 
@@ -132,12 +134,22 @@ function handleResultChange(caseId: string, newResult: unknown) {
 function handleCommentUpdate() {
 	emit("updateComment", props.runCase.id, localComment.value)
 }
+
+function toggleCollapsible() {
+	collapsibleOpen.value = !collapsibleOpen.value
+}
 </script>
 
 <template>
-	<BaseCard
+	<UCard
 		v-if="!props.individual"
 		:class="{ 'outline-2 outline-primary-500/50': props.selected }"
+		:ui="{
+			root: 'h-auto',
+			header: 'px-4 py-3 sm:p-4',
+			body: 'px-4 py-3 sm:p-4',
+			footer: 'px-4 py-3 sm:p-4'
+		}"
 	>
 		<template #default>
 			<div class="flex flex-col">
@@ -149,7 +161,7 @@ function handleCommentUpdate() {
 						:ui="{
 							base: `p-1 text-base cursor-pointer ${getResultType(props.runCase.result).textColor} `
 						}"
-						@click="collapsibleOpen = !collapsibleOpen"
+						@click="toggleCollapsible"
 					>
 						{{ props.runCase.title }}
 					</UButton>
@@ -216,13 +228,13 @@ function handleCommentUpdate() {
 							:ui="{
 								leadingIcon: `transition-transform duration-200 ${collapsibleOpen ? 'rotate-180' : ''}`
 							}"
-							@click="collapsibleOpen = !collapsibleOpen"
+							@click="toggleCollapsible"
 						/>
 					</div>
 				</div>
-				<UCollapsible :open="collapsibleOpen">
+				<UCollapsible v-model:open="collapsibleOpen">
 					<template #content>
-						<div class="flex gap-4 w-full mt-3">
+						<div class="flex gap-4 w-full">
 							<div class="flex flex-col gap-1 w-1/2">
 								<div class="text-sm text-neutral-400">
 									Test Case Description
@@ -264,7 +276,7 @@ function handleCommentUpdate() {
 				</UCollapsible>
 			</div>
 		</template>
-	</BaseCard>
+	</UCard>
 
 	<div v-else class="flex flex-col gap-4 w-full h-full justify-between">
 		<div class="flex flex-col gap-4">

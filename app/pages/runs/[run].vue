@@ -582,7 +582,6 @@ function clearSelectedCase() {
 
 const expandedCaseId = ref<string | undefined>(undefined)
 function toggleCaseExpanded(caseId: string) {
-	if (!selectedCaseId.value) return
 	if (expandedCaseId.value === caseId) {
 		expandedCaseId.value = undefined
 	} else {
@@ -922,6 +921,7 @@ defineShortcuts({
 					:run-case="item"
 					:selected="selectedCaseId === item.id"
 					:expanded="isCaseExpanded(item.id)"
+					@toggle-expanded="toggleCaseExpanded"
 					@update-result="updateCaseResult"
 					@update-comment="updateCaseComment"
 				/>

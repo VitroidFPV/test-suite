@@ -202,6 +202,20 @@ const reportCases = computed<ReportCase[]>(() => {
 	const cases = report.value?.report?.cases
 	return (Array.isArray(cases) ? cases : []) as ReportCase[]
 })
+const expandedCaseId = ref<string | undefined>(undefined)
+
+function toggleCaseExpanded(caseId: string) {
+	if (expandedCaseId.value === caseId) {
+		expandedCaseId.value = undefined
+	} else {
+		expandedCaseId.value = caseId
+	}
+}
+
+function isCaseExpanded(caseId: string) {
+	return expandedCaseId.value === caseId
+}
+
 const statusStats = computed<StatusStat[]>(() => {
 	const cases = reportCases.value
 	return [
@@ -419,10 +433,12 @@ defineShortcuts({
 		<template #content>
 			<div v-if="report" class="flex flex-col gap-y-3">
 				<TestRunCaseCard
-					v-for="(item, index) in reportCases"
-					:key="index"
+					v-for="item in reportCases"
+					:key="item.id"
 					:run-case="item"
+					:expanded="isCaseExpanded(item.id)"
 					readonly
+					@toggle-expanded="toggleCaseExpanded"
 				/>
 			</div>
 		</template>
