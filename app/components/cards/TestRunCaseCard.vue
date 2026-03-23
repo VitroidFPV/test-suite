@@ -300,7 +300,7 @@ function toggleCollapsible() {
 			<VueMarkdown
 				v-if="props.runCase.text"
 				:source="props.runCase.text"
-				class="lg:text-base text-sm"
+				class="lg:text-base text-sm md"
 			>
 			</VueMarkdown>
 			<div v-else class="opacity-50">No description</div>
