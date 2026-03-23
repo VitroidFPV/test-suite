@@ -928,7 +928,7 @@ defineShortcuts({
 			</div>
 			<div
 				v-else
-				class="grid xl:grid-cols-[fit-content(100%)_1fr_fit-content(100%)] grid-cols-2 h-full lg:gap-4 gap-2 lg:pb-0 pb-2"
+				class="grid xl:grid-cols-[fit-content(100%)_1fr_fit-content(100%)] grid-cols-2 h-full flex-1 lg:gap-4 gap-2 lg:pb-0 pb-2"
 			>
 				<UButton
 					color="primary"
