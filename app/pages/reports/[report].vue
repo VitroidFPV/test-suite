@@ -202,18 +202,46 @@ const reportCases = computed<ReportCase[]>(() => {
 	const cases = report.value?.report?.cases
 	return (Array.isArray(cases) ? cases : []) as ReportCase[]
 })
-const expandedCaseId = ref<string | undefined>(undefined)
+
+const expandedCaseIds = ref<string[]>([])
 
 function toggleCaseExpanded(caseId: string) {
-	if (expandedCaseId.value === caseId) {
-		expandedCaseId.value = undefined
+	const set = new Set(expandedCaseIds.value)
+	if (set.has(caseId)) {
+		set.delete(caseId)
 	} else {
-		expandedCaseId.value = caseId
+		set.add(caseId)
 	}
+	expandedCaseIds.value = [...set]
 }
 
 function isCaseExpanded(caseId: string) {
-	return expandedCaseId.value === caseId
+	return expandedCaseIds.value.includes(caseId)
+}
+
+const casesWithComments = computed(() =>
+	reportCases.value.filter((c) => (c.comment?.trim()?.length ?? 0) > 0)
+)
+
+const allCasesWithCommentsExpanded = computed(() => {
+	const commented = casesWithComments.value
+	if (commented.length === 0) return false
+	const expanded = new Set(expandedCaseIds.value)
+	return commented.every((c) => expanded.has(c.id))
+})
+
+function toggleCasesWithCommentsExpanded() {
+	const commentIds = new Set(casesWithComments.value.map((c) => c.id))
+	if (commentIds.size === 0) return
+	if (allCasesWithCommentsExpanded.value) {
+		expandedCaseIds.value = expandedCaseIds.value.filter(
+			(id) => !commentIds.has(id)
+		)
+	} else {
+		expandedCaseIds.value = [
+			...new Set([...expandedCaseIds.value, ...commentIds])
+		]
+	}
 }
 
 const statusStats = computed<StatusStat[]>(() => {
@@ -428,6 +456,32 @@ defineShortcuts({
 				<VueMarkdown :source="report.report.comment"> </VueMarkdown>
 			</div>
 			<TestStatusBar v-if="report" :status-stats="statusStats" />
+		</template>
+
+		<template #separator-trailing>
+			<div
+				v-if="casesWithComments.length > 0"
+				class="flex items-center gap-2 shrink-0"
+			>
+				<UTooltip
+					:text="
+						allCasesWithCommentsExpanded
+							? 'Collapse cases with comments'
+							: 'Expand cases with comments'
+					"
+				>
+					<UButton
+						color="neutral"
+						size="xs"
+						:variant="allCasesWithCommentsExpanded ? 'subtle' : 'soft'"
+						icon="i-lucide-chevrons-down"
+						:ui="{
+							leadingIcon: `transition-transform duration-200 ${allCasesWithCommentsExpanded ? 'rotate-180' : ''}`
+						}"
+						@click="toggleCasesWithCommentsExpanded"
+					/>
+				</UTooltip>
+			</div>
 		</template>
 
 		<template #content>
