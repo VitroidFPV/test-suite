@@ -276,6 +276,37 @@ const statusStats = computed<StatusStat[]>(() => {
 	]
 })
 
+const seoDescription = computed(() => {
+	if (!report.value) return "Test Report"
+	const r = report.value.report
+	const total = statusStats.value[0]?.number ?? 0
+	const countFor = (value: ResultType) =>
+		statusStats.value.find((s) => s.value === value)?.number ?? 0
+	const status = r.pass ? "Passed" : "Failed"
+	return [
+		`Status: ${status}`,
+		`Passed: ${countFor("passed")}/${total}`,
+		`Failed: ${countFor("failed")}/${total}`,
+		`Blocked: ${countFor("blocked")}/${total}`,
+		`Skipped: ${countFor("skipped")}/${total}`,
+		`Not Run: ${countFor("not_run")}/${total}`
+	].join(" | ")
+})
+
+useSeoMeta({
+	ogTitle: computed(() => report.value?.report?.title || "Test Report"),
+	title: computed(() => report.value?.report?.title || "Test Report"),
+	description: seoDescription,
+	ogDescription: seoDescription,
+	twitterTitle: computed(() => report.value?.report?.title || "Test Report"),
+	twitterDescription: seoDescription,
+	twitterCard: "summary",
+	ogType: "website",
+	themeColor: computed(() =>
+		report.value?.report?.pass ? "#96d735" : "#fb2c36"
+	)
+})
+
 defineShortcuts({
 	shift_e: {
 		handler: () => {
