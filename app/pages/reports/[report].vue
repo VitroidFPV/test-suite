@@ -290,13 +290,17 @@ const seoDescription = computed(() => {
 		`Blocked: ${countFor("blocked")}/${total}`,
 		`Skipped: ${countFor("skipped")}/${total}`,
 		`Not Run: ${countFor("not_run")}/${total}`
-	].join("\n")
+	].join(" | ")
 })
 
 useSeoMeta({
 	ogTitle: computed(() => report.value?.report?.title || "Test Report"),
+	title: computed(() => report.value?.report?.title || "Test Report"),
 	description: seoDescription,
 	ogDescription: seoDescription,
+	twitterTitle: computed(() => report.value?.report?.title || "Test Report"),
+	twitterDescription: seoDescription,
+	twitterCard: "summary",
 	ogType: "website",
 	themeColor: computed(() =>
 		report.value?.report?.pass ? "#96d735" : "#fb2c36"

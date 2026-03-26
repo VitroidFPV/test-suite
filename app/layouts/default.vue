@@ -53,10 +53,16 @@ router.afterEach((to) => {
 	currentPath.value = to.path
 })
 
+const isPublicPath = computed(() => {
+	const path = currentPath.value
+	return path.startsWith("/reports") || path.startsWith("/confirm")
+})
+
 const shouldShowNav = computed(() => userIsDev.value)
 
 // Show loading while auth is initializing or metadata is being fetched
 const isLoading = computed(() => {
+	if (isPublicPath.value) return false
 	if (!authInitialized.value) return true
 	if (userIsLoggedIn.value && userMetadataPending.value) return true
 	return false
@@ -64,12 +70,9 @@ const isLoading = computed(() => {
 
 const shouldShowContent = computed(() => {
 	const isDev = userIsDev.value
-	const path = currentPath.value
-	const isReportsPath = path.startsWith("/reports")
-	const isConfirmPath = path.startsWith("/confirm")
 	// Don't show the "no permission" screen until we've finished loading
 	if (isLoading.value) return true
-	return isDev || isReportsPath || isConfirmPath
+	return isDev || isPublicPath.value
 })
 
 const text = computed(() => {
