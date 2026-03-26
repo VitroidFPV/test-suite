@@ -487,6 +487,7 @@ async function generateReport() {
 	}
 
 	reportModalOpen.value = false
+	navigateTo(`/reports/${newReport.value.id}`)
 }
 
 function autoFillReportTitle() {
