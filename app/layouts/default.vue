@@ -24,18 +24,20 @@ const { data: userMetadata, pending: userMetadataPending } = useAsyncData(
 			})
 			if (error) {
 				console.error(error)
-				toast.add({
-					title: "Error fetching user metadata",
-					description: error.message,
-					color: "error"
-				})
+				if (import.meta.client) {
+					toast.add({
+						title: "Error fetching user metadata",
+						description: error.message,
+						color: "error"
+					})
+				}
 				return []
 			}
 			return data
 		}
 		return []
 	},
-	{ watch: [user], server: false, default: () => [] }
+	{ watch: [user], default: () => [] }
 )
 
 const userIsDev = computed(() => {

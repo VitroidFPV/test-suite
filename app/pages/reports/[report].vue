@@ -282,7 +282,7 @@ const seoDescription = computed(() => {
 	const total = statusStats.value[0]?.number ?? 0
 	const countFor = (value: ResultType) =>
 		statusStats.value.find((s) => s.value === value)?.number ?? 0
-	const status = r.pass ? "passed" : "failed"
+	const status = r.pass ? "Passed" : "Failed"
 	return [
 		`Status: ${status}`,
 		`Passed: ${countFor("passed")}/${total}`,
