@@ -553,6 +553,12 @@ defineShortcuts({
 					</div>
 				</TestCaseGroupSection>
 			</div>
+			<div
+				v-else-if="report && groupedReportCases?.length === 0"
+				class="text-neutral-500"
+			>
+				No test cases in this report.
+			</div>
 		</template>
 	</PageWrapper>
 </template>
