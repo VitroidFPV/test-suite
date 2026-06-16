@@ -4,6 +4,7 @@ import type { ResultType } from "~/types/resultTypes"
 import TestRunCaseCard from "~/components/cards/TestRunCaseCard.vue"
 import VueMarkdown from "vue-markdown-render"
 import { groupCasesByCaseGroup } from "~/utils/groupCasesByCaseGroup"
+import { linkSortOrderMap } from "~/utils/planCaseOrdering"
 
 const toast = useToast()
 const urlReport = useRoute().params.report as string
@@ -39,15 +40,40 @@ const {
 		const caseIds = cases.map((testCase) => testCase.id)
 		const caseGroups = await fetchCaseGroupData(supabase, caseIds)
 
+		const { data: reportCaseLinks, error: reportLinksError } = await supabase
+			.from("test_run_report_case_links")
+			.select("case, sort_order")
+			.eq("report", urlReport)
+			.order("sort_order", { ascending: true })
+
+		if (reportLinksError) {
+			throw createSupabaseError(reportLinksError)
+		}
+
+		const sortOrder = linkSortOrderMap(reportCaseLinks ?? [])
+		const orderedCases = [...cases].sort(
+			(a, b) => (sortOrder.get(a.id) ?? 0) - (sortOrder.get(b.id) ?? 0)
+		)
+
 		const { data: creatorData, error: creatorError } = await supabase.rpc(
 			"get_user_metadata",
 			{ user_ids: [reportResult?.created_by] }
 		)
 		if (creatorError) {
 			console.error(creatorError)
-			return { report: reportResult, creator: null, caseGroups }
+			return {
+				report: { ...reportResult, cases: orderedCases },
+				creator: null,
+				caseGroups,
+				reportCaseLinks: reportCaseLinks ?? []
+			}
 		}
-		return { report: reportResult, creator: creatorData[0], caseGroups }
+		return {
+			report: { ...reportResult, cases: orderedCases },
+			creator: creatorData[0],
+			caseGroups,
+			reportCaseLinks: reportCaseLinks ?? []
+		}
 	},
 	{ lazy: true }
 )
@@ -200,10 +226,13 @@ const groupedReportCases = computed(() => {
 		return undefined
 	}
 
+	const sortOrder = linkSortOrderMap(report.value.reportCaseLinks ?? [])
+
 	return groupCasesByCaseGroup(
 		reportCases.value,
 		report.value.caseGroups.groups,
-		report.value.caseGroups.links
+		report.value.caseGroups.links,
+		sortOrder
 	)
 })
 

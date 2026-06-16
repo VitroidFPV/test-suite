@@ -5,6 +5,7 @@ import TestRunCard from "~/components/cards/TestRunCard.vue"
 import BaseCard from "~/components/cards/BaseCard.vue"
 
 import { fetchRunsWithUsers } from "~/composables/fetchRunsWithUsers"
+import { getOrderedPlanCaseIds } from "~/utils/planCaseOrdering"
 
 const toast = useToast()
 
@@ -163,12 +164,13 @@ async function createRun() {
 		}
 	}
 
-	// Get test cases from the selected plan
+	// Get test cases from the selected plan in grouped display order
 	if (newRun.value.plan) {
-		const { data: planCases, error: planCasesError } = await supabase
+		const { data: planCaseLinks, error: planCasesError } = await supabase
 			.from("test_plan_case_links")
-			.select("case")
+			.select("case, sort_order")
 			.eq("plan", newRun.value.plan)
+			.order("sort_order", { ascending: true })
 
 		if (planCasesError) {
 			console.error("Error fetching plan cases:", planCasesError)
@@ -178,12 +180,74 @@ async function createRun() {
 				color: "error"
 			})
 			return
-		} else if (planCases && planCases.length > 0) {
-			// Create run-case links for each case in the plan
-			const runCaseLinks = planCases.map((link) => ({
+		} else if (planCaseLinks && planCaseLinks.length > 0) {
+			const caseIds = planCaseLinks.map((link) => link.case)
+
+			const { data: casesData, error: casesError } = await supabase
+				.from("test_cases")
+				.select("id")
+				.in("id", caseIds)
+				.is("deleted_at", null)
+
+			if (casesError) {
+				console.error("Error fetching plan case details:", casesError)
+				toast.add({
+					title: "Error",
+					description: casesError.message,
+					color: "error"
+				})
+				return
+			}
+
+			const { data: groupLinks, error: groupLinksError } = await supabase
+				.from("test_case_group_links")
+				.select("case, group")
+
+			if (groupLinksError) {
+				console.error("Error fetching case group links:", groupLinksError)
+				toast.add({
+					title: "Error",
+					description: groupLinksError.message,
+					color: "error"
+				})
+				return
+			}
+
+			const groupIds = [
+				...new Set((groupLinks ?? []).map((link) => link.group))
+			]
+
+			const { data: groupsData, error: groupsError } =
+				groupIds.length > 0
+					? await supabase
+							.from("test_case_groups")
+							.select("id, title, name")
+							.in("id", groupIds)
+							.is("deleted_at", null)
+					: { data: [], error: null }
+
+			if (groupsError) {
+				console.error("Error fetching case groups:", groupsError)
+				toast.add({
+					title: "Error",
+					description: groupsError.message,
+					color: "error"
+				})
+				return
+			}
+
+			const orderedCaseIds = getOrderedPlanCaseIds(
+				casesData ?? [],
+				groupsData ?? [],
+				groupLinks ?? [],
+				planCaseLinks
+			)
+
+			const runCaseLinks = orderedCaseIds.map((caseId, index) => ({
 				run: newRun.value.id,
-				case: link.case,
-				result: "not_run" as ResultType
+				case: caseId,
+				result: "not_run" as ResultType,
+				sort_order: index
 			}))
 
 			const { error: linkError } = await supabase

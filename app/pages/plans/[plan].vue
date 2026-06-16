@@ -1,11 +1,23 @@
 <script setup lang="ts">
-import type { Database } from "~/types/database.types"
+import type { Database, Tables } from "~/types/database.types"
 import VueMarkdown from "vue-markdown-render"
 import BaseCard from "~/components/cards/BaseCard.vue"
-import { groupCasesByCaseGroup } from "~/utils/groupCasesByCaseGroup"
+import TestCaseReorderList from "~/components/TestCaseReorderList.vue"
+import {
+	groupCasesByCaseGroup,
+	type CaseGroupSection
+} from "~/utils/groupCasesByCaseGroup"
+import {
+	computeSortOrdersForPlanSave,
+	groupPlanCases,
+	linkSortOrderMap,
+	sortOrderMapFromSections
+} from "~/utils/planCaseOrdering"
 
 const toast = useToast()
 const supabase = useSupabaseClient<Database>()
+
+type TestCase = Tables<"test_cases">
 
 const urlPlan = useRoute().params.plan as string
 
@@ -43,6 +55,7 @@ const {
 			.from("test_plan_case_links")
 			.select("*")
 			.eq("plan", urlPlan)
+			.order("sort_order", { ascending: true })
 		if (linksError) {
 			throw createSupabaseError(linksError)
 		}
@@ -99,7 +112,9 @@ const {
 			throw createSupabaseError(groupingsError)
 		}
 
-		const groupIds = [...new Set((groupingsData ?? []).map((link) => link.group))]
+		const groupIds = [
+			...new Set((groupingsData ?? []).map((link) => link.group))
+		]
 
 		const { data: groupsData, error: groupsError } =
 			groupIds.length > 0
@@ -123,19 +138,57 @@ const {
 	{ lazy: true }
 )
 
+const {
+	data: caseGroupData,
+	error: caseGroupDataError,
+	refresh: refreshCaseGroupData
+} = await useAsyncData(
+	`planCaseGroupData-${urlPlan}`,
+	async () => {
+		const { data: groupingsData, error: groupingsError } = await supabase
+			.from("test_case_group_links")
+			.select("case, group")
+
+		if (groupingsError) {
+			throw createSupabaseError(groupingsError)
+		}
+
+		const groupIds = [
+			...new Set((groupingsData ?? []).map((link) => link.group))
+		]
+
+		const { data: groupsData, error: groupsError } =
+			groupIds.length > 0
+				? await supabase
+						.from("test_case_groups")
+						.select("id, title, name")
+						.in("id", groupIds)
+						.is("deleted_at", null)
+				: { data: [], error: null }
+
+		if (groupsError) {
+			throw createSupabaseError(groupsError)
+		}
+
+		return {
+			groups: groupsData ?? [],
+			links: groupingsData ?? []
+		}
+	},
+	{ lazy: true }
+)
+
 const groupedPlanCases = computed(() => {
-	if (!cases.value || !groupedCases.value) {
+	if (!cases.value || !planCasesData.value || !caseGroupData.value) {
 		return undefined
 	}
 
-	const planCaseIdSet = new Set(cases.value.map((testCase) => testCase.id))
-
-	return groupedCases.value
-		.map((section) => ({
-			...section,
-			cases: section.cases.filter((testCase) => planCaseIdSet.has(testCase.id))
-		}))
-		.filter((section) => section.cases.length > 0)
+	return groupPlanCases(
+		cases.value,
+		caseGroupData.value.groups,
+		caseGroupData.value.links,
+		planCasesData.value.links
+	)
 })
 
 // Consolidated page error - combines all errors when multiple are present
@@ -144,6 +197,7 @@ const pageError = computed(() => {
 	if (planError.value) errors.push(planError.value)
 	if (planCasesError.value) errors.push(planCasesError.value)
 	if (groupedCasesError.value) errors.push(groupedCasesError.value)
+	if (caseGroupDataError.value) errors.push(caseGroupDataError.value)
 
 	if (errors.length === 0) return null
 	if (errors.length === 1) return errors[0]!
@@ -151,11 +205,20 @@ const pageError = computed(() => {
 })
 
 async function retryAll() {
-	await Promise.all([refreshPlan(), refreshPlanCases(), refreshGroupedCases()])
+	await Promise.all([
+		refreshPlan(),
+		refreshPlanCases(),
+		refreshGroupedCases(),
+		refreshCaseGroupData()
+	])
 }
 
 const planCaseModalOpen = ref(false)
 const mdPreviewMode = ref(false)
+const reorderMode = ref(false)
+const reorderSections = ref<CaseGroupSection<TestCase>[]>([])
+const reorderDirty = ref(false)
+const isSavingOrder = ref(false)
 
 // selected cases as an array of uids - initialized from planCaseIds when modal opens
 const selectedCases = ref<string[]>([])
@@ -178,10 +241,40 @@ watch(
 watch(
 	planCaseIds,
 	(newIds) => {
-		selectedCases.value = [...newIds]
+		if (!reorderMode.value) {
+			selectedCases.value = [...newIds]
+		}
 	},
 	{ immediate: true }
 )
+
+watch(
+	groupedPlanCases,
+	(sections) => {
+		if (!sections || reorderDirty.value) {
+			return
+		}
+
+		reorderSections.value = sections.map((section) => ({
+			...section,
+			cases: [...section.cases]
+		}))
+	},
+	{ immediate: true }
+)
+
+watch(reorderMode, (enabled) => {
+	if (enabled && groupedPlanCases.value) {
+		reorderSections.value = groupedPlanCases.value.map((section) => ({
+			...section,
+			cases: [...section.cases]
+		}))
+		reorderDirty.value = false
+		return
+	}
+
+	reorderDirty.value = false
+})
 
 useStablePageTitle({
 	title: computed(() => {
@@ -199,8 +292,101 @@ function selectCase(id: string) {
 	}
 }
 
+function onSectionReorder(
+	sectionTitle: string,
+	reorderedCases: Array<{ id: string }>
+) {
+	reorderSections.value = reorderSections.value.map((section) => {
+		if (section.group !== sectionTitle) {
+			return section
+		}
+
+		const casesById = new Map(
+			section.cases.map((testCase) => [testCase.id, testCase])
+		)
+
+		return {
+			...section,
+			cases: reorderedCases
+				.map((item) => casesById.get(item.id))
+				.filter((testCase): testCase is TestCase => testCase !== undefined)
+		}
+	})
+	reorderDirty.value = true
+}
+
+async function savePlanCaseOrder() {
+	if (!reorderDirty.value) {
+		reorderMode.value = false
+		return
+	}
+
+	isSavingOrder.value = true
+	const sortOrder = sortOrderMapFromSections(reorderSections.value)
+
+	try {
+		const updates = Array.from(sortOrder.entries()).map(
+			([caseId, sort_order]) =>
+				supabase
+					.from("test_plan_case_links")
+					.update({ sort_order })
+					.eq("plan", urlPlan)
+					.eq("case", caseId)
+		)
+
+		const results = await Promise.all(updates)
+		const failedUpdate = results.find((result) => result.error)
+		if (failedUpdate?.error) {
+			throw failedUpdate.error
+		}
+
+		reorderDirty.value = false
+		reorderMode.value = false
+		toast.add({
+			title: "Order saved",
+			description: "Test case order updated successfully.",
+			color: "success"
+		})
+		await refreshPlanCases()
+	} catch (error) {
+		console.error(error)
+		toast.add({
+			title: "Error",
+			description:
+				error instanceof Error ? error.message : "Failed to save case order",
+			color: "error"
+		})
+	} finally {
+		isSavingOrder.value = false
+	}
+}
+
+function cancelReorderMode() {
+	reorderDirty.value = false
+	reorderMode.value = false
+
+	if (groupedPlanCases.value) {
+		reorderSections.value = groupedPlanCases.value.map((section) => ({
+			...section,
+			cases: [...section.cases]
+		}))
+	}
+}
+
 // write selected cases to plan
 async function savePlan() {
+	const existingSortOrder = planCasesData.value?.links
+		? linkSortOrderMap(planCasesData.value.links)
+		: new Map<string, number>()
+
+	const sortOrders = groupedCases.value
+		? computeSortOrdersForPlanSave(
+				selectedCases.value,
+				groupedCases.value,
+				existingSortOrder
+			)
+		: new Map<string, number>()
+
 	const { error } = await supabase
 		.from("test_plan_case_links")
 		.delete()
@@ -217,7 +403,8 @@ async function savePlan() {
 
 	const insertData = selectedCases.value.map((id) => ({
 		plan: urlPlan,
-		case: id
+		case: id,
+		sort_order: sortOrders.get(id) ?? 0
 	}))
 
 	const { error: insertDataError } = await supabase
@@ -259,6 +446,9 @@ async function savePlan() {
 const deletePlanModalOpen = ref(false)
 
 const viewMode = ref<"list" | "grid" | "card">("grid")
+const displaySections = computed(() =>
+	reorderMode.value ? reorderSections.value : (groupedPlanCases.value ?? [])
+)
 const viewClasses = {
 	list: {
 		grid: "grid grid-cols-1 gap-3",
@@ -319,12 +509,23 @@ defineShortcuts({
 	>
 		<template #separator-trailing>
 			<div class="flex items-center gap-2 shrink-0">
+				<UTooltip text="Reorder cases">
+					<UButton
+						color="neutral"
+						size="xs"
+						:variant="reorderMode ? 'subtle' : 'soft'"
+						icon="i-lucide-arrow-up-down"
+						:disabled="!groupedPlanCases || groupedPlanCases.length === 0"
+						@click="reorderMode = !reorderMode"
+					/>
+				</UTooltip>
 				<UTooltip text="Grid view">
 					<UButton
 						color="neutral"
 						size="xs"
 						:variant="viewMode === 'grid' ? 'subtle' : 'soft'"
 						icon="i-lucide-grid-2x2"
+						:disabled="reorderMode"
 						@click="viewMode = 'grid'"
 					/>
 				</UTooltip>
@@ -334,6 +535,7 @@ defineShortcuts({
 						size="xs"
 						:variant="viewMode === 'list' ? 'subtle' : 'soft'"
 						icon="i-lucide-rows-3"
+						:disabled="reorderMode"
 						@click="viewMode = 'list'"
 					/>
 				</UTooltip>
@@ -343,6 +545,7 @@ defineShortcuts({
 						size="xs"
 						:variant="viewMode === 'card' ? 'subtle' : 'soft'"
 						icon="i-lucide-rows-2"
+						:disabled="reorderMode"
 						@click="viewMode = 'card'"
 					/>
 				</UTooltip>
@@ -499,22 +702,60 @@ defineShortcuts({
 		</template>
 
 		<template #content>
+			<div
+				v-if="reorderMode && displaySections.length > 0"
+				class="flex flex-col gap-4 w-full"
+			>
+				<div class="flex items-center justify-between gap-3">
+					<p class="text-sm text-neutral-400">
+						Drag cases within each group to set display and run order.
+					</p>
+					<div class="flex items-center gap-2 shrink-0">
+						<UButton
+							color="neutral"
+							size="sm"
+							variant="soft"
+							@click="cancelReorderMode"
+						>
+							Cancel
+						</UButton>
+						<UButton
+							color="primary"
+							size="sm"
+							variant="solid"
+							icon="i-lucide-save"
+							:loading="isSavingOrder"
+							@click="savePlanCaseOrder"
+						>
+							Save Order
+						</UButton>
+					</div>
+				</div>
+				<div class="flex flex-col gap-y-6 w-full">
+					<TestCaseGroupSection
+						v-for="section in displaySections"
+						:key="section.group"
+						:title="section.group"
+					>
+						<TestCaseReorderList
+							:cases="section.cases"
+							@reorder="onSectionReorder(section.group, $event)"
+						/>
+					</TestCaseGroupSection>
+				</div>
+			</div>
 			<!-- Cases loaded with items -->
 			<div
-				v-if="plan && groupedPlanCases && groupedPlanCases.length > 0"
+				v-else-if="plan && displaySections.length > 0"
 				class="flex flex-col gap-y-6 w-full"
 			>
 				<TestCaseGroupSection
-					v-for="section in groupedPlanCases"
+					v-for="section in displaySections"
 					:key="section.group"
 					:title="section.group"
 				>
 					<div :class="[viewClasses[viewMode].grid, 'w-full']">
-						<div
-							v-for="item in section.cases"
-							:key="item.id"
-							class="h-full"
-						>
+						<div v-for="item in section.cases" :key="item.id" class="h-full">
 							<BaseCard class="h-full">
 								<template #header>
 									<div class="font-bold text-primary-500">

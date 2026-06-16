@@ -125,11 +125,12 @@ async function saveReport() {
 		return
 	}
 
-	// 1. Get the cases from the selected test run
+	// 1. Get the cases from the selected test run in execution order
 	const { data: runCases, error: runCasesError } = await supabase
 		.from("test_run_case_links")
 		.select("*")
 		.eq("run", selectedRun.value.value)
+		.order("sort_order", { ascending: true })
 
 	if (runCasesError) {
 		console.error("Error fetching run cases:", runCasesError)
@@ -168,11 +169,12 @@ async function saveReport() {
 
 	// 3. Create links between the report and cases from the selected run
 	if (runCases && runCases.length > 0) {
-		const reportCaseLinks = runCases.map((runCase) => ({
+		const reportCaseLinks = runCases.map((runCase, index) => ({
 			report: newReport.value.id,
 			case: runCase.case,
 			result: runCase.result,
-			comment: runCase.comment
+			comment: runCase.comment,
+			sort_order: index
 		}))
 
 		const { error: linksError } = await supabase
