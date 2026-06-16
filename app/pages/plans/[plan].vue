@@ -2,6 +2,7 @@
 import type { Database } from "~/types/database.types"
 import VueMarkdown from "vue-markdown-render"
 import BaseCard from "~/components/cards/BaseCard.vue"
+import { groupCasesByCaseGroup } from "~/utils/groupCasesByCaseGroup"
 
 const toast = useToast()
 const supabase = useSupabaseClient<Database>()
@@ -92,55 +93,50 @@ const {
 
 		const { data: groupingsData, error: groupingsError } = await supabase
 			.from("test_case_group_links")
-			.select("*")
+			.select("case, group")
 
 		if (groupingsError) {
 			throw createSupabaseError(groupingsError)
 		}
 
-		// get groups from db
-		const groupIds = [...new Set(groupingsData.map((link) => link.group))]
+		const groupIds = [...new Set((groupingsData ?? []).map((link) => link.group))]
 
-		if (groupIds.length === 0) {
-			// All cases are ungrouped
-			return [{ group: "Ungrouped", cases: casesData }]
-		}
-
-		const { data: groupsData, error: groupsError } = await supabase
-			.from("test_case_groups")
-			.select("*")
-			.in("id", groupIds)
-			.is("deleted_at", null)
+		const { data: groupsData, error: groupsError } =
+			groupIds.length > 0
+				? await supabase
+						.from("test_case_groups")
+						.select("id, title, name")
+						.in("id", groupIds)
+						.is("deleted_at", null)
+				: { data: [], error: null }
 
 		if (groupsError) {
 			throw createSupabaseError(groupsError)
 		}
 
-		// group cases by group
-		const grouped = groupsData.map((group) => ({
-			group: group.title,
-			cases: casesData.filter((c) =>
-				groupingsData
-					.filter((link) => link.group === group.id)
-					.map((link) => link.case)
-					.includes(c.id)
-			)
-		}))
-
-		// add ungrouped cases
-		const groupedCaseIds = grouped.flatMap((g) => g.cases.map((c) => c.id))
-		const ungrouped = casesData.filter((c) => !groupedCaseIds.includes(c.id))
-		if (ungrouped.length > 0) {
-			grouped.push({
-				group: "Ungrouped",
-				cases: ungrouped
-			})
-		}
-
-		return grouped
+		return groupCasesByCaseGroup(
+			casesData,
+			groupsData ?? [],
+			groupingsData ?? []
+		)
 	},
 	{ lazy: true }
 )
+
+const groupedPlanCases = computed(() => {
+	if (!cases.value || !groupedCases.value) {
+		return undefined
+	}
+
+	const planCaseIdSet = new Set(cases.value.map((testCase) => testCase.id))
+
+	return groupedCases.value
+		.map((section) => ({
+			...section,
+			cases: section.cases.filter((testCase) => planCaseIdSet.has(testCase.id))
+		}))
+		.filter((section) => section.cases.length > 0)
+})
 
 // Consolidated page error - combines all errors when multiple are present
 const pageError = computed(() => {
@@ -410,25 +406,12 @@ defineShortcuts({
 								</div>
 							</div>
 							<!-- grid of all case titles -->
-							<div class="flex flex-col gap-y-3">
-								<div
+							<div class="flex flex-col gap-y-6">
+								<TestCaseGroupSection
 									v-for="group in groupedCases"
 									:key="group.group"
-									class="flex flex-col gap-y-3"
+									:title="group.group"
 								>
-									<div
-										class="font-bold text-primary-500 flex items-center gap-2"
-									>
-										<UIcon
-											:name="
-												group.group === 'Ungrouped'
-													? 'i-lucide-folder-open'
-													: 'i-lucide-folder'
-											"
-											class="h-4 w-4"
-										/>
-										{{ group.group }}
-									</div>
 									<div
 										class="grid 2xl:grid-cols-4 lg:grid-cols-3 sm:grid-cols-2 grid-cols-1 gap-3"
 									>
@@ -447,7 +430,7 @@ defineShortcuts({
 											{{ item.title }}
 										</BaseCard>
 									</div>
-								</div>
+								</TestCaseGroupSection>
 							</div>
 						</div>
 					</template>
@@ -518,27 +501,39 @@ defineShortcuts({
 		<template #content>
 			<!-- Cases loaded with items -->
 			<div
-				v-if="plan && cases && cases.length > 0"
-				:class="[viewClasses[viewMode].grid, 'w-full']"
+				v-if="plan && groupedPlanCases && groupedPlanCases.length > 0"
+				class="flex flex-col gap-y-6 w-full"
 			>
-				<div v-for="item in cases" :key="item.id" class="h-full">
-					<BaseCard class="h-full">
-						<template #header>
-							<div class="font-bold text-primary-500">
-								{{ item.title }}
-							</div>
-						</template>
-						<template #default>
-							<div
-								v-if="item.text"
-								:class="['md', viewClasses[viewMode].description]"
-							>
-								<VueMarkdown :source="item.text" />
-							</div>
-							<div v-else class="opacity-50">No description</div>
-						</template>
-					</BaseCard>
-				</div>
+				<TestCaseGroupSection
+					v-for="section in groupedPlanCases"
+					:key="section.group"
+					:title="section.group"
+				>
+					<div :class="[viewClasses[viewMode].grid, 'w-full']">
+						<div
+							v-for="item in section.cases"
+							:key="item.id"
+							class="h-full"
+						>
+							<BaseCard class="h-full">
+								<template #header>
+									<div class="font-bold text-primary-500">
+										{{ item.title }}
+									</div>
+								</template>
+								<template #default>
+									<div
+										v-if="item.text"
+										:class="['md', viewClasses[viewMode].description]"
+									>
+										<VueMarkdown :source="item.text" />
+									</div>
+									<div v-else class="opacity-50">No description</div>
+								</template>
+							</BaseCard>
+						</div>
+					</div>
+				</TestCaseGroupSection>
 			</div>
 			<!-- Loading state: plan or cases still loading -->
 			<div
