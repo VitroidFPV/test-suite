@@ -3,6 +3,7 @@ import type { Database, Tables } from "~/types/database.types"
 import type { ResultType } from "~/types/resultTypes"
 import TestRunCaseCard from "~/components/cards/TestRunCaseCard.vue"
 import VueMarkdown from "vue-markdown-render"
+import { groupCasesByCaseGroup } from "~/utils/groupCasesByCaseGroup"
 
 const toast = useToast()
 const urlReport = useRoute().params.report as string
@@ -32,15 +33,21 @@ const {
 			throw new Error("Report not found")
 		}
 
+		const cases = (
+			Array.isArray(reportResult.cases) ? reportResult.cases : []
+		) as ReportCase[]
+		const caseIds = cases.map((testCase) => testCase.id)
+		const caseGroups = await fetchCaseGroupData(supabase, caseIds)
+
 		const { data: creatorData, error: creatorError } = await supabase.rpc(
 			"get_user_metadata",
 			{ user_ids: [reportResult?.created_by] }
 		)
 		if (creatorError) {
 			console.error(creatorError)
-			return { report: reportResult, creator: null }
+			return { report: reportResult, creator: null, caseGroups }
 		}
-		return { report: reportResult, creator: creatorData[0] }
+		return { report: reportResult, creator: creatorData[0], caseGroups }
 	},
 	{ lazy: true }
 )
@@ -69,21 +76,6 @@ const {
 	},
 	{ lazy: true }
 )
-
-// Consolidated page error - combines all errors when multiple are present
-const pageError = computed(() => {
-	const errors: Error[] = []
-	if (reportError.value) errors.push(reportError.value)
-	if (userMetadataError.value) errors.push(userMetadataError.value)
-
-	if (errors.length === 0) return null
-	if (errors.length === 1) return errors[0]!
-	return errors
-})
-
-async function retryAll() {
-	await Promise.all([refreshReport(), refreshUserMetadata()])
-}
 
 const editedReport = ref<Tables<"test_run_reports">>({
 	comment: "",
@@ -202,6 +194,33 @@ const reportCases = computed<ReportCase[]>(() => {
 	const cases = report.value?.report?.cases
 	return (Array.isArray(cases) ? cases : []) as ReportCase[]
 })
+
+const groupedReportCases = computed(() => {
+	if (!report.value?.caseGroups) {
+		return undefined
+	}
+
+	return groupCasesByCaseGroup(
+		reportCases.value,
+		report.value.caseGroups.groups,
+		report.value.caseGroups.links
+	)
+})
+
+// Consolidated page error - combines all errors when multiple are present
+const pageError = computed(() => {
+	const errors: Error[] = []
+	if (reportError.value) errors.push(reportError.value)
+	if (userMetadataError.value) errors.push(userMetadataError.value)
+
+	if (errors.length === 0) return null
+	if (errors.length === 1) return errors[0]!
+	return errors
+})
+
+async function retryAll() {
+	await Promise.all([refreshReport(), refreshUserMetadata()])
+}
 
 const expandedCaseIds = ref<string[]>([])
 
@@ -516,15 +535,32 @@ defineShortcuts({
 		</template>
 
 		<template #content>
-			<div v-if="report" class="flex flex-col gap-y-3">
-				<TestRunCaseCard
-					v-for="item in reportCases"
-					:key="item.id"
-					:run-case="item"
-					:expanded="isCaseExpanded(item.id)"
-					readonly
-					@toggle-expanded="toggleCaseExpanded"
-				/>
+			<div
+				v-if="report && groupedReportCases && groupedReportCases.length > 0"
+				class="flex flex-col gap-y-6"
+			>
+				<TestCaseGroupSection
+					v-for="section in groupedReportCases"
+					:key="section.group"
+					:title="section.group"
+				>
+					<div class="flex flex-col gap-y-3">
+						<TestRunCaseCard
+							v-for="item in section.cases"
+							:key="item.id"
+							:run-case="item"
+							:expanded="isCaseExpanded(item.id)"
+							readonly
+							@toggle-expanded="toggleCaseExpanded"
+						/>
+					</div>
+				</TestCaseGroupSection>
+			</div>
+			<div
+				v-else-if="report && groupedReportCases?.length === 0"
+				class="text-neutral-500"
+			>
+				No test cases in this report.
 			</div>
 		</template>
 	</PageWrapper>

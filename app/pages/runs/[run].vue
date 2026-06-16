@@ -3,6 +3,7 @@ import type { Database, Tables } from "~/types/database.types"
 import type { ResultType } from "~/types/resultTypes"
 import TestRunCaseCard from "~/components/cards/TestRunCaseCard.vue"
 import { fetchRunsWithUsers } from "~/composables/fetchRunsWithUsers"
+import { groupCasesByCaseGroup } from "~/utils/groupCasesByCaseGroup"
 
 const toast = useToast()
 
@@ -112,7 +113,7 @@ const {
 		}
 
 		if (runCasesDb.length === 0) {
-			return []
+			return { cases: [], groups: [], links: [] }
 		}
 
 		// Get test cases
@@ -129,7 +130,7 @@ const {
 		}
 
 		// Merge cases with their results and comments
-		return cases.map((testCase) => {
+		const mergedCases = cases.map((testCase) => {
 			const linkData = runCasesDb.find((link) => link.case === testCase.id)
 			return {
 				...testCase,
@@ -137,6 +138,13 @@ const {
 				comment: linkData?.comment || null
 			}
 		})
+
+		const { groups, links } = await fetchCaseGroupData(
+			supabase,
+			mergedCases.map((testCase) => testCase.id)
+		)
+
+		return { cases: mergedCases, groups, links }
 	},
 	{ lazy: true }
 )
@@ -158,16 +166,32 @@ async function retryAll() {
 
 // Local reactive copy of run cases for optimistic updates
 const runCases = ref<RunCaseWithResult[]>([])
+const runCaseGroups = ref<
+	Awaited<ReturnType<typeof fetchCaseGroupData>>["groups"]
+>([])
+const runCaseGroupLinks = ref<
+	Awaited<ReturnType<typeof fetchCaseGroupData>>["links"]
+>([])
 
 // Sync local runCases with fetched data
 watch(
 	runCasesData,
 	(newData) => {
 		if (newData) {
-			runCases.value = [...newData]
+			runCases.value = [...newData.cases]
+			runCaseGroups.value = newData.groups
+			runCaseGroupLinks.value = newData.links
 		}
 	},
 	{ immediate: true }
+)
+
+const groupedRunCases = computed(() =>
+	groupCasesByCaseGroup(
+		runCases.value,
+		runCaseGroups.value,
+		runCaseGroupLinks.value
+	)
 )
 
 // Computed status stats
@@ -915,17 +939,25 @@ defineShortcuts({
 		</template>
 
 		<template v-if="runCases.length > 0" #content>
-			<div v-if="!isTestRunMode" class="flex flex-col gap-y-3">
-				<TestRunCaseCard
-					v-for="item in runCases"
-					:key="item.id"
-					:run-case="item"
-					:selected="selectedCaseId === item.id"
-					:expanded="isCaseExpanded(item.id)"
-					@toggle-expanded="toggleCaseExpanded"
-					@update-result="updateCaseResult"
-					@update-comment="updateCaseComment"
-				/>
+			<div v-if="!isTestRunMode" class="flex flex-col gap-y-6">
+				<TestCaseGroupSection
+					v-for="section in groupedRunCases"
+					:key="section.group"
+					:title="section.group"
+				>
+					<div class="flex flex-col gap-y-3">
+						<TestRunCaseCard
+							v-for="item in section.cases"
+							:key="item.id"
+							:run-case="item"
+							:selected="selectedCaseId === item.id"
+							:expanded="isCaseExpanded(item.id)"
+							@toggle-expanded="toggleCaseExpanded"
+							@update-result="updateCaseResult"
+							@update-comment="updateCaseComment"
+						/>
+					</div>
+				</TestCaseGroupSection>
 			</div>
 			<div
 				v-else
