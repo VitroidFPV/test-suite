@@ -34,5 +34,11 @@ export async function fetchCaseGroupData(
 		throw createSupabaseError(groupsError)
 	}
 
-	return { groups: groups ?? [], links: links ?? [] }
+	const validGroups = groups ?? []
+	const validGroupIds = new Set(validGroups.map((group) => group.id))
+	const normalizedLinks = (links ?? []).filter((link) =>
+		validGroupIds.has(link.group)
+	)
+
+	return { groups: validGroups, links: normalizedLinks }
 }

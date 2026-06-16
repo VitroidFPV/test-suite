@@ -535,7 +535,10 @@ defineShortcuts({
 		</template>
 
 		<template #content>
-			<div v-if="report && groupedReportCases" class="flex flex-col gap-y-6">
+			<div
+				v-if="report && groupedReportCases && groupedReportCases.length > 0"
+				class="flex flex-col gap-y-6"
+			>
 				<TestCaseGroupSection
 					v-for="section in groupedReportCases"
 					:key="section.group"
