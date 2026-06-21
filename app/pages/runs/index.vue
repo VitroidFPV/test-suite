@@ -3,6 +3,7 @@ import type { Database, Tables } from "~/types/database.types"
 import type { ResultType } from "~/types/resultTypes"
 import TestRunCard from "~/components/cards/TestRunCard.vue"
 import BaseCard from "~/components/cards/BaseCard.vue"
+import type { ListControlOption, ListSortOrder } from "~/utils/listGrouping"
 
 import { fetchRunsWithUsers } from "~/composables/fetchRunsWithUsers"
 import { getOrderedPlanCaseIds } from "~/utils/planCaseOrdering"
@@ -16,6 +17,9 @@ type RunGroup = Tables<"test_run_groups">
 type Run = Tables<"test_runs">
 type NewRun = Run
 type TestPlan = Tables<"test_plans">
+type UserMetadata = Tables<"user_metadata">
+type RunWithUser = Run & { creator?: UserMetadata }
+type RunWithListMetadata = RunWithUser & { runGroupTitles: string[] }
 
 type TestPlanWithLabel = Omit<TestPlan, "description"> & {
 	label: string
@@ -70,12 +74,31 @@ const {
 	{ lazy: true }
 )
 
+const {
+	data: runGroupLinks,
+	error: runGroupLinksError,
+	refresh: refreshRunGroupLinks
+} = await useAsyncData(
+	"runGroupLinks",
+	async () => {
+		const { data, error } = await supabase
+			.from("test_run_group_links")
+			.select("run, group")
+		if (error) {
+			throw createSupabaseError(error)
+		}
+		return data
+	},
+	{ lazy: true }
+)
+
 // Consolidated page error - combines all errors when multiple are present
 const pageError = computed(() => {
 	const errors: Error[] = []
 	if (runsError.value) errors.push(runsError.value)
 	if (testPlansError.value) errors.push(testPlansError.value)
 	if (runGroupsError.value) errors.push(runGroupsError.value)
+	if (runGroupLinksError.value) errors.push(runGroupLinksError.value)
 
 	if (errors.length === 0) return null
 	if (errors.length === 1) return errors[0]!
@@ -83,7 +106,12 @@ const pageError = computed(() => {
 })
 
 async function retryAll() {
-	await Promise.all([refreshRuns(), refreshTestPlans(), refreshRunGroups()])
+	await Promise.all([
+		refreshRuns(),
+		refreshTestPlans(),
+		refreshRunGroups(),
+		refreshRunGroupLinks()
+	])
 }
 
 const selectedRunGroup = ref<RunGroupWithLabel>()
@@ -104,6 +132,108 @@ const transformedRunGroups = computed(() =>
 		description: group.description ?? undefined
 	}))
 )
+
+const runGroupsByRunId = computed(() => {
+	const groupsById = new Map(
+		(runGroups.value ?? []).map((group) => [group.id, group])
+	)
+	const groupsByRunId = new Map<string, RunGroup[]>()
+
+	for (const link of runGroupLinks.value ?? []) {
+		const group = groupsById.get(link.group)
+		if (!group) continue
+
+		const groups = groupsByRunId.get(link.run) ?? []
+		groups.push(group)
+		groupsByRunId.set(link.run, groups)
+	}
+
+	return groupsByRunId
+})
+
+const runsWithListMetadata = computed<RunWithListMetadata[] | undefined>(() => {
+	if (!runs.value) return undefined
+
+	return (runs.value as RunWithUser[]).map((run) => ({
+		...run,
+		runGroupTitles: (runGroupsByRunId.value.get(run.id) ?? []).map(
+			(group) => group.title
+		)
+	}))
+})
+
+const runListOptions = ref<ListControlOption[]>([
+	{ label: "Created At", value: "created_at" },
+	{ label: "Name", value: "title" },
+	{ label: "Author", value: "created_by" },
+	{ label: "Run Group", value: "run_group" }
+])
+const runGroupOptions = ref<ListControlOption[]>([
+	{ label: "None", value: "none" },
+	...runListOptions.value.filter((option) => option.value !== "title")
+])
+const runGroupBy = ref<ListControlOption>(runGroupOptions.value[0]!)
+const runGroupSortOrder = ref<ListSortOrder>("asc")
+const runSortBy = ref<ListControlOption>(runListOptions.value[0]!)
+const runSortOrder = ref<ListSortOrder>("desc")
+
+function getRunListValue(run: RunWithListMetadata, option: string) {
+	if (option === "created_by") {
+		return run.creator?.username ?? "Unknown user"
+	}
+	if (option === "run_group") {
+		return run.runGroupTitles.join(", ")
+	}
+	return run[option as keyof RunWithListMetadata]
+}
+
+const sortedRuns = computed(() => {
+	if (!runsWithListMetadata.value) return undefined
+
+	return [...runsWithListMetadata.value].sort((a, b) =>
+		compareListValues(
+			getRunListValue(a, runSortBy.value.value),
+			getRunListValue(b, runSortBy.value.value),
+			runSortOrder.value
+		)
+	)
+})
+
+const groupedRuns = computed(() => {
+	if (!sortedRuns.value) return undefined
+
+	if (runGroupBy.value.value === "none") {
+		return [{ label: "", sortValue: "", items: sortedRuns.value }]
+	}
+
+	if (runGroupBy.value.value === "created_at") {
+		return sortListSections(
+			groupListItems(sortedRuns.value, (run) =>
+				createdDateGroupLabel(run.created_at)
+			),
+			runGroupSortOrder.value
+		)
+	}
+
+	if (runGroupBy.value.value === "created_by") {
+		return sortListSections(
+			groupListItems(
+				sortedRuns.value,
+				(run) => run.creator?.username ?? "Unknown user"
+			),
+			runGroupSortOrder.value
+		)
+	}
+
+	if (runGroupBy.value.value === "run_group") {
+		return sortListSections(
+			groupListItems(sortedRuns.value, (run) => run.runGroupTitles),
+			runGroupSortOrder.value
+		)
+	}
+
+	return [{ label: "", sortValue: "", items: sortedRuns.value }]
+})
 
 const user = useSupabaseUser()
 
@@ -281,7 +411,7 @@ async function createRun() {
 	selectedRunGroup.value = undefined
 	selectedTestPlan.value = undefined
 
-	await refreshRuns()
+	await Promise.all([refreshRuns(), refreshRunGroupLinks()])
 }
 
 useStablePageTitle({
@@ -412,11 +542,72 @@ defineShortcuts({
 			</UModal>
 		</template>
 		<template #content>
-			<div
-				v-if="runs && runs.length > 0"
-				class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 w-full"
-			>
-				<TestRunCard v-for="item in runs" :key="item.id" :run="item" />
+			<div v-if="runs && runs.length > 0" class="flex flex-col gap-4 w-full">
+				<div class="flex flex-wrap items-center gap-2">
+					<div class="text-sm text-neutral-500">Group by</div>
+					<USelectMenu
+						v-model="runGroupBy"
+						:items="runGroupOptions"
+						:ui="{ content: 'min-w-fit' }"
+						class="w-36"
+					/>
+					<UTooltip
+						:text="
+							runGroupSortOrder === 'asc'
+								? 'Sort groups ascending'
+								: 'Sort groups descending'
+						"
+					>
+						<UButton
+							color="neutral"
+							variant="ghost"
+							size="sm"
+							:disabled="runGroupBy.value === 'none'"
+							:icon="listSortOrderIcon(runGroupSortOrder)"
+							@click="
+								runGroupSortOrder = runGroupSortOrder === 'asc' ? 'desc' : 'asc'
+							"
+						/>
+					</UTooltip>
+					<div class="text-sm text-neutral-500">Sort by</div>
+					<USelectMenu
+						v-model="runSortBy"
+						:items="runListOptions"
+						:ui="{ content: 'min-w-fit' }"
+						class="w-36"
+					/>
+					<UTooltip
+						:text="
+							runSortOrder === 'asc'
+								? 'Sort items ascending'
+								: 'Sort items descending'
+						"
+					>
+						<UButton
+							color="neutral"
+							variant="ghost"
+							size="sm"
+							:icon="listSortOrderIcon(runSortOrder)"
+							@click="runSortOrder = runSortOrder === 'asc' ? 'desc' : 'asc'"
+						/>
+					</UTooltip>
+				</div>
+				<div
+					v-for="section in groupedRuns"
+					:key="section.label || 'all-runs'"
+					class="flex flex-col gap-3"
+				>
+					<h2 v-if="section.label" class="font-semibold text-neutral-500">
+						{{ section.label }}
+					</h2>
+					<div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
+						<TestRunCard
+							v-for="item in section.items"
+							:key="`${section.label}-${item.id}`"
+							:run="item"
+						/>
+					</div>
+				</div>
 			</div>
 			<div
 				v-else-if="!runs"
