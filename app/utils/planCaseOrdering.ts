@@ -83,11 +83,13 @@ export function sortOrderMapFromSections<T extends { id: string }>(
 	sections: CaseGroupSection<T>[]
 ): Map<string, number> {
 	const sortOrder = new Map<string, number>()
+	let sortIndex = 0
 
 	for (const section of sections) {
-		section.cases.forEach((testCase, index) => {
-			sortOrder.set(testCase.id, index)
-		})
+		for (const testCase of section.cases) {
+			sortOrder.set(testCase.id, sortIndex)
+			sortIndex++
+		}
 	}
 
 	return sortOrder
@@ -100,6 +102,7 @@ export function computeSortOrdersForPlanSave(
 ): Map<string, number> {
 	const selectedSet = new Set(selectedCaseIds)
 	const sortOrder = new Map<string, number>()
+	let sortIndex = 0
 
 	for (const section of groupSections) {
 		const casesInPlan = section.cases.filter((testCase) =>
@@ -125,8 +128,9 @@ export function computeSortOrdersForPlanSave(
 			)
 		})
 
-		sortedCases.forEach((testCase, index) => {
-			sortOrder.set(testCase.id, index)
+		sortedCases.forEach((testCase) => {
+			sortOrder.set(testCase.id, sortIndex)
+			sortIndex++
 		})
 	}
 

@@ -202,6 +202,7 @@ async function createRun() {
 			const { data: groupLinks, error: groupLinksError } = await supabase
 				.from("test_case_group_links")
 				.select("case, group")
+				.in("case", caseIds)
 
 			if (groupLinksError) {
 				console.error("Error fetching case group links:", groupLinksError)
