@@ -120,14 +120,17 @@ export type Database = {
         Row: {
           case: string
           plan: string
+          sort_order: number
         }
         Insert: {
           case: string
           plan: string
+          sort_order?: number
         }
         Update: {
           case?: string
           plan?: string
+          sort_order?: number
         }
         Relationships: [
           {
@@ -179,18 +182,21 @@ export type Database = {
           comment: string | null
           result: Database["public"]["Enums"]["test_run_result"]
           run: string
+          sort_order: number
         }
         Insert: {
           case: string
           comment?: string | null
           result?: Database["public"]["Enums"]["test_run_result"]
           run: string
+          sort_order?: number
         }
         Update: {
           case?: string
           comment?: string | null
           result?: Database["public"]["Enums"]["test_run_result"]
           run?: string
+          sort_order?: number
         }
         Relationships: [
           {
@@ -272,18 +278,21 @@ export type Database = {
           comment: string | null
           report: string
           result: Database["public"]["Enums"]["test_run_result"]
+          sort_order: number
         }
         Insert: {
           case: string
           comment?: string | null
           report: string
           result?: Database["public"]["Enums"]["test_run_result"]
+          sort_order?: number
         }
         Update: {
           case?: string
           comment?: string | null
           report?: string
           result?: Database["public"]["Enums"]["test_run_result"]
+          sort_order?: number
         }
         Relationships: [
           {

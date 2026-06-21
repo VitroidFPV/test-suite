@@ -4,6 +4,7 @@ import type { ResultType } from "~/types/resultTypes"
 import TestRunCaseCard from "~/components/cards/TestRunCaseCard.vue"
 import { fetchRunsWithUsers } from "~/composables/fetchRunsWithUsers"
 import { groupCasesByCaseGroup } from "~/utils/groupCasesByCaseGroup"
+import { linkSortOrderMap } from "~/utils/planCaseOrdering"
 
 const toast = useToast()
 
@@ -106,14 +107,15 @@ const {
 	async () => {
 		const { data: runCasesDb, error: runCasesError } = await supabase
 			.from("test_run_case_links")
-			.select("case, result, comment")
+			.select("case, result, comment, sort_order")
 			.eq("run", urlRun)
+			.order("sort_order", { ascending: true })
 		if (runCasesError) {
 			throw createSupabaseError(runCasesError)
 		}
 
 		if (runCasesDb.length === 0) {
-			return { cases: [], groups: [], links: [] }
+			return { cases: [], groups: [], links: [], runLinks: [] }
 		}
 
 		// Get test cases
@@ -129,22 +131,32 @@ const {
 			throw createSupabaseError(casesError)
 		}
 
-		// Merge cases with their results and comments
-		const mergedCases = cases.map((testCase) => {
-			const linkData = runCasesDb.find((link) => link.case === testCase.id)
-			return {
-				...testCase,
-				result: linkData?.result || null,
-				comment: linkData?.comment || null
+		const casesById = new Map(
+			(cases ?? []).map((testCase) => [testCase.id, testCase])
+		)
+
+		// Merge cases with their results and comments in run link order
+		const mergedCases: RunCaseWithResult[] = []
+
+		for (const link of runCasesDb) {
+			const testCase = casesById.get(link.case)
+			if (!testCase) {
+				continue
 			}
-		})
+
+			mergedCases.push({
+				...testCase,
+				result: link.result ?? null,
+				comment: link.comment ?? null
+			})
+		}
 
 		const { groups, links } = await fetchCaseGroupData(
 			supabase,
 			mergedCases.map((testCase) => testCase.id)
 		)
 
-		return { cases: mergedCases, groups, links }
+		return { cases: mergedCases, groups, links, runLinks: runCasesDb }
 	},
 	{ lazy: true }
 )
@@ -172,6 +184,7 @@ const runCaseGroups = ref<
 const runCaseGroupLinks = ref<
 	Awaited<ReturnType<typeof fetchCaseGroupData>>["links"]
 >([])
+const runCaseLinkSortOrder = ref<Map<string, number>>(new Map())
 
 // Sync local runCases with fetched data
 watch(
@@ -181,6 +194,7 @@ watch(
 			runCases.value = [...newData.cases]
 			runCaseGroups.value = newData.groups
 			runCaseGroupLinks.value = newData.links
+			runCaseLinkSortOrder.value = linkSortOrderMap(newData.runLinks)
 		}
 	},
 	{ immediate: true }
@@ -190,7 +204,8 @@ const groupedRunCases = computed(() =>
 	groupCasesByCaseGroup(
 		runCases.value,
 		runCaseGroups.value,
-		runCaseGroupLinks.value
+		runCaseGroupLinks.value,
+		runCaseLinkSortOrder.value
 	)
 )
 
@@ -477,11 +492,12 @@ async function generateReport() {
 	}
 
 	// Create report links for all test cases with their current results
-	const reportLinks = runCases.value.map((testCase) => ({
+	const reportLinks = runCases.value.map((testCase, index) => ({
 		report: newReport.value.id,
 		case: testCase.id,
 		result: testCase.result || "not_run",
-		comment: testCase.comment || null
+		comment: testCase.comment || null,
+		sort_order: index
 	}))
 
 	const { error: linksError } = await supabase
