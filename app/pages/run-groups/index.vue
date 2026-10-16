@@ -371,58 +371,14 @@ defineShortcuts({
 				v-if="runGroups && runGroups.length > 0"
 				class="flex flex-col gap-4 w-full"
 			>
-				<div class="flex flex-wrap items-center gap-2">
-					<div class="text-sm text-neutral-500">Group by</div>
-					<USelectMenu
-						v-model="runGroupGroupBy"
-						:items="runGroupGroupOptions"
-						:ui="{ content: 'min-w-fit' }"
-						class="w-36"
-					/>
-					<UTooltip
-						:text="
-							runGroupGroupSortOrder === 'asc'
-								? 'Sort groups ascending'
-								: 'Sort groups descending'
-						"
-					>
-						<UButton
-							color="neutral"
-							variant="ghost"
-							size="sm"
-							:disabled="runGroupGroupBy.value === 'none'"
-							:icon="listSortOrderIcon(runGroupGroupSortOrder)"
-							@click="
-								runGroupGroupSortOrder =
-									runGroupGroupSortOrder === 'asc' ? 'desc' : 'asc'
-							"
-						/>
-					</UTooltip>
-					<div class="text-sm text-neutral-500">Sort by</div>
-					<USelectMenu
-						v-model="runGroupSortBy"
-						:items="runGroupListOptions"
-						:ui="{ content: 'min-w-fit' }"
-						class="w-36"
-					/>
-					<UTooltip
-						:text="
-							runGroupSortOrder === 'asc'
-								? 'Sort items ascending'
-								: 'Sort items descending'
-						"
-					>
-						<UButton
-							color="neutral"
-							variant="ghost"
-							size="sm"
-							:icon="listSortOrderIcon(runGroupSortOrder)"
-							@click="
-								runGroupSortOrder = runGroupSortOrder === 'asc' ? 'desc' : 'asc'
-							"
-						/>
-					</UTooltip>
-				</div>
+				<ListControls
+					v-model:group-by="runGroupGroupBy"
+					v-model:group-sort-order="runGroupGroupSortOrder"
+					v-model:sort-by="runGroupSortBy"
+					v-model:sort-order="runGroupSortOrder"
+					:group-options="runGroupGroupOptions"
+					:sort-options="runGroupListOptions"
+				/>
 				<div
 					v-for="section in groupedRunGroups"
 					:key="section.label || 'all-run-groups'"

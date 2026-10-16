@@ -2,6 +2,7 @@
 import type { Database, Tables } from "~/types/database.types"
 import BaseCard from "~/components/cards/BaseCard.vue"
 import type { ListControlOption, ListSortOrder } from "~/utils/listGrouping"
+import { indexRunGroupsByRunId } from "~/utils/indexRunGroupsByRunId"
 
 const { dateTimeProps } = useDateTimeFormat()
 
@@ -13,7 +14,6 @@ const currentUser = useSupabaseUser()
 type Report = Tables<"test_run_reports">
 type User = Tables<"user_metadata">
 type Run = Tables<"test_runs">
-type RunGroup = Tables<"test_run_groups">
 
 type ReportWithUser = Report & { creator?: User }
 type ReportWithListMetadata = ReportWithUser & {
@@ -157,21 +157,7 @@ const runById = computed(() => {
 })
 
 const runGroupsByRunId = computed(() => {
-	const groupsById = new Map(
-		(runGroups.value ?? []).map((group) => [group.id, group as RunGroup])
-	)
-	const groupsByRunId = new Map<string, RunGroup[]>()
-
-	for (const link of runGroupLinks.value ?? []) {
-		const group = groupsById.get(link.group)
-		if (!group) continue
-
-		const groups = groupsByRunId.get(link.run) ?? []
-		groups.push(group)
-		groupsByRunId.set(link.run, groups)
-	}
-
-	return groupsByRunId
+	return indexRunGroupsByRunId(runGroups.value ?? [], runGroupLinks.value ?? [])
 })
 
 const reportsWithListMetadata = computed<ReportWithListMetadata[] | undefined>(
@@ -486,58 +472,14 @@ defineShortcuts({
 				v-if="reportsData && reportsData.length > 0"
 				class="flex flex-col gap-4 w-full"
 			>
-				<div class="flex flex-wrap items-center gap-2">
-					<div class="text-sm text-neutral-500">Group by</div>
-					<USelectMenu
-						v-model="reportGroupBy"
-						:items="reportGroupOptions"
-						:ui="{ content: 'min-w-fit' }"
-						class="w-36"
-					/>
-					<UTooltip
-						:text="
-							reportGroupSortOrder === 'asc'
-								? 'Sort groups ascending'
-								: 'Sort groups descending'
-						"
-					>
-						<UButton
-							color="neutral"
-							variant="ghost"
-							size="sm"
-							:disabled="reportGroupBy.value === 'none'"
-							:icon="listSortOrderIcon(reportGroupSortOrder)"
-							@click="
-								reportGroupSortOrder =
-									reportGroupSortOrder === 'asc' ? 'desc' : 'asc'
-							"
-						/>
-					</UTooltip>
-					<div class="text-sm text-neutral-500">Sort by</div>
-					<USelectMenu
-						v-model="reportSortBy"
-						:items="reportListOptions"
-						:ui="{ content: 'min-w-fit' }"
-						class="w-36"
-					/>
-					<UTooltip
-						:text="
-							reportSortOrder === 'asc'
-								? 'Sort items ascending'
-								: 'Sort items descending'
-						"
-					>
-						<UButton
-							color="neutral"
-							variant="ghost"
-							size="sm"
-							:icon="listSortOrderIcon(reportSortOrder)"
-							@click="
-								reportSortOrder = reportSortOrder === 'asc' ? 'desc' : 'asc'
-							"
-						/>
-					</UTooltip>
-				</div>
+				<ListControls
+					v-model:group-by="reportGroupBy"
+					v-model:group-sort-order="reportGroupSortOrder"
+					v-model:sort-by="reportSortBy"
+					v-model:sort-order="reportSortOrder"
+					:group-options="reportGroupOptions"
+					:sort-options="reportListOptions"
+				/>
 				<div
 					v-for="section in groupedReports"
 					:key="section.label || 'all-reports'"

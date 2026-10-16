@@ -7,6 +7,7 @@ import type { ListControlOption, ListSortOrder } from "~/utils/listGrouping"
 
 import { fetchRunsWithUsers } from "~/composables/fetchRunsWithUsers"
 import { getOrderedPlanCaseIds } from "~/utils/planCaseOrdering"
+import { indexRunGroupsByRunId } from "~/utils/indexRunGroupsByRunId"
 
 const toast = useToast()
 
@@ -134,21 +135,7 @@ const transformedRunGroups = computed(() =>
 )
 
 const runGroupsByRunId = computed(() => {
-	const groupsById = new Map(
-		(runGroups.value ?? []).map((group) => [group.id, group])
-	)
-	const groupsByRunId = new Map<string, RunGroup[]>()
-
-	for (const link of runGroupLinks.value ?? []) {
-		const group = groupsById.get(link.group)
-		if (!group) continue
-
-		const groups = groupsByRunId.get(link.run) ?? []
-		groups.push(group)
-		groupsByRunId.set(link.run, groups)
-	}
-
-	return groupsByRunId
+	return indexRunGroupsByRunId(runGroups.value ?? [], runGroupLinks.value ?? [])
 })
 
 const runsWithListMetadata = computed<RunWithListMetadata[] | undefined>(() => {
@@ -543,55 +530,14 @@ defineShortcuts({
 		</template>
 		<template #content>
 			<div v-if="runs && runs.length > 0" class="flex flex-col gap-4 w-full">
-				<div class="flex flex-wrap items-center gap-2">
-					<div class="text-sm text-neutral-500">Group by</div>
-					<USelectMenu
-						v-model="runGroupBy"
-						:items="runGroupOptions"
-						:ui="{ content: 'min-w-fit' }"
-						class="w-36"
-					/>
-					<UTooltip
-						:text="
-							runGroupSortOrder === 'asc'
-								? 'Sort groups ascending'
-								: 'Sort groups descending'
-						"
-					>
-						<UButton
-							color="neutral"
-							variant="ghost"
-							size="sm"
-							:disabled="runGroupBy.value === 'none'"
-							:icon="listSortOrderIcon(runGroupSortOrder)"
-							@click="
-								runGroupSortOrder = runGroupSortOrder === 'asc' ? 'desc' : 'asc'
-							"
-						/>
-					</UTooltip>
-					<div class="text-sm text-neutral-500">Sort by</div>
-					<USelectMenu
-						v-model="runSortBy"
-						:items="runListOptions"
-						:ui="{ content: 'min-w-fit' }"
-						class="w-36"
-					/>
-					<UTooltip
-						:text="
-							runSortOrder === 'asc'
-								? 'Sort items ascending'
-								: 'Sort items descending'
-						"
-					>
-						<UButton
-							color="neutral"
-							variant="ghost"
-							size="sm"
-							:icon="listSortOrderIcon(runSortOrder)"
-							@click="runSortOrder = runSortOrder === 'asc' ? 'desc' : 'asc'"
-						/>
-					</UTooltip>
-				</div>
+				<ListControls
+					v-model:group-by="runGroupBy"
+					v-model:group-sort-order="runGroupSortOrder"
+					v-model:sort-by="runSortBy"
+					v-model:sort-order="runSortOrder"
+					:group-options="runGroupOptions"
+					:sort-options="runListOptions"
+				/>
 				<div
 					v-for="section in groupedRuns"
 					:key="section.label || 'all-runs'"
