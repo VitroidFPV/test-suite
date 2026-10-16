@@ -146,26 +146,32 @@ function toggleCollapsible() {
 		:class="{ 'outline-2 outline-primary-500/50': props.selected }"
 		:ui="{
 			root: 'h-auto',
-			header: 'px-4 py-3 sm:p-4',
-			body: 'px-4 py-3 sm:p-4',
+			header: 'px-4 py-3',
+			body: 'px-4 py-2 sm:px-4',
 			footer: 'px-4 py-3 sm:p-4'
 		}"
 	>
 		<template #default>
 			<div class="flex flex-col">
-				<div class="flex items-center justify-between w-full">
+				<div class="flex items-center justify-between gap-3 w-full">
 					<UButton
-						class="font-bold"
+						class="min-w-0 text-left font-medium"
 						variant="ghost"
 						color="neutral"
 						:ui="{
-							base: `p-1 text-base cursor-pointer ${getResultType(props.runCase.result).textColor} `
+							base: 'p-1 text-base cursor-pointer text-neutral-100 hover:text-primary-400 whitespace-normal justify-start'
 						}"
 						@click="toggleCollapsible"
 					>
 						{{ props.runCase.title }}
 					</UButton>
-					<div class="flex items-center gap-2">
+					<div class="flex items-center gap-2 shrink-0">
+						<UTooltip v-if="props.runCase.comment?.trim()" text="Has a comment">
+							<UIcon
+								name="i-lucide-message-square"
+								class="size-4 text-neutral-400"
+							/>
+						</UTooltip>
 						<USelectMenu
 							v-if="!props.readonly"
 							:model-value="getResultType(props.runCase.result)"
@@ -234,8 +240,8 @@ function toggleCollapsible() {
 				</div>
 				<UCollapsible v-model:open="collapsibleOpen">
 					<template #content>
-						<div class="flex gap-4 w-full">
-							<div class="flex flex-col gap-1 w-1/2">
+						<div class="flex flex-col md:flex-row gap-4 w-full pt-3">
+							<div class="flex flex-col gap-1 min-w-0 flex-1">
 								<div class="text-sm text-neutral-400">
 									Test Case Description
 								</div>
@@ -249,7 +255,10 @@ function toggleCollapsible() {
 								</div>
 							</div>
 							<!-- textarea for comment -->
-							<div v-if="!props.readonly" class="flex flex-col gap-1 w-1/2">
+							<div
+								v-if="!props.readonly"
+								class="flex flex-col gap-1 min-w-0 flex-1"
+							>
 								<div class="text-sm text-neutral-400">Test Case Comment</div>
 								<UTextarea
 									v-model="localComment"
@@ -261,7 +270,10 @@ function toggleCollapsible() {
 									@blur="handleCommentUpdate"
 								/>
 							</div>
-							<div v-else class="flex flex-col gap-1 w-1/2">
+							<div
+								v-else-if="props.runCase.comment"
+								class="flex flex-col gap-1 min-w-0 flex-1"
+							>
 								<div class="text-sm text-neutral-400">Test Case Comment</div>
 								<div class="md h-full bg-neutral-800/50 p-2 rounded-md">
 									<VueMarkdown
@@ -280,7 +292,7 @@ function toggleCollapsible() {
 
 	<div v-else class="flex flex-col gap-4 w-full h-full justify-between">
 		<div class="flex flex-col gap-4">
-			<div class="flex gap-2 lg:items-end lg:mb-6 lg:flex-row flex-col">
+			<div class="flex gap-2 lg:items-end lg:mb-2 lg:flex-row flex-col">
 				<span
 					v-if="
 						props.individualIndex !== undefined &&
@@ -291,16 +303,33 @@ function toggleCollapsible() {
 					<span class="text-xl">{{ props.individualIndex + 1 }}</span
 					>/{{ props.totalCases }}
 				</span>
-				<h3
-					:class="`${getResultType(props.runCase.result).textColor} font-bold lg:text-3xl text-xl`"
-				>
+				<h3 class="text-neutral-100 font-semibold lg:text-2xl text-xl">
 					{{ props.runCase.title }}
 				</h3>
+			</div>
+			<div class="grid grid-cols-2 lg:grid-cols-5 gap-2 w-full">
+				<UButton
+					v-for="result in resultTypes"
+					:key="result.value"
+					:color="result.color"
+					variant="soft"
+					:icon="result.icon"
+					:ui="{
+						base: `w-full min-h-12 text-sm items-center justify-center ring-2
+						${result.value === props.runCase.result ? `` : 'ring-transparent'}
+						${result.value === 'skipped' ? `${getResultType('skipped').bgColor} bg-transparent` : ''}
+						`
+					}"
+					@click="handleResultChange(props.runCase.id, result.value)"
+				>
+					{{ result.label }}
+					<UKbd :color="result.color" variant="subtle">{{ result.key }}</UKbd>
+				</UButton>
 			</div>
 			<VueMarkdown
 				v-if="props.runCase.text"
 				:source="props.runCase.text"
-				class="lg:text-base text-sm md"
+				class="text-sm md leading-relaxed max-w-4xl"
 			>
 			</VueMarkdown>
 			<div v-else class="opacity-50">No description</div>
@@ -314,7 +343,7 @@ function toggleCollapsible() {
 					color="primary"
 					variant="soft"
 					placeholder="Add a comment about this test result..."
-					:rows="5"
+					:rows="3"
 					autoresize
 					@blur="handleCommentUpdate"
 				/>
@@ -328,25 +357,6 @@ function toggleCollapsible() {
 					>
 					</VueMarkdown>
 				</div>
-			</div>
-			<div class="flex lg:flex-row flex-col xl:gap-4 gap-2 w-full">
-				<UButton
-					v-for="result in resultTypes"
-					:key="result.value"
-					:color="result.color"
-					variant="soft"
-					:icon="result.icon"
-					:ui="{
-						base: `w-full lg:min-h-24 min-h-10 lg:text-xl items-center justify-center ring-3
-						${result.value === props.runCase.result ? `` : 'ring-transparent'}
-						${result.value === 'skipped' ? `${getResultType('skipped').bgColor} bg-transparent` : ''}
-						`
-					}"
-					@click="handleResultChange(props.runCase.id, result.value)"
-				>
-					{{ result.label }}
-					<UKbd :color="result.color" variant="subtle">{{ result.key }}</UKbd>
-				</UButton>
 			</div>
 		</div>
 	</div>

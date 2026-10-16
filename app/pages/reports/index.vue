@@ -495,10 +495,10 @@ defineShortcuts({
 							class="flex flex-col justify-between"
 						>
 							<template #header>
-								<div class="flex items-center justify-between">
+								<div class="flex items-start justify-between gap-3">
 									<NuxtLink
 										:to="`/reports/${item.id}`"
-										class="font-bold text-primary hover:underline"
+										class="min-w-0 font-semibold text-neutral-100 hover:text-primary-400 hover:underline"
 									>
 										{{ item.title }}
 									</NuxtLink>
@@ -506,13 +506,13 @@ defineShortcuts({
 										:color="item.pass ? 'success' : 'error'"
 										:label="item.pass ? 'Passed' : 'Failed'"
 										variant="soft"
-										class="font-semibold rounded-full"
+										class="font-semibold rounded-full shrink-0"
 									/>
 								</div>
 							</template>
 							<template #default>
 								<div
-									class="text-sm text-neutral-500 flex items-center justify-between gap-1"
+									class="text-sm text-neutral-400 flex flex-wrap items-center justify-between gap-2"
 								>
 									<div class="flex items-center gap-1">
 										<UAvatar
@@ -524,7 +524,7 @@ defineShortcuts({
 									</div>
 									<NuxtTime
 										:datetime="item.created_at"
-										class="text-sm text-neutral-500"
+										class="text-sm text-neutral-400"
 										v-bind="dateTimeProps"
 									/>
 								</div>

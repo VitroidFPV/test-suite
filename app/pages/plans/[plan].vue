@@ -452,11 +452,11 @@ const displaySections = computed(() =>
 const viewClasses = {
 	list: {
 		grid: "grid grid-cols-1 gap-3",
-		description: "text-ellipsis line-clamp-2"
+		description: "line-clamp-3"
 	},
 	grid: {
 		grid: "grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3",
-		description: "text-ellipsis line-clamp-2"
+		description: "line-clamp-3"
 	},
 	card: {
 		grid: "grid grid-cols-1 gap-3",
@@ -758,7 +758,7 @@ defineShortcuts({
 						<div v-for="item in section.cases" :key="item.id" class="h-full">
 							<BaseCard class="h-full">
 								<template #header>
-									<div class="font-bold text-primary-500">
+									<div class="font-semibold text-neutral-100">
 										{{ item.title }}
 									</div>
 								</template>

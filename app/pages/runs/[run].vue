@@ -949,7 +949,25 @@ defineShortcuts({
 				</div>
 				<USkeleton v-else class="h-6 w-32" />
 				<USeparator orientation="vertical" class="h-6" />
-				<USwitch v-model="isTestRunMode" label="Test Run Mode" />
+				<div
+					class="flex items-center gap-1 rounded-lg bg-neutral-800/60 p-1"
+					aria-label="Run view"
+				>
+					<UButton
+						color="neutral"
+						size="sm"
+						:variant="isTestRunMode ? 'ghost' : 'soft'"
+						@click="isTestRunMode = false"
+						>List</UButton
+					>
+					<UButton
+						color="neutral"
+						size="sm"
+						:variant="isTestRunMode ? 'soft' : 'ghost'"
+						@click="isTestRunMode = true"
+						>Focus</UButton
+					>
+				</div>
 			</div>
 			<TestStatusBar :status-stats="statusStats" />
 		</template>
@@ -975,48 +993,41 @@ defineShortcuts({
 					</div>
 				</TestCaseGroupSection>
 			</div>
-			<div
-				v-else
-				class="grid xl:grid-cols-[fit-content(100%)_1fr_fit-content(100%)] grid-cols-2 h-full flex-1 lg:gap-4 gap-2 lg:pb-0 pb-2"
-			>
-				<UButton
-					color="primary"
-					size="sm"
-					variant="soft"
-					leading-icon="i-lucide-arrow-left"
-					:ui="{
-						base: 'px-8 xl:order-1 order-3 justify-start lg:min-h-16 min-h-10'
-					}"
-					@click="previousCase()"
-				>
-					<UKbd color="primary" variant="subtle">J</UKbd>
-				</UButton>
+			<div v-else class="mx-auto w-full max-w-5xl flex flex-col gap-4">
 				<div
-					class="w-full xl:col-span-1 col-span-2 order-2 flex flex-col lg:gap-6 gap-2"
+					class="flex items-center justify-between gap-3 rounded-lg border border-neutral-800 bg-neutral-900/70 px-3 py-2"
 				>
+					<UButton
+						color="neutral"
+						size="sm"
+						variant="ghost"
+						leading-icon="i-lucide-arrow-left"
+						@click="previousCase()"
+					>
+						Previous <UKbd color="neutral" variant="subtle">J</UKbd>
+					</UButton>
+					<span class="text-sm text-neutral-400"
+						>Case {{ selectedCaseIndex + 1 }} of {{ runCases.length }}</span
+					>
+					<UButton
+						color="neutral"
+						size="sm"
+						variant="ghost"
+						trailing-icon="i-lucide-arrow-right"
+						@click="nextCase()"
+					>
+						Next <UKbd color="neutral" variant="subtle">K</UKbd>
+					</UButton>
+				</div>
+				<div class="w-full flex flex-col gap-4">
 					<TestRunCaseCard
 						v-if="selectedCase"
 						:run-case="selectedCase"
 						individual
-						:individual-index="selectedCaseIndex"
-						:total-cases="runCases.length"
 						@update-result="updateCaseResult"
 						@update-comment="updateCaseComment"
 					/>
-					<USeparator class="block xl:hidden" />
 				</div>
-				<UButton
-					color="primary"
-					size="sm"
-					variant="soft"
-					trailing-icon="i-lucide-arrow-right"
-					:ui="{
-						base: 'px-8 order-4 justify-end lg:min-h-16 min-h-10'
-					}"
-					@click="nextCase()"
-				>
-					<UKbd color="primary" variant="subtle">K</UKbd>
-				</UButton>
 			</div>
 		</template>
 	</PageWrapper>

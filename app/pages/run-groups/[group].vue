@@ -410,13 +410,12 @@ defineShortcuts({
 		</template>
 
 		<template #description>
-			<div class="md text-neutral-400">
+			<div v-if="runGroup?.description" class="md text-neutral-400">
 				<VueMarkdown
 					v-if="runGroup?.description"
 					:source="runGroup.description"
 				>
 				</VueMarkdown>
-				<span v-else class="text-neutral-500">No description</span>
 			</div>
 		</template>
 
