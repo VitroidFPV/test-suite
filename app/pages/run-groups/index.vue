@@ -111,6 +111,11 @@ const testRunsSortBy = ref<{ label: string; value: string }>(
 	testRunsSortOptions.value[0]!
 )
 const testRunsSortOrder = ref<ListSortOrder>("asc")
+const testRunsSortLabel = computed(() =>
+	testRunsSortOrder.value === "asc"
+		? "Sort runs descending"
+		: "Sort runs ascending"
+)
 
 const sortedTestRuns = computed(() => {
 	if (!testRuns.value) return undefined
@@ -122,7 +127,6 @@ const sortedTestRuns = computed(() => {
 		let aValue: unknown
 		let bValue: unknown
 
-		// For "Created By", sort by creator username instead of UUID
 		if (sortBy === "created_by") {
 			aValue = a.creator?.username ?? ""
 			bValue = b.creator?.username ?? ""
@@ -131,23 +135,7 @@ const sortedTestRuns = computed(() => {
 			bValue = b[sortBy as keyof TestRunWithUser]
 		}
 
-		// Convert undefined/null to empty string for consistent sorting
-		aValue = aValue ?? ""
-		bValue = bValue ?? ""
-
-		// For date fields, compare as Date
-		let comparison = 0
-		if (sortBy === "created_at") {
-			const aTime = aValue ? new Date(aValue as string).getTime() : 0
-			const bTime = bValue ? new Date(bValue as string).getTime() : 0
-			comparison = aTime - bTime
-		} else if (typeof aValue === "string" && typeof bValue === "string") {
-			comparison = aValue.localeCompare(bValue)
-		} else if (typeof aValue === "number" && typeof bValue === "number") {
-			comparison = aValue - bValue
-		}
-
-		return sortOrder === "desc" ? -comparison : comparison
+		return compareListValues(aValue, bValue, sortOrder)
 	})
 })
 
@@ -301,18 +289,13 @@ defineShortcuts({
 								}"
 								class="w-32"
 							/>
-							<UTooltip
-								:text="
-									testRunsSortOrder === 'asc'
-										? 'Sort ascending'
-										: 'Sort descending'
-								"
-							>
+							<UTooltip :text="testRunsSortLabel">
 								<UButton
 									color="neutral"
 									variant="ghost"
 									size="sm"
 									:icon="listSortOrderIcon(testRunsSortOrder)"
+									:aria-label="testRunsSortLabel"
 									@click="
 										testRunsSortOrder =
 											testRunsSortOrder === 'asc' ? 'desc' : 'asc'

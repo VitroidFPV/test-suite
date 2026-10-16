@@ -21,7 +21,7 @@ export type ListGroupLabel =
 export function compareListValues(
 	aValue: unknown,
 	bValue: unknown,
-	sortOrder: string
+	sortOrder: ListSortOrder
 ) {
 	const normalizedA = aValue ?? ""
 	const normalizedB = bValue ?? ""
@@ -88,7 +88,7 @@ export function groupListItems<T>(
 
 export function sortListSections<T>(
 	sections: ListSection<T>[],
-	sortOrder: string
+	sortOrder: ListSortOrder
 ) {
 	return [...sections].sort((a, b) =>
 		compareListValues(a.sortValue, b.sortValue, sortOrder)
