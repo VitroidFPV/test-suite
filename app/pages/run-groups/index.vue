@@ -3,6 +3,7 @@ import type { Database, Tables } from "~/types/database.types"
 import VueMarkdown from "vue-markdown-render"
 import BaseCard from "~/components/cards/BaseCard.vue"
 import TestRunCard from "~/components/cards/TestRunCard.vue"
+import type { ListControlOption, ListSortOrder } from "~/utils/listGrouping"
 
 import { fetchRunsWithUsers } from "~/composables/fetchRunsWithUsers"
 
@@ -55,33 +56,77 @@ const pageError = computed(() => {
 	return errors
 })
 
+const runGroupListOptions = ref<ListControlOption[]>([
+	{ label: "Created At", value: "created_at" },
+	{ label: "Name", value: "title" }
+])
+const runGroupGroupOptions = ref<ListControlOption[]>([
+	{ label: "None", value: "none" },
+	...runGroupListOptions.value.filter((option) => option.value !== "title")
+])
+const runGroupGroupBy = ref<ListControlOption>(runGroupGroupOptions.value[0]!)
+const runGroupGroupSortOrder = ref<ListSortOrder>("asc")
+const runGroupSortBy = ref<ListControlOption>(runGroupListOptions.value[0]!)
+const runGroupSortOrder = ref<ListSortOrder>("desc")
+
+const sortedRunGroups = computed(() => {
+	if (!runGroups.value) return undefined
+
+	const sortBy = runGroupSortBy.value.value
+
+	return [...runGroups.value].sort((a, b) =>
+		compareListValues(
+			a[sortBy as keyof RunGroup],
+			b[sortBy as keyof RunGroup],
+			runGroupSortOrder.value
+		)
+	)
+})
+
+const groupedRunGroups = computed(() => {
+	if (!sortedRunGroups.value) return undefined
+
+	if (runGroupGroupBy.value.value === "none") {
+		return [{ label: "", sortValue: "", items: sortedRunGroups.value }]
+	}
+
+	if (runGroupGroupBy.value.value === "created_at") {
+		return sortListSections(
+			groupListItems(sortedRunGroups.value, (group) =>
+				createdDateGroupLabel(group.created_at)
+			),
+			runGroupGroupSortOrder.value
+		)
+	}
+
+	return [{ label: "", sortValue: "", items: sortedRunGroups.value }]
+})
+
 const testRunsSortOptions = ref<{ label: string; value: string }[]>([
 	{ label: "Title", value: "title" },
 	{ label: "Created At", value: "created_at" },
 	{ label: "Created By", value: "created_by" }
 ])
-const testRunsSortOrders = ref<{ label: string; value: string }[]>([
-	{ label: "Ascending", value: "asc" },
-	{ label: "Descending", value: "desc" }
-])
 const testRunsSortBy = ref<{ label: string; value: string }>(
 	testRunsSortOptions.value[0]!
 )
-const testRunsSortOrder = ref<{ label: string; value: string }>(
-	testRunsSortOrders.value[0]!
+const testRunsSortOrder = ref<ListSortOrder>("asc")
+const testRunsSortLabel = computed(() =>
+	testRunsSortOrder.value === "asc"
+		? "Sort runs descending"
+		: "Sort runs ascending"
 )
 
 const sortedTestRuns = computed(() => {
 	if (!testRuns.value) return undefined
 
 	const sortBy = testRunsSortBy.value.value
-	const sortOrder = testRunsSortOrder.value.value
+	const sortOrder = testRunsSortOrder.value
 
 	return [...testRuns.value].sort((a, b) => {
 		let aValue: unknown
 		let bValue: unknown
 
-		// For "Created By", sort by creator username instead of UUID
 		if (sortBy === "created_by") {
 			aValue = a.creator?.username ?? ""
 			bValue = b.creator?.username ?? ""
@@ -90,23 +135,7 @@ const sortedTestRuns = computed(() => {
 			bValue = b[sortBy as keyof TestRunWithUser]
 		}
 
-		// Convert undefined/null to empty string for consistent sorting
-		aValue = aValue ?? ""
-		bValue = bValue ?? ""
-
-		// For date fields, compare as Date
-		let comparison = 0
-		if (sortBy === "created_at") {
-			const aTime = aValue ? new Date(aValue as string).getTime() : 0
-			const bTime = bValue ? new Date(bValue as string).getTime() : 0
-			comparison = aTime - bTime
-		} else if (typeof aValue === "string" && typeof bValue === "string") {
-			comparison = aValue.localeCompare(bValue)
-		} else if (typeof aValue === "number" && typeof bValue === "number") {
-			comparison = aValue - bValue
-		}
-
-		return sortOrder === "desc" ? -comparison : comparison
+		return compareListValues(aValue, bValue, sortOrder)
 	})
 })
 
@@ -260,15 +289,19 @@ defineShortcuts({
 								}"
 								class="w-32"
 							/>
-							<div class="text-sm text-neutral-500">Sort order:</div>
-							<USelectMenu
-								v-model="testRunsSortOrder"
-								:items="testRunsSortOrders"
-								:ui="{
-									content: 'min-w-fit'
-								}"
-								class="w-32"
-							/>
+							<UTooltip :text="testRunsSortLabel">
+								<UButton
+									color="neutral"
+									variant="ghost"
+									size="sm"
+									:icon="listSortOrderIcon(testRunsSortOrder)"
+									:aria-label="testRunsSortLabel"
+									@click="
+										testRunsSortOrder =
+											testRunsSortOrder === 'asc' ? 'desc' : 'asc'
+									"
+								/>
+							</UTooltip>
 						</div>
 						<div class="grid gap-3 2xl:grid-cols-4 lg:grid-cols-3 grid-cols-2">
 							<TestRunCard
@@ -319,36 +352,55 @@ defineShortcuts({
 		<template #content>
 			<div
 				v-if="runGroups && runGroups.length > 0"
-				class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 w-full"
+				class="flex flex-col gap-4 w-full"
 			>
-				<div v-for="run in runGroups" :key="run.id">
-					<BaseCard>
-						<template #header>
-							<NuxtLink
-								class="font-bold text-primary hover:underline"
-								:to="'/run-groups/' + run.id"
-							>
-								{{ run.title }}
-							</NuxtLink>
-						</template>
-						<template #default>
-							<div class="md">
-								<VueMarkdown
-									v-if="run.description"
-									:source="run.description"
-									class="line-clamp-2 text-ellipsis"
-									style="
-										mask-image: linear-gradient(
-											180deg,
-											#000000 60%,
-											transparent 100%
-										);
-									"
-								>
-								</VueMarkdown>
-							</div>
-						</template>
-					</BaseCard>
+				<ListControls
+					v-model:group-by="runGroupGroupBy"
+					v-model:group-sort-order="runGroupGroupSortOrder"
+					v-model:sort-by="runGroupSortBy"
+					v-model:sort-order="runGroupSortOrder"
+					:group-options="runGroupGroupOptions"
+					:sort-options="runGroupListOptions"
+				/>
+				<div
+					v-for="section in groupedRunGroups"
+					:key="section.label || 'all-run-groups'"
+					class="flex flex-col gap-3"
+				>
+					<h2 v-if="section.label" class="font-semibold text-neutral-500">
+						{{ section.label }}
+					</h2>
+					<div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
+						<div v-for="run in section.items" :key="run.id">
+							<BaseCard>
+								<template #header>
+									<NuxtLink
+										class="font-bold text-primary hover:underline"
+										:to="'/run-groups/' + run.id"
+									>
+										{{ run.title }}
+									</NuxtLink>
+								</template>
+								<template #default>
+									<div class="md">
+										<VueMarkdown
+											v-if="run.description"
+											:source="run.description"
+											class="line-clamp-2 text-ellipsis"
+											style="
+												mask-image: linear-gradient(
+													180deg,
+													#000000 60%,
+													transparent 100%
+												);
+											"
+										>
+										</VueMarkdown>
+									</div>
+								</template>
+							</BaseCard>
+						</div>
+					</div>
 				</div>
 			</div>
 			<div
