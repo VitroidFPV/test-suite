@@ -14,10 +14,12 @@ const currentUser = useSupabaseUser()
 type Report = Tables<"test_run_reports">
 type User = Tables<"user_metadata">
 type Run = Tables<"test_runs">
+type RunGroup = Tables<"test_run_groups">
 
 type ReportWithUser = Report & { creator?: User }
 type ReportWithListMetadata = ReportWithUser & {
 	runTitle: string
+	runGroups: RunGroup[]
 	runGroupTitles: string[]
 	statusLabel: string
 }
@@ -167,6 +169,7 @@ const reportsWithListMetadata = computed<ReportWithListMetadata[] | undefined>(
 		return reportsData.value.map((report) => ({
 			...report,
 			runTitle: runById.value.get(report.run)?.title ?? "Unknown run",
+			runGroups: runGroupsByRunId.value.get(report.run) ?? [],
 			runGroupTitles: (runGroupsByRunId.value.get(report.run) ?? []).map(
 				(group) => group.title
 			),
@@ -515,7 +518,7 @@ defineShortcuts({
 							class="flex flex-col justify-between"
 						>
 							<template #header>
-								<div class="flex items-start justify-between gap-3">
+								<div class="flex items-start justify-between gap-5">
 									<NuxtLink
 										:to="`/reports/${item.id}`"
 										class="min-w-0 font-semibold text-neutral-100 hover:text-primary-400 hover:underline"
@@ -534,17 +537,39 @@ defineShortcuts({
 								<div
 									class="text-sm text-neutral-400 flex flex-wrap items-center justify-between gap-2"
 								>
-									<div class="flex items-center gap-1">
-										<UAvatar
-											:src="item.creator?.avatar ?? ''"
-											size="sm"
-											class="rounded-full"
-										/>
-										{{ item.creator?.username || "Unknown user" }}
+									<div class="flex flex-wrap items-center gap-2">
+										<div class="flex items-center gap-1">
+											<UAvatar
+												:src="item.creator?.avatar ?? ''"
+												size="sm"
+												class="rounded-full"
+											/>
+											{{ item.creator?.username || "Unknown user" }}
+										</div>
+										<div
+											v-if="item.runGroups.length"
+											class="flex flex-wrap items-center gap-2"
+										>
+											<USeparator orientation="vertical" class="h-5" />
+											<NuxtLink
+												v-for="group in item.runGroups"
+												:key="group.id"
+												:to="`/run-groups/${group.id}`"
+												class="inline-flex items-center gap-1 hover:text-primary-400 hover:underline"
+											>
+												<RunGroupImage
+													:src="group.image_url"
+													:alt="`${group.title} image`"
+													size="avatar"
+													fallback
+												/>
+												<span>{{ group.title }}</span>
+											</NuxtLink>
+										</div>
 									</div>
 									<NuxtTime
 										:datetime="item.created_at"
-										class="text-sm text-neutral-400"
+										class="ml-auto text-sm text-neutral-400"
 										v-bind="dateTimeProps"
 									/>
 								</div>

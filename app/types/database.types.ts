@@ -442,6 +442,7 @@ export type Database = {
           id: string
           pass: boolean
           run: string
+          run_groups: Json
           title: string
         }[]
       }

@@ -571,6 +571,7 @@ defineShortcuts({
 							v-for="item in section.items"
 							:key="`${section.label}-${item.id}`"
 							:run="item"
+							:groups="runGroupsByRunId.get(item.id) ?? []"
 						/>
 					</div>
 				</div>

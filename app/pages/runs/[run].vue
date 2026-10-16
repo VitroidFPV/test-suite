@@ -961,21 +961,25 @@ defineShortcuts({
 				<USeparator orientation="vertical" class="h-6" />
 				<div
 					v-if="runGroupsContainingTestRun"
-					class="flex gap-1 items-center text-neutral-500 font-semibold"
+					class="flex flex-wrap gap-2 items-center text-neutral-500 font-semibold"
 				>
 					<UIcon name="i-lucide-library-big" class="h-4 w-4" />
 					<div
-						v-for="(runGroup, index) in runGroupsContainingTestRun"
+						v-for="runGroup in runGroupsContainingTestRun"
 						:key="runGroup.id"
-						class="flex"
+						class="flex items-center"
 					>
 						<NuxtLink
-							class="hover:underline"
+							class="inline-flex items-center gap-1 hover:underline"
 							:to="`/run-groups/${runGroup.id}`"
 						>
+							<RunGroupImage
+								:src="runGroup.image_url"
+								:alt="`${runGroup.title} image`"
+								size="xs"
+							/>
 							<span>{{ runGroup.title }}</span>
 						</NuxtLink>
-						<span v-if="index < runGroupsContainingTestRun.length - 1">,</span>
 					</div>
 					<div
 						v-if="
