@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { optionalExternalUrl } from "~/utils/optionalExternalUrl"
+
 const props = defineProps<{
 	src: string | null
 	alt: string
