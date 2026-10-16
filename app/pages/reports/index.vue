@@ -269,7 +269,8 @@ const newReport = ref<Tables<"test_run_reports">>({
 	created_at: new Date().toISOString(),
 	deleted_at: null,
 	pass: false,
-	comment: ""
+	comment: "",
+	discussion_url: null
 })
 
 function autoFillReportTitle() {
@@ -281,6 +282,15 @@ function autoFillReportTitle() {
 async function saveReport() {
 	if (!selectedRun.value?.value) {
 		console.error("No run selected")
+		return
+	}
+	const discussionUrl = optionalExternalUrl(newReport.value.discussion_url)
+	if (discussionUrl === undefined) {
+		toast.add({
+			title: "Invalid URL",
+			description: "Use a full https URL.",
+			color: "error"
+		})
 		return
 	}
 
@@ -309,7 +319,8 @@ async function saveReport() {
 		created_by: currentUser.value?.id || "",
 		created_at: new Date().toISOString(),
 		pass: newReport.value.pass,
-		comment: newReport.value.comment
+		comment: newReport.value.comment,
+		discussion_url: discussionUrl
 	}
 
 	const { error: reportError } = await supabase
@@ -361,7 +372,8 @@ async function saveReport() {
 		created_at: new Date().toISOString(),
 		deleted_at: null,
 		pass: false,
-		comment: ""
+		comment: "",
+		discussion_url: null
 	}
 	selectedRun.value = undefined
 
@@ -448,6 +460,14 @@ defineShortcuts({
 								v-model="newReport.comment"
 								placeholder="Report Comment"
 								:ui="{ root: 'w-full' }"
+							/>
+						</UFormField>
+						<UFormField label="Public discussion message">
+							<UInput
+								v-model="newReport.discussion_url"
+								type="url"
+								placeholder="https://discord.com/channels/..."
+								class="w-full"
 							/>
 						</UFormField>
 					</div>

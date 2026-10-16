@@ -251,7 +251,10 @@ export type Database = {
           deleted_at: string | null
           description: string | null
           id: string
+          image_url: string | null
           name: string
+          primary_channel_url: string | null
+          secondary_channel_url: string | null
           title: string
         }
         Insert: {
@@ -259,7 +262,10 @@ export type Database = {
           deleted_at?: string | null
           description?: string | null
           id?: string
+          image_url?: string | null
           name?: string
+          primary_channel_url?: string | null
+          secondary_channel_url?: string | null
           title?: string
         }
         Update: {
@@ -267,7 +273,10 @@ export type Database = {
           deleted_at?: string | null
           description?: string | null
           id?: string
+          image_url?: string | null
           name?: string
+          primary_channel_url?: string | null
+          secondary_channel_url?: string | null
           title?: string
         }
         Relationships: []
@@ -317,6 +326,7 @@ export type Database = {
           created_at: string
           created_by: string
           deleted_at: string | null
+          discussion_url: string | null
           id: string
           pass: boolean
           run: string
@@ -327,6 +337,7 @@ export type Database = {
           created_at?: string
           created_by: string
           deleted_at?: string | null
+          discussion_url?: string | null
           id: string
           pass: boolean
           run: string
@@ -337,6 +348,7 @@ export type Database = {
           created_at?: string
           created_by?: string
           deleted_at?: string | null
+          discussion_url?: string | null
           id?: string
           pass?: boolean
           run?: string
@@ -357,6 +369,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           deleted_at: string | null
+          discussion_url: string | null
           id: string
           plan: string | null
           title: string | null
@@ -365,6 +378,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
+          discussion_url?: string | null
           id?: string
           plan?: string | null
           title?: string | null
@@ -373,6 +387,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
+          discussion_url?: string | null
           id?: string
           plan?: string | null
           title?: string | null
@@ -423,6 +438,7 @@ export type Database = {
           comment: string
           created_at: string
           created_by: string
+          discussion_url: string | null
           id: string
           pass: boolean
           run: string

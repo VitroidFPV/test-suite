@@ -330,6 +330,7 @@ const editedRun = ref<Run>({
 	deleted_at: null,
 	id: "",
 	plan: null,
+	discussion_url: null,
 	title: ""
 })
 const selectedRunGroups = ref<string[]>([])
@@ -349,6 +350,15 @@ function selectRunGroup(runGroupId: string) {
 
 async function saveRun() {
 	if (!run.value) return
+	const discussionUrl = optionalExternalUrl(editedRun.value.discussion_url)
+	if (discussionUrl === undefined) {
+		toast.add({
+			title: "Invalid URL",
+			description: "Use a full https URL.",
+			color: "error"
+		})
+		return
+	}
 	const currentRun = run.value
 
 	let hasErrors = false
@@ -356,7 +366,8 @@ async function saveRun() {
 	const { error } = await supabase
 		.from("test_runs")
 		.update({
-			title: editedRun.value.title
+			title: editedRun.value.title,
+			discussion_url: discussionUrl
 		})
 		.eq("id", currentRun.id)
 	if (error) {
@@ -436,7 +447,8 @@ const newReport = ref<Report>({
 	created_at: new Date().toISOString(),
 	deleted_at: null,
 	pass: false,
-	comment: ""
+	comment: "",
+	discussion_url: null
 })
 
 function resetReportForm() {
@@ -448,7 +460,8 @@ function resetReportForm() {
 		created_at: new Date().toISOString(),
 		deleted_at: null,
 		pass: false,
-		comment: ""
+		comment: "",
+		discussion_url: null
 	}
 }
 
@@ -471,6 +484,15 @@ async function generateReport() {
 		})
 		return
 	}
+	const discussionUrl = optionalExternalUrl(newReport.value.discussion_url)
+	if (discussionUrl === undefined) {
+		toast.add({
+			title: "Invalid URL",
+			description: "Use a full https URL.",
+			color: "error"
+		})
+		return
+	}
 
 	const { error } = await supabase.from("test_run_reports").insert({
 		id: newReport.value.id,
@@ -479,7 +501,8 @@ async function generateReport() {
 		created_by: currentUser.value.id,
 		created_at: new Date().toISOString(),
 		pass: newReport.value.pass,
-		comment: newReport.value.comment
+		comment: newReport.value.comment,
+		discussion_url: discussionUrl
 	})
 	if (error) {
 		console.error(error)
@@ -771,6 +794,14 @@ defineShortcuts({
 								v-model="newReport.comment"
 								placeholder="Report Comment"
 							/>
+							<UFormField label="Public discussion message">
+								<UInput
+									v-model="newReport.discussion_url"
+									type="url"
+									placeholder="https://discord.com/channels/..."
+									class="w-full"
+								/>
+							</UFormField>
 						</div>
 					</template>
 					<template #footer>
@@ -820,6 +851,14 @@ defineShortcuts({
 									:ui="{
 										root: 'w-full'
 									}"
+								/>
+							</UFormField>
+							<UFormField label="Board discussion message">
+								<UInput
+									v-model="editedRun.discussion_url"
+									type="url"
+									placeholder="https://discord.com/channels/..."
+									class="w-full"
 								/>
 							</UFormField>
 							<UFormField label="Run Groups">
@@ -968,6 +1007,18 @@ defineShortcuts({
 						>Focus</UButton
 					>
 				</div>
+				<UButton
+					v-if="optionalExternalUrl(run?.discussion_url ?? null)"
+					:to="optionalExternalUrl(run?.discussion_url ?? null)"
+					target="_blank"
+					rel="noopener noreferrer"
+					icon="i-simple-icons-discord"
+					color="primary"
+					variant="soft"
+					size="sm"
+					label="Discussion"
+					class="ml-auto"
+				/>
 			</div>
 			<TestStatusBar :status-stats="statusStats" />
 		</template>

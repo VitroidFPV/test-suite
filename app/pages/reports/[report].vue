@@ -112,6 +112,7 @@ const editedReport = ref<Tables<"test_run_reports">>({
 	id: "",
 	pass: false,
 	run: "",
+	discussion_url: null,
 	title: ""
 })
 
@@ -127,6 +128,7 @@ watch(editReportModalOpen, (isOpen) => {
 			id: report.value.report.id,
 			pass: report.value.report.pass,
 			run: report.value.report.run,
+			discussion_url: report.value.report.discussion_url,
 			title: report.value.report.title || ""
 		}
 	}
@@ -142,11 +144,21 @@ async function saveReport() {
 		})
 		return
 	}
+	const discussionUrl = optionalExternalUrl(editedReport.value.discussion_url)
+	if (discussionUrl === undefined) {
+		toast.add({
+			title: "Invalid URL",
+			description: "Use a full https URL.",
+			color: "error"
+		})
+		return
+	}
 	const { error } = await supabase
 		.from("test_run_reports")
 		.update({
 			title: editedReport.value.title,
 			comment: editedReport.value.comment,
+			discussion_url: discussionUrl,
 			pass: editedReport.value.pass
 		})
 		.eq("id", report.value.report.id)
@@ -459,6 +471,14 @@ defineShortcuts({
 									</div>
 								</UFormField>
 							</div>
+							<UFormField label="Public discussion message">
+								<UInput
+									v-model="editedReport.discussion_url"
+									type="url"
+									placeholder="https://discord.com/channels/..."
+									class="w-full"
+								/>
+							</UFormField>
 						</div>
 					</template>
 					<template #footer>
@@ -548,6 +568,18 @@ defineShortcuts({
 				>
 					View test run
 				</NuxtLink>
+				<UButton
+					v-if="optionalExternalUrl(report.report.discussion_url)"
+					:to="optionalExternalUrl(report.report.discussion_url)"
+					target="_blank"
+					rel="noopener noreferrer"
+					icon="i-simple-icons-discord"
+					color="primary"
+					variant="soft"
+					size="sm"
+					label="Discussion"
+					class="ml-auto"
+				/>
 			</div>
 			<div v-if="report?.report.comment" class="md max-w-4xl text-neutral-300">
 				<VueMarkdown :source="report.report.comment"> </VueMarkdown>
