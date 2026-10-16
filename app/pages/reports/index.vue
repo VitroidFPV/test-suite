@@ -2,6 +2,7 @@
 import type { Database, Tables } from "~/types/database.types"
 import BaseCard from "~/components/cards/BaseCard.vue"
 import type { ListControlOption, ListSortOrder } from "~/utils/listGrouping"
+import { calculateReportOutcome } from "~/utils/calculateReportOutcome"
 
 const { dateTimeProps } = useDateTimeFormat()
 
@@ -13,7 +14,11 @@ const currentUser = useSupabaseUser()
 type Report = Tables<"test_run_reports">
 type ReportForm = Omit<
 	Report,
-	"run_title" | "run_groups" | "snapshot_backfilled_at"
+	| "run_title"
+	| "run_groups"
+	| "snapshot_backfilled_at"
+	| "suggested_pass"
+	| "suggestion_reason"
 >
 type User = Tables<"user_metadata">
 type RunGroup = { id: string; title: string; image_url: string | null }
@@ -105,6 +110,58 @@ async function retryAll() {
 }
 
 const selectedRun = ref<{ label: string; value: string } | undefined>(undefined)
+type RunLink = Tables<"test_run_case_links">
+type PreviewCase = RunLink & { priority: Tables<"test_cases">["priority"] }
+const previewCases = ref<PreviewCase[] | null>(null)
+const previewError = ref("")
+const reportPassOverridden = ref(false)
+const reportSuggestion = computed(() =>
+	calculateReportOutcome(previewCases.value ?? [])
+)
+
+watch(selectedRun, async (run) => {
+	previewCases.value = null
+	previewError.value = ""
+	reportPassOverridden.value = false
+	if (!run) return
+	const { data: links, error: linksError } = await supabase
+		.from("test_run_case_links")
+		.select("*")
+		.eq("run", run.value)
+		.order("sort_order", { ascending: true })
+	if (selectedRun.value?.value !== run.value) return
+	if (linksError) {
+		previewError.value = linksError.message
+		return
+	}
+	const { data: cases, error: casesError } = links.length
+		? await supabase
+				.from("test_cases")
+				.select("id, priority")
+				.in(
+					"id",
+					links.map((link) => link.case)
+				)
+				.is("deleted_at", null)
+		: { data: [], error: null }
+	if (selectedRun.value?.value !== run.value) return
+	if (casesError) {
+		previewError.value = casesError.message
+		return
+	}
+	const priorities = new Map(
+		cases.map((testCase) => [testCase.id, testCase.priority])
+	)
+	previewCases.value = links
+		.filter((link) => priorities.has(link.case))
+		.map((link) => ({
+			...link,
+			priority: priorities.get(link.case) ?? null
+		}))
+	if (!reportPassOverridden.value) {
+		newReport.value.pass = reportSuggestion.value.pass
+	}
+})
 const formattedRuns = computed(() => {
 	return runsData.value?.map((run) => ({
 		label: run.title || "",
@@ -250,22 +307,10 @@ async function saveReport() {
 		return
 	}
 
-	// 1. Get the cases from the selected test run in execution order
-	const { data: runCases, error: runCasesError } = await supabase
-		.from("test_run_case_links")
-		.select("*")
-		.eq("run", selectedRun.value.value)
-		.order("sort_order", { ascending: true })
-
-	if (runCasesError) {
-		console.error("Error fetching run cases:", runCasesError)
-		toast.add({
-			title: "Error",
-			description: runCasesError.message,
-			color: "error"
-		})
-		return
-	}
+	if (!previewCases.value) return
+	const runCases = [...previewCases.value]
+	const suggestion = calculateReportOutcome(runCases)
+	if (!reportPassOverridden.value) newReport.value.pass = suggestion.pass
 
 	// 2. Create the new report
 	const reportToInsert = {
@@ -275,6 +320,8 @@ async function saveReport() {
 		created_by: currentUser.value?.id || "",
 		created_at: new Date().toISOString(),
 		pass: newReport.value.pass,
+		suggested_pass: suggestion.pass,
+		suggestion_reason: suggestion.reason,
 		comment: newReport.value.comment,
 		discussion_url: discussionUrl
 	}
@@ -298,6 +345,7 @@ async function saveReport() {
 		const reportCaseLinks = runCases.map((runCase, index) => ({
 			report: newReport.value.id,
 			case: runCase.case,
+			case_priority: runCase.priority ?? "medium",
 			result: runCase.result,
 			comment: runCase.comment,
 			sort_order: index
@@ -413,9 +461,17 @@ defineShortcuts({
 							/>
 						</UFormField>
 						<UFormField label="Overall Pass Status">
+							<p v-if="previewCases" class="text-sm text-neutral-400 mb-2">
+								Suggested {{ reportSuggestion.pass ? "Passed" : "Failed" }}:
+								{{ reportSuggestion.reason }}.
+							</p>
+							<p v-if="previewError" class="text-sm text-red-400 mb-2">
+								{{ previewError }}
+							</p>
 							<USwitch
 								v-model="newReport.pass"
-								:label="newReport.pass ? 'Passed' : 'Failed'"
+								:label="`Final result: ${newReport.pass ? 'Passed' : 'Failed'}`"
+								@update:model-value="reportPassOverridden = true"
 							/>
 						</UFormField>
 						<UFormField label="Comment">
@@ -441,7 +497,9 @@ defineShortcuts({
 							color="primary"
 							size="sm"
 							variant="soft"
-							:disabled="!newReport.title || !selectedRun?.value"
+							:disabled="
+								!newReport.title || !selectedRun?.value || !previewCases
+							"
 							loading-auto
 							@click="saveReport"
 							>Create Report</UButton

@@ -4,10 +4,15 @@ import type { ResultType } from "~/types/resultTypes"
 import TestRunCaseCard from "~/components/cards/TestRunCaseCard.vue"
 import VueMarkdown from "vue-markdown-render"
 import { groupCasesByCaseGroup } from "~/utils/groupCasesByCaseGroup"
+import type { CasePriority } from "~/utils/calculateReportOutcome"
 
 type ReportForm = Omit<
 	Tables<"test_run_reports">,
-	"run_title" | "run_groups" | "snapshot_backfilled_at"
+	| "run_title"
+	| "run_groups"
+	| "snapshot_backfilled_at"
+	| "suggested_pass"
+	| "suggestion_reason"
 >
 
 const toast = useToast()
@@ -227,16 +232,33 @@ type ReportCase = {
 	created_at: string
 	result: ResultType | null
 	comment: string | null
+	priority: CasePriority | null
 	groups?: ReportCaseGroup[] | null
 }
 const reportCases = computed<ReportCase[]>(() => {
 	const cases = report.value?.report?.cases
 	return (Array.isArray(cases) ? cases : []) as ReportCase[]
 })
+const hasRecordedPriority = computed(() =>
+	reportCases.value.some((testCase) => testCase.priority != null)
+)
+const caseGrouping = ref<"group" | "priority">("group")
 
 const groupedReportCases = computed(() => {
 	if (!report.value) {
 		return undefined
+	}
+	if (caseGrouping.value === "priority" && hasRecordedPriority.value) {
+		return (["high", "medium", "low", null] as const)
+			.map((priority) => ({
+				group: priority
+					? `${priority.replace(/^./, (letter) => letter.toUpperCase())} priority`
+					: "Not recorded",
+				cases: reportCases.value.filter(
+					(testCase) => (testCase.priority ?? null) === priority
+				)
+			}))
+			.filter((section) => section.cases.length)
 	}
 
 	const groups = new Map<string, ReportCaseGroup>()
@@ -620,6 +642,14 @@ defineShortcuts({
 				<VueMarkdown :source="report.report.comment"> </VueMarkdown>
 			</div>
 			<p
+				v-if="report && report.report.suggested_pass !== null"
+				class="text-sm text-neutral-400"
+			>
+				Suggested {{ report.report.suggested_pass ? "Passed" : "Failed" }}:
+				{{ report.report.suggestion_reason }}. Final result:
+				{{ report.report.pass ? "Passed" : "Failed" }}.
+			</p>
+			<p
 				v-if="report?.report.snapshot_backfilled_at"
 				class="text-sm text-neutral-500"
 			>
@@ -627,12 +657,28 @@ defineShortcuts({
 				<NuxtTime
 					:datetime="report.report.snapshot_backfilled_at"
 					v-bind="dateTimeProps"
-				/>. Earlier versions are unavailable.
+				/>.
 			</p>
 			<TestStatusBar v-if="report" :status-stats="statusStats" />
 		</template>
 
 		<template #separator-trailing>
+			<div v-if="hasRecordedPriority" class="flex gap-1 mr-3">
+				<UButton
+					size="sm"
+					color="neutral"
+					:variant="caseGrouping === 'group' ? 'subtle' : 'soft'"
+					@click="caseGrouping = 'group'"
+					>Groups</UButton
+				>
+				<UButton
+					size="sm"
+					color="neutral"
+					:variant="caseGrouping === 'priority' ? 'subtle' : 'soft'"
+					@click="caseGrouping = 'priority'"
+					>Priority</UButton
+				>
+			</div>
 			<div
 				v-if="casesWithComments.length > 0"
 				class="flex items-center gap-2 shrink-0"
@@ -671,6 +717,7 @@ defineShortcuts({
 							v-for="item in section.cases"
 							:key="item.id"
 							:run-case="item"
+							:hide-priority="item.priority == null"
 							:expanded="isCaseExpanded(item.id)"
 							readonly
 							@toggle-expanded="toggleCaseExpanded"

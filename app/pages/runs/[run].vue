@@ -5,6 +5,7 @@ import TestRunCaseCard from "~/components/cards/TestRunCaseCard.vue"
 import { fetchRunsWithUsers } from "~/composables/fetchRunsWithUsers"
 import { groupCasesByCaseGroup } from "~/utils/groupCasesByCaseGroup"
 import { linkSortOrderMap } from "~/utils/planCaseOrdering"
+import { calculateReportOutcome } from "~/utils/calculateReportOutcome"
 
 const toast = useToast()
 
@@ -19,7 +20,11 @@ type RunGroup = Tables<"test_run_groups">
 type Report = Tables<"test_run_reports">
 type ReportForm = Omit<
 	Report,
-	"run_title" | "run_groups" | "snapshot_backfilled_at"
+	| "run_title"
+	| "run_groups"
+	| "snapshot_backfilled_at"
+	| "suggested_pass"
+	| "suggestion_reason"
 >
 
 interface RunCaseWithResult extends RunCase {
@@ -454,6 +459,14 @@ const newReport = ref<ReportForm>({
 	comment: "",
 	discussion_url: null
 })
+const reportSuggestion = computed(() => calculateReportOutcome(runCases.value))
+const reportPassOverridden = ref(false)
+
+watch(reportSuggestion, (suggestion) => {
+	if (reportModalOpen.value && !reportPassOverridden.value) {
+		newReport.value.pass = suggestion.pass
+	}
+})
 
 function resetReportForm() {
 	newReport.value = {
@@ -476,9 +489,12 @@ const reportModalOpen = ref(false)
 watch(reportModalOpen, (isOpen) => {
 	if (isOpen) {
 		resetReportForm()
+		reportPassOverridden.value = false
+		newReport.value.pass = reportSuggestion.value.pass
 	}
 })
 async function generateReport() {
+	if (!runCasesData.value) return
 	if (!currentUser.value?.id) {
 		console.error("Cannot generate report: User not authenticated")
 		toast.add({
@@ -498,6 +514,10 @@ async function generateReport() {
 		return
 	}
 
+	// Use the same local cases for both the suggestion and the saved links.
+	const reportCases = [...runCases.value]
+	const suggestion = calculateReportOutcome(reportCases)
+	if (!reportPassOverridden.value) newReport.value.pass = suggestion.pass
 	const { error } = await supabase.from("test_run_reports").insert({
 		id: newReport.value.id,
 		run: urlRun,
@@ -505,6 +525,8 @@ async function generateReport() {
 		created_by: currentUser.value.id,
 		created_at: new Date().toISOString(),
 		pass: newReport.value.pass,
+		suggested_pass: suggestion.pass,
+		suggestion_reason: suggestion.reason,
 		comment: newReport.value.comment,
 		discussion_url: discussionUrl
 	})
@@ -519,9 +541,10 @@ async function generateReport() {
 	}
 
 	// Create report links for all test cases with their current results
-	const reportLinks = runCases.value.map((testCase, index) => ({
+	const reportLinks = reportCases.map((testCase, index) => ({
 		report: newReport.value.id,
 		case: testCase.id,
+		case_priority: testCase.priority ?? "medium",
 		result: testCase.result || "not_run",
 		comment: testCase.comment || null,
 		sort_order: index
@@ -769,7 +792,7 @@ defineShortcuts({
 							size="sm"
 							variant="soft"
 							icon="i-lucide-file-text"
-							:disabled="!runData"
+							:disabled="!runData || !runCasesData"
 							class="whitespace-nowrap"
 						>
 							Generate Report
@@ -793,7 +816,15 @@ defineShortcuts({
 									</UButton>
 								</UTooltip>
 							</UFieldGroup>
-							<USwitch v-model="newReport.pass" label="Overall Pass?" />
+							<p class="text-sm text-neutral-400">
+								Suggested {{ reportSuggestion.pass ? "Passed" : "Failed" }}:
+								{{ reportSuggestion.reason }}.
+							</p>
+							<USwitch
+								v-model="newReport.pass"
+								:label="`Final result: ${newReport.pass ? 'Passed' : 'Failed'}`"
+								@update:model-value="reportPassOverridden = true"
+							/>
 							<UTextarea
 								v-model="newReport.comment"
 								placeholder="Report Comment"
@@ -814,6 +845,7 @@ defineShortcuts({
 								color="primary"
 								size="sm"
 								variant="solid"
+								:disabled="!runCasesData"
 								loading-auto
 								@click="generateReport"
 								>Generate Report</UButton

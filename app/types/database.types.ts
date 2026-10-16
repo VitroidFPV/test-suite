@@ -287,6 +287,7 @@ export type Database = {
           case_created_at: string | null
           case_groups: Json
           case_id: number | null
+          case_priority: Database["public"]["Enums"]["priority_string"] | null
           case_text: string | null
           case_title: string | null
           comment: string | null
@@ -299,6 +300,7 @@ export type Database = {
           case_created_at?: string | null
           case_groups?: Json
           case_id?: number | null
+          case_priority?: Database["public"]["Enums"]["priority_string"] | null
           case_text?: string | null
           case_title?: string | null
           comment?: string | null
@@ -311,6 +313,7 @@ export type Database = {
           case_created_at?: string | null
           case_groups?: Json
           case_id?: number | null
+          case_priority?: Database["public"]["Enums"]["priority_string"] | null
           case_text?: string | null
           case_title?: string | null
           comment?: string | null
@@ -344,6 +347,8 @@ export type Database = {
           discussion_url: string | null
           id: string
           pass: boolean
+          suggested_pass: boolean | null
+          suggestion_reason: string | null
           run: string
           run_groups: Json
           run_title: string | null
@@ -358,6 +363,8 @@ export type Database = {
           discussion_url?: string | null
           id: string
           pass: boolean
+          suggested_pass?: boolean | null
+          suggestion_reason?: string | null
           run: string
           run_groups?: Json
           run_title?: string | null
@@ -372,6 +379,8 @@ export type Database = {
           discussion_url?: string | null
           id?: string
           pass?: boolean
+          suggested_pass?: boolean | null
+          suggestion_reason?: string | null
           run?: string
           run_groups?: Json
           run_title?: string | null
@@ -465,6 +474,8 @@ export type Database = {
           discussion_url: string | null
           id: string
           pass: boolean
+          suggested_pass: boolean | null
+          suggestion_reason: string | null
           run: string
           run_groups: Json
           run_title: string | null

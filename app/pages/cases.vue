@@ -172,7 +172,7 @@ function caseModal(id: string) {
 			text: "",
 			created_at: new Date().toISOString(),
 			deleted_at: null,
-			priority: null,
+			priority: "medium",
 			id: ""
 		}
 	}
@@ -679,6 +679,14 @@ useStablePageTitle({
 									<div class="font-bold text-primary-500">
 										{{ item.title }}
 									</div>
+									<div class="text-xs font-normal text-neutral-400 mt-1">
+										{{
+											(item.priority ?? "medium").replace(/^./, (letter) =>
+												letter.toUpperCase()
+											)
+										}}
+										priority
+									</div>
 								</template>
 								<template #default>
 									<div
@@ -766,6 +774,19 @@ useStablePageTitle({
 								placeholder="Case Title"
 								class="font-bold text-primary-500 w-full p-3 rounded-lg resize-none outline-none focus-visible:outline-primary-500/5 placeholder:font-normal bg-neutral-800"
 							/>
+							<UFormField label="Priority">
+								<USelect
+									:model-value="editedCase.priority ?? 'medium'"
+									:items="[
+										{ label: 'Low', value: 'low' },
+										{ label: 'Medium', value: 'medium' },
+										{ label: 'High', value: 'high' }
+									]"
+									@update:model-value="
+										editedCase.priority = $event as TestCase['priority']
+									"
+								/>
+							</UFormField>
 							<!-- Description with markdown preview -->
 							<div class="flex flex-col gap-2">
 								<div class="flex items-center justify-between">

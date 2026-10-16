@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import VueMarkdown from "vue-markdown-render"
 import type { ResultType } from "~/types/resultTypes"
+import type { CasePriority } from "~/utils/calculateReportOutcome"
 import type { ButtonProps } from "@nuxt/ui"
 
 interface RunCaseWithResult {
@@ -11,11 +12,13 @@ interface RunCaseWithResult {
 	created_at: string
 	result: ResultType | null
 	comment: string | null
+	priority?: CasePriority | null
 }
 
 interface Props {
 	runCase: RunCaseWithResult
 	readonly?: boolean
+	hidePriority?: boolean
 	selected?: boolean
 	expanded?: boolean
 	individual?: boolean
@@ -154,17 +157,30 @@ function toggleCollapsible() {
 		<template #default>
 			<div class="flex flex-col">
 				<div class="flex items-center justify-between gap-3 w-full">
-					<UButton
-						class="min-w-0 text-left font-medium"
-						variant="ghost"
-						color="neutral"
-						:ui="{
-							base: 'p-1 text-base cursor-pointer text-neutral-100 hover:text-primary-400 whitespace-normal justify-start'
-						}"
-						@click="toggleCollapsible"
-					>
-						{{ props.runCase.title }}
-					</UButton>
+					<div class="flex flex-col min-w-0">
+						<UButton
+							class="min-w-0 text-left font-medium"
+							variant="ghost"
+							color="neutral"
+							:ui="{
+								base: 'p-1 text-base cursor-pointer text-neutral-100 hover:text-primary-400 whitespace-normal justify-start'
+							}"
+							@click="toggleCollapsible"
+						>
+							{{ props.runCase.title }}
+						</UButton>
+						<span
+							v-if="!props.hidePriority"
+							class="text-xs text-neutral-400 whitespace-nowrap"
+						>
+							{{
+								(props.runCase.priority ?? "medium").replace(/^./, (letter) =>
+									letter.toUpperCase()
+								)
+							}}
+							priority
+						</span>
+					</div>
 					<div class="flex items-center gap-2 shrink-0">
 						<UTooltip v-if="props.runCase.comment?.trim()" text="Has a comment">
 							<UIcon
@@ -306,6 +322,14 @@ function toggleCollapsible() {
 				<h3 class="text-neutral-100 font-semibold lg:text-2xl text-xl">
 					{{ props.runCase.title }}
 				</h3>
+				<span class="text-xs text-neutral-400"
+					>{{
+						(props.runCase.priority ?? "medium").replace(/^./, (letter) =>
+							letter.toUpperCase()
+						)
+					}}
+					priority</span
+				>
 			</div>
 			<div class="grid grid-cols-2 lg:grid-cols-5 gap-2 w-full">
 				<UButton
