@@ -2,7 +2,6 @@
 import type { Database, Tables } from "~/types/database.types"
 import BaseCard from "~/components/cards/BaseCard.vue"
 import type { ListControlOption, ListSortOrder } from "~/utils/listGrouping"
-import { indexRunGroupsByRunId } from "~/utils/indexRunGroupsByRunId"
 
 const { dateTimeProps } = useDateTimeFormat()
 
@@ -12,9 +11,12 @@ const supabase = useSupabaseClient<Database>()
 const currentUser = useSupabaseUser()
 
 type Report = Tables<"test_run_reports">
+type ReportForm = Omit<
+	Report,
+	"run_title" | "run_groups" | "snapshot_backfilled_at"
+>
 type User = Tables<"user_metadata">
-type Run = Tables<"test_runs">
-type RunGroup = Tables<"test_run_groups">
+type RunGroup = { id: string; title: string; image_url: string | null }
 
 type ReportWithUser = Report & { creator?: User }
 type ReportWithListMetadata = ReportWithUser & {
@@ -87,50 +89,11 @@ const {
 	{ lazy: true }
 )
 
-const {
-	data: runGroups,
-	error: runGroupsError,
-	refresh: refreshRunGroups
-} = await useAsyncData(
-	"reportRunGroups",
-	async () => {
-		const { data, error } = await supabase
-			.from("test_run_groups")
-			.select("*")
-			.is("deleted_at", null)
-		if (error) {
-			throw createSupabaseError(error)
-		}
-		return data
-	},
-	{ lazy: true }
-)
-
-const {
-	data: runGroupLinks,
-	error: runGroupLinksError,
-	refresh: refreshRunGroupLinks
-} = await useAsyncData(
-	"reportRunGroupLinks",
-	async () => {
-		const { data, error } = await supabase
-			.from("test_run_group_links")
-			.select("run, group")
-		if (error) {
-			throw createSupabaseError(error)
-		}
-		return data
-	},
-	{ lazy: true }
-)
-
 // Consolidated page error - combines all errors when multiple are present
 const pageError = computed(() => {
 	const errors: Error[] = []
 	if (reportsError.value) errors.push(reportsError.value)
 	if (runsError.value) errors.push(runsError.value)
-	if (runGroupsError.value) errors.push(runGroupsError.value)
-	if (runGroupLinksError.value) errors.push(runGroupLinksError.value)
 
 	if (errors.length === 0) return null
 	if (errors.length === 1) return errors[0]!
@@ -138,12 +101,7 @@ const pageError = computed(() => {
 })
 
 async function retryAll() {
-	await Promise.all([
-		refreshReports(),
-		refreshRuns(),
-		refreshRunGroups(),
-		refreshRunGroupLinks()
-	])
+	await Promise.all([refreshReports(), refreshRuns()])
 }
 
 const selectedRun = ref<{ label: string; value: string } | undefined>(undefined)
@@ -154,27 +112,22 @@ const formattedRuns = computed(() => {
 	}))
 })
 
-const runById = computed(() => {
-	return new Map((runsData.value ?? []).map((run) => [run.id, run as Run]))
-})
-
-const runGroupsByRunId = computed(() => {
-	return indexRunGroupsByRunId(runGroups.value ?? [], runGroupLinks.value ?? [])
-})
-
 const reportsWithListMetadata = computed<ReportWithListMetadata[] | undefined>(
 	() => {
 		if (!reportsData.value) return undefined
 
-		return reportsData.value.map((report) => ({
-			...report,
-			runTitle: runById.value.get(report.run)?.title ?? "Unknown run",
-			runGroups: runGroupsByRunId.value.get(report.run) ?? [],
-			runGroupTitles: (runGroupsByRunId.value.get(report.run) ?? []).map(
-				(group) => group.title
-			),
-			statusLabel: report.pass ? "Passed" : "Failed"
-		}))
+		return reportsData.value.map((report) => {
+			const groups = (
+				Array.isArray(report.run_groups) ? report.run_groups : []
+			) as RunGroup[]
+			return {
+				...report,
+				runTitle: report.run_title ?? "Unknown run",
+				runGroups: groups,
+				runGroupTitles: groups.map((group) => group.title),
+				statusLabel: report.pass ? "Passed" : "Failed"
+			}
+		})
 	}
 )
 
@@ -264,7 +217,7 @@ const groupedReports = computed(() => {
 
 const createReportModalOpen = ref(false)
 
-const newReport = ref<Tables<"test_run_reports">>({
+const newReport = ref<ReportForm>({
 	id: crypto.randomUUID(),
 	title: "",
 	run: "",
@@ -356,9 +309,16 @@ async function saveReport() {
 
 		if (linksError) {
 			console.error("Error creating report case links:", linksError)
+			const { error: cleanupError } = await supabase
+				.from("test_run_reports")
+				.delete()
+				.eq("id", newReport.value.id)
+			if (cleanupError) {
+				console.error("Error cleaning up incomplete report:", cleanupError)
+			}
 			toast.add({
 				title: "Error",
-				description: linksError.message,
+				description: cleanupError?.message ?? linksError.message,
 				color: "error"
 			})
 			return

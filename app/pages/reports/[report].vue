@@ -4,7 +4,11 @@ import type { ResultType } from "~/types/resultTypes"
 import TestRunCaseCard from "~/components/cards/TestRunCaseCard.vue"
 import VueMarkdown from "vue-markdown-render"
 import { groupCasesByCaseGroup } from "~/utils/groupCasesByCaseGroup"
-import { linkSortOrderMap } from "~/utils/planCaseOrdering"
+
+type ReportForm = Omit<
+	Tables<"test_run_reports">,
+	"run_title" | "run_groups" | "snapshot_backfilled_at"
+>
 
 const toast = useToast()
 const urlReport = useRoute().params.report as string
@@ -38,23 +42,14 @@ const {
 		const cases = (
 			Array.isArray(reportResult.cases) ? reportResult.cases : []
 		) as ReportCase[]
-		const caseIds = cases.map((testCase) => testCase.id)
-		const caseGroups = await fetchCaseGroupData(supabase, caseIds)
-
-		const { data: reportCaseLinks, error: reportLinksError } = await supabase
-			.from("test_run_report_case_links")
-			.select("case, sort_order")
-			.eq("report", urlReport)
-			.order("sort_order", { ascending: true })
-
-		if (reportLinksError) {
-			throw createSupabaseError(reportLinksError)
-		}
-
-		const sortOrder = linkSortOrderMap(reportCaseLinks ?? [])
-		const orderedCases = [...cases].sort(
-			(a, b) => (sortOrder.get(a.id) ?? 0) - (sortOrder.get(b.id) ?? 0)
+		const legacyCaseGroups = cases.some(
+			(testCase) => !Array.isArray(testCase.groups)
 		)
+			? await fetchCaseGroupData(
+					supabase,
+					cases.map((testCase) => testCase.id)
+				)
+			: null
 
 		const { data: creatorData, error: creatorError } = await supabase.rpc(
 			"get_user_metadata",
@@ -63,17 +58,15 @@ const {
 		if (creatorError) {
 			console.error(creatorError)
 			return {
-				report: { ...reportResult, cases: orderedCases },
+				report: { ...reportResult, cases },
 				creator: null,
-				caseGroups,
-				reportCaseLinks: reportCaseLinks ?? []
+				legacyCaseGroups
 			}
 		}
 		return {
-			report: { ...reportResult, cases: orderedCases },
+			report: { ...reportResult, cases },
 			creator: creatorData[0],
-			caseGroups,
-			reportCaseLinks: reportCaseLinks ?? []
+			legacyCaseGroups
 		}
 	},
 	{ lazy: true }
@@ -104,7 +97,7 @@ const {
 	{ lazy: true }
 )
 
-const editedReport = ref<Tables<"test_run_reports">>({
+const editedReport = ref<ReportForm>({
 	comment: "",
 	created_at: "",
 	created_by: "",
@@ -221,6 +214,7 @@ useStablePageTitle({
 
 type StatusStat = { title: string; value: ResultType | "total"; number: number }
 type ReportRunGroup = { id: string; title: string; image_url: string | null }
+type ReportCaseGroup = { id: string; title: string; name: string }
 const reportRunGroups = computed<ReportRunGroup[]>(() => {
 	const groups = report.value?.report?.run_groups
 	return (Array.isArray(groups) ? groups : []) as ReportRunGroup[]
@@ -233,6 +227,7 @@ type ReportCase = {
 	created_at: string
 	result: ResultType | null
 	comment: string | null
+	groups?: ReportCaseGroup[] | null
 }
 const reportCases = computed<ReportCase[]>(() => {
 	const cases = report.value?.report?.cases
@@ -240,16 +235,26 @@ const reportCases = computed<ReportCase[]>(() => {
 })
 
 const groupedReportCases = computed(() => {
-	if (!report.value?.caseGroups) {
+	if (!report.value) {
 		return undefined
 	}
 
-	const sortOrder = linkSortOrderMap(report.value.reportCaseLinks ?? [])
+	const groups = new Map<string, ReportCaseGroup>()
+	const links: { case: string; group: string }[] = []
+	const sortOrder = new Map<string, number>()
+	for (const [index, testCase] of reportCases.value.entries()) {
+		sortOrder.set(testCase.id, index)
+		for (const group of Array.isArray(testCase.groups) ? testCase.groups : []) {
+			groups.set(group.id, group)
+			links.push({ case: testCase.id, group: group.id })
+		}
+	}
+	const caseGroups = report.value.legacyCaseGroups
 
 	return groupCasesByCaseGroup(
 		reportCases.value,
-		report.value.caseGroups.groups,
-		report.value.caseGroups.links,
+		caseGroups?.groups ?? [...groups.values()],
+		caseGroups?.links ?? links,
 		sortOrder
 	)
 })
@@ -614,6 +619,16 @@ defineShortcuts({
 			<div v-if="report?.report.comment" class="md max-w-4xl text-neutral-300">
 				<VueMarkdown :source="report.report.comment"> </VueMarkdown>
 			</div>
+			<p
+				v-if="report?.report.snapshot_backfilled_at"
+				class="text-sm text-neutral-500"
+			>
+				Case and group details captured on
+				<NuxtTime
+					:datetime="report.report.snapshot_backfilled_at"
+					v-bind="dateTimeProps"
+				/>. Earlier versions are unavailable.
+			</p>
 			<TestStatusBar v-if="report" :status-stats="statusStats" />
 		</template>
 
