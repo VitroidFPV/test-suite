@@ -158,7 +158,9 @@ watch(selectedRun, async (run) => {
 			...link,
 			priority: priorities.get(link.case) ?? null
 		}))
-	newReport.value.pass = reportSuggestion.value.pass
+	if (!reportPassOverridden.value) {
+		newReport.value.pass = reportSuggestion.value.pass
+	}
 })
 const formattedRuns = computed(() => {
 	return runsData.value?.map((run) => ({
