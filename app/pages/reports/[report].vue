@@ -112,6 +112,7 @@ const editedReport = ref<Tables<"test_run_reports">>({
 	id: "",
 	pass: false,
 	run: "",
+	discussion_url: null,
 	title: ""
 })
 
@@ -127,6 +128,7 @@ watch(editReportModalOpen, (isOpen) => {
 			id: report.value.report.id,
 			pass: report.value.report.pass,
 			run: report.value.report.run,
+			discussion_url: report.value.report.discussion_url,
 			title: report.value.report.title || ""
 		}
 	}
@@ -142,11 +144,21 @@ async function saveReport() {
 		})
 		return
 	}
+	const discussionUrl = optionalDiscordUrl(editedReport.value.discussion_url)
+	if (discussionUrl === undefined) {
+		toast.add({
+			title: "Invalid URL",
+			description: "Use a Discord HTTPS link.",
+			color: "error"
+		})
+		return
+	}
 	const { error } = await supabase
 		.from("test_run_reports")
 		.update({
 			title: editedReport.value.title,
 			comment: editedReport.value.comment,
+			discussion_url: discussionUrl,
 			pass: editedReport.value.pass
 		})
 		.eq("id", report.value.report.id)
@@ -208,6 +220,11 @@ useStablePageTitle({
 })
 
 type StatusStat = { title: string; value: ResultType | "total"; number: number }
+type ReportRunGroup = { id: string; title: string; image_url: string | null }
+const reportRunGroups = computed<ReportRunGroup[]>(() => {
+	const groups = report.value?.report?.run_groups
+	return (Array.isArray(groups) ? groups : []) as ReportRunGroup[]
+})
 type ReportCase = {
 	id: string
 	title: string
@@ -383,6 +400,16 @@ defineShortcuts({
 		back-link="/reports"
 		@retry="retryAll"
 	>
+		<template #title>
+			<UBadge
+				v-if="report"
+				:color="report.report.pass ? 'success' : 'error'"
+				:label="report.report.pass ? 'Passed' : 'Failed'"
+				variant="solid"
+				size="lg"
+				class="shrink-0 rounded-lg px-3 py-1.5 text-base font-bold ml-2"
+			/>
+		</template>
 		<template #title-trailing>
 			<div v-if="userIsLoggedIn" class="flex gap-2 items-center">
 				<UModal
@@ -459,6 +486,14 @@ defineShortcuts({
 									</div>
 								</UFormField>
 							</div>
+							<UFormField label="Public discussion message">
+								<UInput
+									v-model="editedReport.discussion_url"
+									type="url"
+									placeholder="https://discord.com/channels/..."
+									class="w-full"
+								/>
+							</UFormField>
 						</div>
 					</template>
 					<template #footer>
@@ -524,30 +559,57 @@ defineShortcuts({
 		<template #description>
 			<div
 				v-if="report"
-				class="flex flex-wrap gap-x-4 gap-y-2 items-center text-sm text-neutral-400"
+				class="flex flex-wrap gap-x-3 gap-y-2 items-center text-sm text-neutral-400"
 			>
-				<UBadge
-					:color="report.report.pass ? 'success' : 'error'"
-					:label="report.report.pass ? 'Passed' : 'Failed'"
-					variant="soft"
-					class="rounded-full font-semibold"
-				/>
-				<UAvatar
-					v-if="report?.creator"
-					:src="report.creator.avatar ?? ''"
-					:alt="report.creator.username"
-				/>
-				<div v-if="report.creator" class="font-medium">
-					{{ report.creator.username }}
+				<div class="flex flex-wrap items-center gap-x-3 gap-y-2">
+					<div
+						v-if="report.creator"
+						class="inline-flex items-center gap-2 font-medium text-neutral-300"
+					>
+						<UAvatar
+							:src="report.creator.avatar ?? ''"
+							:alt="report.creator.username"
+							size="sm"
+						/>
+						<span>{{ report.creator.username }}</span>
+					</div>
+					<div
+						v-for="group in reportRunGroups"
+						:key="group.id"
+						class="inline-flex items-center gap-1 text-neutral-300"
+					>
+						<RunGroupImage
+							:src="group.image_url"
+							:alt="`${group.title} image`"
+							size="xs"
+							fallback
+						/>
+						<span>{{ group.title }}</span>
+					</div>
 				</div>
+				<USeparator orientation="vertical" class="h-5" />
 				<NuxtTime :datetime="report.report.created_at" v-bind="dateTimeProps" />
-				<NuxtLink
+				<USeparator v-if="userIsLoggedIn" orientation="vertical" class="h-5" />
+				<UButton
 					v-if="userIsLoggedIn"
 					:to="`/runs/${report.report.run}`"
-					class="text-primary-400 hover:underline"
-				>
-					View test run
-				</NuxtLink>
+					color="neutral"
+					variant="soft"
+					size="sm"
+					label="View test run"
+				/>
+				<UButton
+					v-if="optionalDiscordUrl(report.report.discussion_url)"
+					:to="optionalDiscordUrl(report.report.discussion_url)"
+					target="_blank"
+					rel="noopener noreferrer"
+					icon="i-simple-icons-discord"
+					color="primary"
+					variant="soft"
+					size="sm"
+					label="Discussion"
+					class="ml-auto"
+				/>
 			</div>
 			<div v-if="report?.report.comment" class="md max-w-4xl text-neutral-300">
 				<VueMarkdown :source="report.report.comment"> </VueMarkdown>
