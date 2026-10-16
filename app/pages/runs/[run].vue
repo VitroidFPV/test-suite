@@ -17,6 +17,10 @@ type Run = Tables<"test_runs">
 type RunCase = Tables<"test_cases">
 type RunGroup = Tables<"test_run_groups">
 type Report = Tables<"test_run_reports">
+type ReportForm = Omit<
+	Report,
+	"run_title" | "run_groups" | "snapshot_backfilled_at"
+>
 
 interface RunCaseWithResult extends RunCase {
 	result: ResultType | null
@@ -439,7 +443,7 @@ async function saveRun() {
 	}
 }
 
-const newReport = ref<Report>({
+const newReport = ref<ReportForm>({
 	id: crypto.randomUUID(),
 	title: "",
 	run: urlRun,

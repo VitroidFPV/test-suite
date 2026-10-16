@@ -284,6 +284,11 @@ export type Database = {
       test_run_report_case_links: {
         Row: {
           case: string
+          case_created_at: string | null
+          case_groups: Json
+          case_id: number | null
+          case_text: string | null
+          case_title: string | null
           comment: string | null
           report: string
           result: Database["public"]["Enums"]["test_run_result"]
@@ -291,6 +296,11 @@ export type Database = {
         }
         Insert: {
           case: string
+          case_created_at?: string | null
+          case_groups?: Json
+          case_id?: number | null
+          case_text?: string | null
+          case_title?: string | null
           comment?: string | null
           report: string
           result?: Database["public"]["Enums"]["test_run_result"]
@@ -298,6 +308,11 @@ export type Database = {
         }
         Update: {
           case?: string
+          case_created_at?: string | null
+          case_groups?: Json
+          case_id?: number | null
+          case_text?: string | null
+          case_title?: string | null
           comment?: string | null
           report?: string
           result?: Database["public"]["Enums"]["test_run_result"]
@@ -330,6 +345,9 @@ export type Database = {
           id: string
           pass: boolean
           run: string
+          run_groups: Json
+          run_title: string | null
+          snapshot_backfilled_at: string | null
           title: string
         }
         Insert: {
@@ -341,6 +359,9 @@ export type Database = {
           id: string
           pass: boolean
           run: string
+          run_groups?: Json
+          run_title?: string | null
+          snapshot_backfilled_at?: string | null
           title?: string
         }
         Update: {
@@ -352,6 +373,9 @@ export type Database = {
           id?: string
           pass?: boolean
           run?: string
+          run_groups?: Json
+          run_title?: string | null
+          snapshot_backfilled_at?: string | null
           title?: string
         }
         Relationships: [
@@ -443,6 +467,8 @@ export type Database = {
           pass: boolean
           run: string
           run_groups: Json
+          run_title: string | null
+          snapshot_backfilled_at: string | null
           title: string
         }[]
       }
