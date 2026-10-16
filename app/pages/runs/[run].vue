@@ -350,11 +350,11 @@ function selectRunGroup(runGroupId: string) {
 
 async function saveRun() {
 	if (!run.value) return
-	const discussionUrl = optionalExternalUrl(editedRun.value.discussion_url)
+	const discussionUrl = optionalDiscordUrl(editedRun.value.discussion_url)
 	if (discussionUrl === undefined) {
 		toast.add({
 			title: "Invalid URL",
-			description: "Use a full https URL.",
+			description: "Use a Discord HTTPS link.",
 			color: "error"
 		})
 		return
@@ -484,11 +484,11 @@ async function generateReport() {
 		})
 		return
 	}
-	const discussionUrl = optionalExternalUrl(newReport.value.discussion_url)
+	const discussionUrl = optionalDiscordUrl(newReport.value.discussion_url)
 	if (discussionUrl === undefined) {
 		toast.add({
 			title: "Invalid URL",
-			description: "Use a full https URL.",
+			description: "Use a Discord HTTPS link.",
 			color: "error"
 		})
 		return
@@ -1012,8 +1012,8 @@ defineShortcuts({
 					>
 				</div>
 				<UButton
-					v-if="optionalExternalUrl(run?.discussion_url ?? null)"
-					:to="optionalExternalUrl(run?.discussion_url ?? null)"
+					v-if="optionalDiscordUrl(run?.discussion_url ?? null)"
+					:to="optionalDiscordUrl(run?.discussion_url ?? null)"
 					target="_blank"
 					rel="noopener noreferrer"
 					icon="i-simple-icons-discord"

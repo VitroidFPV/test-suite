@@ -165,16 +165,24 @@ const createRunGroupModalOpen = ref(false)
 
 async function createRunGroup() {
 	const imageUrl = optionalExternalUrl(newRunGroup.value.image_url)
-	const primaryChannelUrl = optionalExternalUrl(
+	const primaryChannelUrl = optionalDiscordUrl(
 		newRunGroup.value.primary_channel_url
 	)
-	const secondaryChannelUrl = optionalExternalUrl(
+	const secondaryChannelUrl = optionalDiscordUrl(
 		newRunGroup.value.secondary_channel_url
 	)
-	if ([imageUrl, primaryChannelUrl, secondaryChannelUrl].includes(undefined)) {
+	if (imageUrl === undefined) {
 		toast.add({
 			title: "Invalid URL",
 			description: "Use a full https URL.",
+			color: "error"
+		})
+		return
+	}
+	if ([primaryChannelUrl, secondaryChannelUrl].includes(undefined)) {
+		toast.add({
+			title: "Invalid Discord URL",
+			description: "Use a Discord HTTPS link.",
 			color: "error"
 		})
 		return

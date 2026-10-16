@@ -287,11 +287,11 @@ async function saveReport() {
 		console.error("No run selected")
 		return
 	}
-	const discussionUrl = optionalExternalUrl(newReport.value.discussion_url)
+	const discussionUrl = optionalDiscordUrl(newReport.value.discussion_url)
 	if (discussionUrl === undefined) {
 		toast.add({
 			title: "Invalid URL",
-			description: "Use a full https URL.",
+			description: "Use a Discord HTTPS link.",
 			color: "error"
 		})
 		return

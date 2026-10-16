@@ -210,16 +210,24 @@ async function writeRunsToGroup() {
 async function saveRunGroup() {
 	if (!runGroup.value) return
 	const imageUrl = optionalExternalUrl(editedRunGroup.value.image_url)
-	const primaryChannelUrl = optionalExternalUrl(
+	const primaryChannelUrl = optionalDiscordUrl(
 		editedRunGroup.value.primary_channel_url
 	)
-	const secondaryChannelUrl = optionalExternalUrl(
+	const secondaryChannelUrl = optionalDiscordUrl(
 		editedRunGroup.value.secondary_channel_url
 	)
-	if ([imageUrl, primaryChannelUrl, secondaryChannelUrl].includes(undefined)) {
+	if (imageUrl === undefined) {
 		toast.add({
 			title: "Invalid URL",
 			description: "Use a full https URL.",
+			color: "error"
+		})
+		return
+	}
+	if ([primaryChannelUrl, secondaryChannelUrl].includes(undefined)) {
+		toast.add({
+			title: "Invalid Discord URL",
+			description: "Use a Discord HTTPS link.",
 			color: "error"
 		})
 		return
@@ -497,8 +505,8 @@ defineShortcuts({
 			<div class="flex flex-col gap-4">
 				<div v-if="runGroup" class="flex flex-wrap gap-2">
 					<UButton
-						v-if="optionalExternalUrl(runGroup.primary_channel_url)"
-						:to="optionalExternalUrl(runGroup.primary_channel_url)"
+						v-if="optionalDiscordUrl(runGroup.primary_channel_url)"
+						:to="optionalDiscordUrl(runGroup.primary_channel_url)"
 						target="_blank"
 						rel="noopener noreferrer"
 						icon="i-simple-icons-discord"
@@ -508,8 +516,8 @@ defineShortcuts({
 						label="Current"
 					/>
 					<UButton
-						v-if="optionalExternalUrl(runGroup.secondary_channel_url)"
-						:to="optionalExternalUrl(runGroup.secondary_channel_url)"
+						v-if="optionalDiscordUrl(runGroup.secondary_channel_url)"
+						:to="optionalDiscordUrl(runGroup.secondary_channel_url)"
 						target="_blank"
 						rel="noopener noreferrer"
 						icon="i-simple-icons-discord"

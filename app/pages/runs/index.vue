@@ -249,11 +249,11 @@ function autoFill() {
 const createRunModalOpen = ref(false)
 
 async function createRun() {
-	const discussionUrl = optionalExternalUrl(newRun.value.discussion_url)
+	const discussionUrl = optionalDiscordUrl(newRun.value.discussion_url)
 	if (discussionUrl === undefined) {
 		toast.add({
 			title: "Invalid URL",
-			description: "Use a full https URL.",
+			description: "Use a Discord HTTPS link.",
 			color: "error"
 		})
 		return

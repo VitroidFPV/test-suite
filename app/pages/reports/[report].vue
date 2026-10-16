@@ -144,11 +144,11 @@ async function saveReport() {
 		})
 		return
 	}
-	const discussionUrl = optionalExternalUrl(editedReport.value.discussion_url)
+	const discussionUrl = optionalDiscordUrl(editedReport.value.discussion_url)
 	if (discussionUrl === undefined) {
 		toast.add({
 			title: "Invalid URL",
-			description: "Use a full https URL.",
+			description: "Use a Discord HTTPS link.",
 			color: "error"
 		})
 		return
@@ -599,8 +599,8 @@ defineShortcuts({
 					label="View test run"
 				/>
 				<UButton
-					v-if="optionalExternalUrl(report.report.discussion_url)"
-					:to="optionalExternalUrl(report.report.discussion_url)"
+					v-if="optionalDiscordUrl(report.report.discussion_url)"
+					:to="optionalDiscordUrl(report.report.discussion_url)"
 					target="_blank"
 					rel="noopener noreferrer"
 					icon="i-simple-icons-discord"
