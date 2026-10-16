@@ -71,7 +71,7 @@ function getErrorDetails(err: Error) {
 </script>
 
 <template>
-	<div class="flex flex-col gap-y-6 min-h-full">
+	<div class="flex flex-col gap-y-5 min-h-full">
 		<div class="flex items-center justify-between gap-3 w-full">
 			<div class="flex items-center gap-2">
 				<slot name="breadcrumbs-leading" />
@@ -81,25 +81,25 @@ function getErrorDetails(err: Error) {
 			<slot name="breadcrumbs-trailing" />
 		</div>
 		<div
-			class="flex items-start lg:items-center justify-between gap-3 w-full flex-col lg:flex-row"
+			class="flex items-start justify-between gap-4 w-full flex-col lg:flex-row"
 		>
-			<div class="flex items-center gap-2">
+			<div class="flex items-center gap-2 min-w-0">
 				<slot name="title-leading" />
 				<h1
 					v-if="title && !loading && !hasError"
-					class="lg:text-5xl text-3xl font-bold"
+					class="text-3xl lg:text-4xl font-semibold leading-tight tracking-tight break-words"
 				>
 					{{ props.title }}
 				</h1>
 				<h1
 					v-else-if="hasError && isNotFound"
-					class="lg:text-5xl text-3xl font-bold text-error"
+					class="text-3xl lg:text-4xl font-semibold leading-tight text-error"
 				>
 					Not Found
 				</h1>
 				<h1
 					v-else-if="hasError"
-					class="lg:text-5xl text-3xl font-bold text-error"
+					class="text-3xl lg:text-4xl font-semibold leading-tight text-error"
 				>
 					Error
 				</h1>

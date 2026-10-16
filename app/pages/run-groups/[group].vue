@@ -119,6 +119,9 @@ const editedRunGroup = ref({
 	created_at: new Date().toISOString(),
 	deleted_at: null as string | null,
 	description: "",
+	image_url: null as string | null,
+	primary_channel_url: null as string | null,
+	secondary_channel_url: null as string | null,
 	id: "",
 	name: "",
 	title: ""
@@ -206,12 +209,46 @@ async function writeRunsToGroup() {
 
 async function saveRunGroup() {
 	if (!runGroup.value) return
+	const imageUrl = optionalExternalUrl(editedRunGroup.value.image_url)
+	const primaryChannelUrl = optionalDiscordUrl(
+		editedRunGroup.value.primary_channel_url
+	)
+	const secondaryChannelUrl = optionalDiscordUrl(
+		editedRunGroup.value.secondary_channel_url
+	)
+	if (imageUrl === undefined) {
+		toast.add({
+			title: "Invalid URL",
+			description: "Use a full https URL.",
+			color: "error"
+		})
+		return
+	}
+	if ([primaryChannelUrl, secondaryChannelUrl].includes(undefined)) {
+		toast.add({
+			title: "Invalid Discord URL",
+			description: "Use a Discord HTTPS link.",
+			color: "error"
+		})
+		return
+	}
+	if (secondaryChannelUrl && !primaryChannelUrl) {
+		toast.add({
+			title: "Primary channel required",
+			description: "Add the primary channel before a second channel.",
+			color: "error"
+		})
+		return
+	}
 
 	const { error } = await supabase
 		.from("test_run_groups")
 		.update({
 			title: editedRunGroup.value.title,
-			description: editedRunGroup.value.description
+			description: editedRunGroup.value.description,
+			image_url: imageUrl,
+			primary_channel_url: primaryChannelUrl,
+			secondary_channel_url: secondaryChannelUrl
 		})
 		.eq("id", runGroup.value.id)
 	if (error) {
@@ -259,6 +296,14 @@ defineShortcuts({
 		back-link="/run-groups"
 		@retry="retryAll"
 	>
+		<template #title-leading>
+			<RunGroupImage
+				v-if="runGroup"
+				:src="runGroup.image_url"
+				:alt="`${runGroup.title} image`"
+				size="lg"
+			/>
+		</template>
 		<template #title-trailing>
 			<div class="flex gap-2">
 				<UModal
@@ -332,6 +377,53 @@ defineShortcuts({
 									<span v-else class="text-neutral-500">No description</span>
 								</div>
 							</div>
+							<UFormField label="Image URL">
+								<div class="flex items-center gap-3 w-full">
+									<RunGroupImage
+										:src="editedRunGroup.image_url"
+										:alt="`${editedRunGroup.title} image preview`"
+									/>
+									<UInput
+										v-model="editedRunGroup.image_url"
+										type="url"
+										placeholder="https://example.com/logo.png"
+										class="flex-1"
+									/>
+								</div>
+							</UFormField>
+							<UFormField label="Primary Discord channel">
+								<UInput
+									v-model="editedRunGroup.primary_channel_url"
+									type="url"
+									placeholder="https://discord.com/channels/..."
+									class="w-full"
+								/>
+							</UFormField>
+							<UFormField label="Second Discord channel">
+								<div class="flex gap-2 w-full">
+									<UInput
+										v-model="editedRunGroup.secondary_channel_url"
+										type="url"
+										placeholder="Optional"
+										class="flex-1"
+									/>
+									<UButton
+										v-if="editedRunGroup.secondary_channel_url"
+										label="Make primary"
+										color="neutral"
+										variant="soft"
+										@click="
+											[
+												editedRunGroup.primary_channel_url,
+												editedRunGroup.secondary_channel_url
+											] = [
+												editedRunGroup.secondary_channel_url,
+												editedRunGroup.primary_channel_url
+											]
+										"
+									/>
+								</div>
+							</UFormField>
 							<div
 								class="grid 2xl:grid-cols-4 lg:grid-cols-3 sm:grid-cols-2 grid-cols-1 gap-3"
 							>
@@ -410,13 +502,34 @@ defineShortcuts({
 		</template>
 
 		<template #description>
-			<div class="md text-neutral-400">
-				<VueMarkdown
-					v-if="runGroup?.description"
-					:source="runGroup.description"
-				>
-				</VueMarkdown>
-				<span v-else class="text-neutral-500">No description</span>
+			<div class="flex flex-col gap-4">
+				<div v-if="runGroup" class="flex flex-wrap gap-2">
+					<UButton
+						v-if="optionalDiscordUrl(runGroup.primary_channel_url)"
+						:to="optionalDiscordUrl(runGroup.primary_channel_url)"
+						target="_blank"
+						rel="noopener noreferrer"
+						icon="i-simple-icons-discord"
+						color="primary"
+						variant="soft"
+						size="sm"
+						label="Current"
+					/>
+					<UButton
+						v-if="optionalDiscordUrl(runGroup.secondary_channel_url)"
+						:to="optionalDiscordUrl(runGroup.secondary_channel_url)"
+						target="_blank"
+						rel="noopener noreferrer"
+						icon="i-simple-icons-discord"
+						color="neutral"
+						variant="soft"
+						size="sm"
+						label="Other"
+					/>
+				</div>
+				<div v-if="runGroup?.description" class="md max-w-4xl text-neutral-400">
+					<VueMarkdown :source="runGroup.description" />
+				</div>
 			</div>
 		</template>
 

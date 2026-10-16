@@ -330,6 +330,7 @@ const editedRun = ref<Run>({
 	deleted_at: null,
 	id: "",
 	plan: null,
+	discussion_url: null,
 	title: ""
 })
 const selectedRunGroups = ref<string[]>([])
@@ -349,6 +350,15 @@ function selectRunGroup(runGroupId: string) {
 
 async function saveRun() {
 	if (!run.value) return
+	const discussionUrl = optionalDiscordUrl(editedRun.value.discussion_url)
+	if (discussionUrl === undefined) {
+		toast.add({
+			title: "Invalid URL",
+			description: "Use a Discord HTTPS link.",
+			color: "error"
+		})
+		return
+	}
 	const currentRun = run.value
 
 	let hasErrors = false
@@ -356,7 +366,8 @@ async function saveRun() {
 	const { error } = await supabase
 		.from("test_runs")
 		.update({
-			title: editedRun.value.title
+			title: editedRun.value.title,
+			discussion_url: discussionUrl
 		})
 		.eq("id", currentRun.id)
 	if (error) {
@@ -436,7 +447,8 @@ const newReport = ref<Report>({
 	created_at: new Date().toISOString(),
 	deleted_at: null,
 	pass: false,
-	comment: ""
+	comment: "",
+	discussion_url: null
 })
 
 function resetReportForm() {
@@ -448,7 +460,8 @@ function resetReportForm() {
 		created_at: new Date().toISOString(),
 		deleted_at: null,
 		pass: false,
-		comment: ""
+		comment: "",
+		discussion_url: null
 	}
 }
 
@@ -471,6 +484,15 @@ async function generateReport() {
 		})
 		return
 	}
+	const discussionUrl = optionalDiscordUrl(newReport.value.discussion_url)
+	if (discussionUrl === undefined) {
+		toast.add({
+			title: "Invalid URL",
+			description: "Use a Discord HTTPS link.",
+			color: "error"
+		})
+		return
+	}
 
 	const { error } = await supabase.from("test_run_reports").insert({
 		id: newReport.value.id,
@@ -479,7 +501,8 @@ async function generateReport() {
 		created_by: currentUser.value.id,
 		created_at: new Date().toISOString(),
 		pass: newReport.value.pass,
-		comment: newReport.value.comment
+		comment: newReport.value.comment,
+		discussion_url: discussionUrl
 	})
 	if (error) {
 		console.error(error)
@@ -771,6 +794,14 @@ defineShortcuts({
 								v-model="newReport.comment"
 								placeholder="Report Comment"
 							/>
+							<UFormField label="Public discussion message">
+								<UInput
+									v-model="newReport.discussion_url"
+									type="url"
+									placeholder="https://discord.com/channels/..."
+									class="w-full"
+								/>
+							</UFormField>
 						</div>
 					</template>
 					<template #footer>
@@ -820,6 +851,14 @@ defineShortcuts({
 									:ui="{
 										root: 'w-full'
 									}"
+								/>
+							</UFormField>
+							<UFormField label="Board discussion message">
+								<UInput
+									v-model="editedRun.discussion_url"
+									type="url"
+									placeholder="https://discord.com/channels/..."
+									class="w-full"
 								/>
 							</UFormField>
 							<UFormField label="Run Groups">
@@ -922,21 +961,25 @@ defineShortcuts({
 				<USeparator orientation="vertical" class="h-6" />
 				<div
 					v-if="runGroupsContainingTestRun"
-					class="flex gap-1 items-center text-neutral-500 font-semibold"
+					class="flex flex-wrap gap-2 items-center text-neutral-500 font-semibold"
 				>
 					<UIcon name="i-lucide-library-big" class="h-4 w-4" />
 					<div
-						v-for="(runGroup, index) in runGroupsContainingTestRun"
+						v-for="runGroup in runGroupsContainingTestRun"
 						:key="runGroup.id"
-						class="flex"
+						class="flex items-center"
 					>
 						<NuxtLink
-							class="hover:underline"
+							class="inline-flex items-center gap-1 hover:underline"
 							:to="`/run-groups/${runGroup.id}`"
 						>
+							<RunGroupImage
+								:src="runGroup.image_url"
+								:alt="`${runGroup.title} image`"
+								size="xs"
+							/>
 							<span>{{ runGroup.title }}</span>
 						</NuxtLink>
-						<span v-if="index < runGroupsContainingTestRun.length - 1">,</span>
 					</div>
 					<div
 						v-if="
@@ -949,7 +992,37 @@ defineShortcuts({
 				</div>
 				<USkeleton v-else class="h-6 w-32" />
 				<USeparator orientation="vertical" class="h-6" />
-				<USwitch v-model="isTestRunMode" label="Test Run Mode" />
+				<div
+					class="flex items-center gap-1 rounded-lg bg-neutral-800/60 p-1"
+					aria-label="Run view"
+				>
+					<UButton
+						color="neutral"
+						size="sm"
+						:variant="isTestRunMode ? 'ghost' : 'soft'"
+						@click="isTestRunMode = false"
+						>List</UButton
+					>
+					<UButton
+						color="neutral"
+						size="sm"
+						:variant="isTestRunMode ? 'soft' : 'ghost'"
+						@click="isTestRunMode = true"
+						>Focus</UButton
+					>
+				</div>
+				<UButton
+					v-if="optionalDiscordUrl(run?.discussion_url ?? null)"
+					:to="optionalDiscordUrl(run?.discussion_url ?? null)"
+					target="_blank"
+					rel="noopener noreferrer"
+					icon="i-simple-icons-discord"
+					color="primary"
+					variant="soft"
+					size="sm"
+					label="Discussion"
+					class="ml-auto"
+				/>
 			</div>
 			<TestStatusBar :status-stats="statusStats" />
 		</template>
@@ -975,48 +1048,41 @@ defineShortcuts({
 					</div>
 				</TestCaseGroupSection>
 			</div>
-			<div
-				v-else
-				class="grid xl:grid-cols-[fit-content(100%)_1fr_fit-content(100%)] grid-cols-2 h-full flex-1 lg:gap-4 gap-2 lg:pb-0 pb-2"
-			>
-				<UButton
-					color="primary"
-					size="sm"
-					variant="soft"
-					leading-icon="i-lucide-arrow-left"
-					:ui="{
-						base: 'px-8 xl:order-1 order-3 justify-start lg:min-h-16 min-h-10'
-					}"
-					@click="previousCase()"
-				>
-					<UKbd color="primary" variant="subtle">J</UKbd>
-				</UButton>
+			<div v-else class="mx-auto w-full max-w-5xl flex flex-col gap-4">
 				<div
-					class="w-full xl:col-span-1 col-span-2 order-2 flex flex-col lg:gap-6 gap-2"
+					class="flex items-center justify-between gap-3 rounded-lg border border-neutral-800 bg-neutral-900/70 px-3 py-2"
 				>
+					<UButton
+						color="neutral"
+						size="sm"
+						variant="ghost"
+						leading-icon="i-lucide-arrow-left"
+						@click="previousCase()"
+					>
+						Previous <UKbd color="neutral" variant="subtle">J</UKbd>
+					</UButton>
+					<span class="text-sm text-neutral-400"
+						>Case {{ selectedCaseIndex + 1 }} of {{ runCases.length }}</span
+					>
+					<UButton
+						color="neutral"
+						size="sm"
+						variant="ghost"
+						trailing-icon="i-lucide-arrow-right"
+						@click="nextCase()"
+					>
+						Next <UKbd color="neutral" variant="subtle">K</UKbd>
+					</UButton>
+				</div>
+				<div class="w-full flex flex-col gap-4">
 					<TestRunCaseCard
 						v-if="selectedCase"
 						:run-case="selectedCase"
 						individual
-						:individual-index="selectedCaseIndex"
-						:total-cases="runCases.length"
 						@update-result="updateCaseResult"
 						@update-comment="updateCaseComment"
 					/>
-					<USeparator class="block xl:hidden" />
 				</div>
-				<UButton
-					color="primary"
-					size="sm"
-					variant="soft"
-					trailing-icon="i-lucide-arrow-right"
-					:ui="{
-						base: 'px-8 order-4 justify-end lg:min-h-16 min-h-10'
-					}"
-					@click="nextCase()"
-				>
-					<UKbd color="primary" variant="subtle">K</UKbd>
-				</UButton>
 			</div>
 		</template>
 	</PageWrapper>

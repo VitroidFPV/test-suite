@@ -154,6 +154,9 @@ const newRunGroup = ref<RunGroup>({
 	id: crypto.randomUUID(),
 	title: "",
 	description: "",
+	image_url: null,
+	primary_channel_url: null,
+	secondary_channel_url: null,
 	deleted_at: null,
 	created_at: new Date().toISOString()
 })
@@ -161,6 +164,37 @@ const newRunGroup = ref<RunGroup>({
 const createRunGroupModalOpen = ref(false)
 
 async function createRunGroup() {
+	const imageUrl = optionalExternalUrl(newRunGroup.value.image_url)
+	const primaryChannelUrl = optionalDiscordUrl(
+		newRunGroup.value.primary_channel_url
+	)
+	const secondaryChannelUrl = optionalDiscordUrl(
+		newRunGroup.value.secondary_channel_url
+	)
+	if (imageUrl === undefined) {
+		toast.add({
+			title: "Invalid URL",
+			description: "Use a full https URL.",
+			color: "error"
+		})
+		return
+	}
+	if ([primaryChannelUrl, secondaryChannelUrl].includes(undefined)) {
+		toast.add({
+			title: "Invalid Discord URL",
+			description: "Use a Discord HTTPS link.",
+			color: "error"
+		})
+		return
+	}
+	if (secondaryChannelUrl && !primaryChannelUrl) {
+		toast.add({
+			title: "Primary channel required",
+			description: "Add the primary channel before a second channel.",
+			color: "error"
+		})
+		return
+	}
 	// create run group, name is kebab-case of title
 	const { error } = await supabase.from("test_run_groups").insert([
 		{
@@ -168,6 +202,9 @@ async function createRunGroup() {
 			name: newRunGroup.value.title?.toLowerCase().replace(/\s/g, "-") ?? "",
 			title: newRunGroup.value.title,
 			description: newRunGroup.value.description,
+			image_url: imageUrl,
+			primary_channel_url: primaryChannelUrl,
+			secondary_channel_url: secondaryChannelUrl,
 			created_at: newRunGroup.value.created_at
 		}
 	])
@@ -212,6 +249,9 @@ async function createRunGroup() {
 		id: crypto.randomUUID(),
 		title: "",
 		description: "",
+		image_url: null,
+		primary_channel_url: null,
+		secondary_channel_url: null,
 		deleted_at: null,
 		created_at: new Date().toISOString()
 	}
@@ -278,6 +318,36 @@ defineShortcuts({
 							class="w-full"
 							:rows="5"
 						/>
+						<UFormField label="Image URL">
+							<div class="flex items-center gap-3 w-full">
+								<RunGroupImage
+									:src="newRunGroup.image_url"
+									:alt="`${newRunGroup.title} image preview`"
+								/>
+								<UInput
+									v-model="newRunGroup.image_url"
+									type="url"
+									placeholder="https://example.com/logo.png"
+									class="flex-1"
+								/>
+							</div>
+						</UFormField>
+						<UFormField label="Primary Discord channel">
+							<UInput
+								v-model="newRunGroup.primary_channel_url"
+								type="url"
+								placeholder="https://discord.com/channels/..."
+								class="w-full"
+							/>
+						</UFormField>
+						<UFormField label="Second Discord channel">
+							<UInput
+								v-model="newRunGroup.secondary_channel_url"
+								type="url"
+								placeholder="Optional"
+								class="w-full"
+							/>
+						</UFormField>
 						<USeparator />
 						<div class="flex gap-3 items-center">
 							<div class="text-sm text-neutral-500">Sort by:</div>
@@ -372,21 +442,26 @@ defineShortcuts({
 					</h2>
 					<div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
 						<div v-for="run in section.items" :key="run.id">
-							<BaseCard>
+							<BaseCard :class="{ 'justify-center': !run.description }">
 								<template #header>
 									<NuxtLink
-										class="font-bold text-primary hover:underline"
+										class="flex items-center gap-3 font-semibold text-neutral-100 hover:text-primary-400 hover:underline"
+										:class="{ 'pb-2 sm:pb-3': !run.description }"
 										:to="'/run-groups/' + run.id"
 									>
+										<RunGroupImage
+											:src="run.image_url"
+											:alt="`${run.title} image`"
+										/>
 										{{ run.title }}
 									</NuxtLink>
 								</template>
-								<template #default>
+								<template v-if="run.description" #default>
 									<div class="md">
 										<VueMarkdown
 											v-if="run.description"
 											:source="run.description"
-											class="line-clamp-2 text-ellipsis"
+											class="line-clamp-3"
 											style="
 												mask-image: linear-gradient(
 													180deg,

@@ -230,6 +230,7 @@ const newRun = ref<NewRun>({
 	created_at: new Date().toISOString(),
 	created_by: user.value?.id || "",
 	deleted_at: null,
+	discussion_url: null,
 	plan: null
 })
 
@@ -248,6 +249,16 @@ function autoFill() {
 const createRunModalOpen = ref(false)
 
 async function createRun() {
+	const discussionUrl = optionalDiscordUrl(newRun.value.discussion_url)
+	if (discussionUrl === undefined) {
+		toast.add({
+			title: "Invalid URL",
+			description: "Use a Discord HTTPS link.",
+			color: "error"
+		})
+		return
+	}
+	newRun.value.discussion_url = discussionUrl
 	const { error } = await supabase.from("test_runs").insert([newRun.value])
 	if (error) {
 		console.error(error)
@@ -393,6 +404,7 @@ async function createRun() {
 		created_at: new Date().toISOString(),
 		created_by: user.value?.id || "",
 		deleted_at: null,
+		discussion_url: null,
 		plan: null
 	}
 	selectedRunGroup.value = undefined
@@ -462,6 +474,14 @@ defineShortcuts({
 								/>
 							</UTooltip>
 						</UFieldGroup>
+						<UFormField label="Board discussion message">
+							<UInput
+								v-model="newRun.discussion_url"
+								type="url"
+								placeholder="https://discord.com/channels/..."
+								class="w-full"
+							/>
+						</UFormField>
 						<div class="flex gap-x-3">
 							<div class="flex flex-col gap-y-2 w-full">
 								<div class="flex items-center gap-x-1 text-neutral-400 text-sm">
@@ -551,6 +571,7 @@ defineShortcuts({
 							v-for="item in section.items"
 							:key="`${section.label}-${item.id}`"
 							:run="item"
+							:groups="runGroupsByRunId.get(item.id) ?? []"
 						/>
 					</div>
 				</div>
