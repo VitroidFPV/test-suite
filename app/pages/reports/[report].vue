@@ -10,6 +10,7 @@ const toast = useToast()
 const urlReport = useRoute().params.report as string
 
 const supabase = useSupabaseClient<Database>()
+const { dateTimeProps } = useDateTimeFormat()
 
 const mdPreviewMode = ref(false)
 
@@ -521,17 +522,34 @@ defineShortcuts({
 		</template>
 
 		<template #description>
-			<div class="flex gap-2 items-center">
+			<div
+				v-if="report"
+				class="flex flex-wrap gap-x-4 gap-y-2 items-center text-sm text-neutral-400"
+			>
+				<UBadge
+					:color="report.report.pass ? 'success' : 'error'"
+					:label="report.report.pass ? 'Passed' : 'Failed'"
+					variant="soft"
+					class="rounded-full font-semibold"
+				/>
 				<UAvatar
 					v-if="report?.creator"
 					:src="report.creator.avatar ?? ''"
 					:alt="report.creator.username"
 				/>
-				<div v-if="report?.creator" class="text-neutral-500 font-semibold">
+				<div v-if="report.creator" class="font-medium">
 					{{ report.creator.username }}
 				</div>
+				<NuxtTime :datetime="report.report.created_at" v-bind="dateTimeProps" />
+				<NuxtLink
+					v-if="userIsLoggedIn"
+					:to="`/runs/${report.report.run}`"
+					class="text-primary-400 hover:underline"
+				>
+					View test run
+				</NuxtLink>
 			</div>
-			<div v-if="report?.report.comment" class="md text-neutral-400">
+			<div v-if="report?.report.comment" class="md max-w-4xl text-neutral-300">
 				<VueMarkdown :source="report.report.comment"> </VueMarkdown>
 			</div>
 			<TestStatusBar v-if="report" :status-stats="statusStats" />
@@ -542,24 +560,22 @@ defineShortcuts({
 				v-if="casesWithComments.length > 0"
 				class="flex items-center gap-2 shrink-0"
 			>
-				<UTooltip
-					:text="
-						allCasesWithCommentsExpanded
-							? 'Collapse cases with comments'
-							: 'Expand cases with comments'
-					"
+				<UButton
+					color="neutral"
+					size="sm"
+					:variant="allCasesWithCommentsExpanded ? 'subtle' : 'soft'"
+					icon="i-lucide-chevrons-down"
+					:ui="{
+						leadingIcon: `transition-transform duration-200 ${allCasesWithCommentsExpanded ? 'rotate-180' : ''}`
+					}"
+					@click="toggleCasesWithCommentsExpanded"
 				>
-					<UButton
-						color="neutral"
-						size="xs"
-						:variant="allCasesWithCommentsExpanded ? 'subtle' : 'soft'"
-						icon="i-lucide-chevrons-down"
-						:ui="{
-							leadingIcon: `transition-transform duration-200 ${allCasesWithCommentsExpanded ? 'rotate-180' : ''}`
-						}"
-						@click="toggleCasesWithCommentsExpanded"
-					/>
-				</UTooltip>
+					{{
+						allCasesWithCommentsExpanded
+							? "Collapse comments"
+							: "Expand comments"
+					}}
+				</UButton>
 			</div>
 		</template>
 

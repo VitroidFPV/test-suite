@@ -372,21 +372,22 @@ defineShortcuts({
 					</h2>
 					<div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
 						<div v-for="run in section.items" :key="run.id">
-							<BaseCard>
+							<BaseCard :class="{ 'justify-center': !run.description }">
 								<template #header>
 									<NuxtLink
-										class="font-bold text-primary hover:underline"
+										class="block font-semibold text-neutral-100 hover:text-primary-400 hover:underline"
+										:class="{ 'pb-2 sm:pb-3': !run.description }"
 										:to="'/run-groups/' + run.id"
 									>
 										{{ run.title }}
 									</NuxtLink>
 								</template>
-								<template #default>
+								<template v-if="run.description" #default>
 									<div class="md">
 										<VueMarkdown
 											v-if="run.description"
 											:source="run.description"
-											class="line-clamp-2 text-ellipsis"
+											class="line-clamp-3"
 											style="
 												mask-image: linear-gradient(
 													180deg,

@@ -19,14 +19,14 @@ const { dateTimeProps } = useDateTimeFormat()
 		<template #header>
 			<NuxtLink
 				:to="`/runs/${props.run.id}`"
-				class="font-bold text-primary hover:underline"
+				class="font-semibold text-neutral-100 hover:text-primary-400 hover:underline"
 			>
 				{{ props.run.title }}
 			</NuxtLink>
 		</template>
 		<template #default>
 			<div
-				class="text-sm text-neutral-500 flex items-center justify-between gap-1"
+				class="text-sm text-neutral-400 flex flex-wrap items-center justify-between gap-2"
 			>
 				<div class="flex items-center gap-1">
 					<UAvatar
@@ -38,7 +38,7 @@ const { dateTimeProps } = useDateTimeFormat()
 				</div>
 				<NuxtTime
 					:datetime="props.run.created_at"
-					class="text-sm text-neutral-500"
+					class="text-sm text-neutral-400"
 					v-bind="dateTimeProps"
 				/>
 			</div>

@@ -177,19 +177,14 @@ defineShortcuts({
 					<BaseCard>
 						<template #header>
 							<NuxtLink
-								class="font-bold text-primary hover:underline"
+								class="font-semibold text-neutral-100 hover:text-primary-400 hover:underline"
 								:to="'/plans/' + item.id"
 							>
 								{{ item.title }}
 							</NuxtLink>
 						</template>
-						<template #default>
-							<span
-								v-if="item.description"
-								class="line-clamp-1 text-ellipsis"
-								>{{ item.description }}</span
-							>
-							<div v-else class="opacity-50">No description</div>
+						<template v-if="item.description" #default>
+							<VueMarkdown :source="item.description" class="md line-clamp-3" />
 						</template>
 					</BaseCard>
 				</div>

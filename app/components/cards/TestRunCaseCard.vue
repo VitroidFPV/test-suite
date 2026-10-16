@@ -146,26 +146,32 @@ function toggleCollapsible() {
 		:class="{ 'outline-2 outline-primary-500/50': props.selected }"
 		:ui="{
 			root: 'h-auto',
-			header: 'px-4 py-3 sm:p-4',
-			body: 'px-4 py-3 sm:p-4',
+			header: 'px-4 py-3',
+			body: 'px-4 py-2 sm:px-4',
 			footer: 'px-4 py-3 sm:p-4'
 		}"
 	>
 		<template #default>
 			<div class="flex flex-col">
-				<div class="flex items-center justify-between w-full">
+				<div class="flex items-center justify-between gap-3 w-full">
 					<UButton
-						class="font-bold"
+						class="min-w-0 text-left font-medium"
 						variant="ghost"
 						color="neutral"
 						:ui="{
-							base: `p-1 text-base cursor-pointer ${getResultType(props.runCase.result).textColor} `
+							base: 'p-1 text-base cursor-pointer text-neutral-100 hover:text-primary-400 whitespace-normal justify-start'
 						}"
 						@click="toggleCollapsible"
 					>
 						{{ props.runCase.title }}
 					</UButton>
-					<div class="flex items-center gap-2">
+					<div class="flex items-center gap-2 shrink-0">
+						<UTooltip v-if="props.runCase.comment?.trim()" text="Has a comment">
+							<UIcon
+								name="i-lucide-message-square"
+								class="size-4 text-neutral-400"
+							/>
+						</UTooltip>
 						<USelectMenu
 							v-if="!props.readonly"
 							:model-value="getResultType(props.runCase.result)"
@@ -234,8 +240,8 @@ function toggleCollapsible() {
 				</div>
 				<UCollapsible v-model:open="collapsibleOpen">
 					<template #content>
-						<div class="flex gap-4 w-full">
-							<div class="flex flex-col gap-1 w-1/2">
+						<div class="flex flex-col md:flex-row gap-4 w-full pt-3">
+							<div class="flex flex-col gap-1 min-w-0 flex-1">
 								<div class="text-sm text-neutral-400">
 									Test Case Description
 								</div>
@@ -249,7 +255,10 @@ function toggleCollapsible() {
 								</div>
 							</div>
 							<!-- textarea for comment -->
-							<div v-if="!props.readonly" class="flex flex-col gap-1 w-1/2">
+							<div
+								v-if="!props.readonly"
+								class="flex flex-col gap-1 min-w-0 flex-1"
+							>
 								<div class="text-sm text-neutral-400">Test Case Comment</div>
 								<UTextarea
 									v-model="localComment"
@@ -261,7 +270,10 @@ function toggleCollapsible() {
 									@blur="handleCommentUpdate"
 								/>
 							</div>
-							<div v-else class="flex flex-col gap-1 w-1/2">
+							<div
+								v-else-if="props.runCase.comment"
+								class="flex flex-col gap-1 min-w-0 flex-1"
+							>
 								<div class="text-sm text-neutral-400">Test Case Comment</div>
 								<div class="md h-full bg-neutral-800/50 p-2 rounded-md">
 									<VueMarkdown
